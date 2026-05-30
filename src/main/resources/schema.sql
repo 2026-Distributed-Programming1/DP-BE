@@ -343,7 +343,8 @@ CREATE TABLE IF NOT EXISTS revivals (
 
 -- 채널 모집
 CREATE TABLE IF NOT EXISTS channel_recruitments (
-    recruitment_no VARCHAR(20)  PRIMARY KEY,
+    id             BIGINT       AUTO_INCREMENT PRIMARY KEY,
+    recruitment_no VARCHAR(20)  UNIQUE,
     manager_name   VARCHAR(100),
     channel_type   VARCHAR(50),
     recruit_count  INT          DEFAULT 0,
@@ -356,7 +357,8 @@ CREATE TABLE IF NOT EXISTS channel_recruitments (
 
 -- 채널 심사
 CREATE TABLE IF NOT EXISTS channel_screenings (
-    screening_no     VARCHAR(20)  PRIMARY KEY,
+    id               BIGINT       AUTO_INCREMENT PRIMARY KEY,
+    screening_no     VARCHAR(20)  UNIQUE,
     candidate_name   VARCHAR(100),
     channel_type     VARCHAR(50),
     qualification    VARCHAR(200),
@@ -369,7 +371,8 @@ CREATE TABLE IF NOT EXISTS channel_screenings (
 
 -- 활동 계획
 CREATE TABLE IF NOT EXISTS activity_plans (
-    plan_no                  VARCHAR(20)  PRIMARY KEY,
+    id                       BIGINT       AUTO_INCREMENT PRIMARY KEY,
+    plan_no                  VARCHAR(20)  UNIQUE,
     plan_name                VARCHAR(200),
     author_name              VARCHAR(100),
     start_date               DATE,
@@ -396,7 +399,8 @@ CREATE TABLE IF NOT EXISTS activity_schedule_items (
 
 -- 성과급 요청
 CREATE TABLE IF NOT EXISTS bonus_requests (
-    request_no       VARCHAR(20)  PRIMARY KEY,
+    id               BIGINT       AUTO_INCREMENT PRIMARY KEY,
+    request_no       VARCHAR(20)  UNIQUE,
     requester        VARCHAR(100),
     evaluation_no    VARCHAR(20),
     channel_type     VARCHAR(50),
@@ -409,7 +413,8 @@ CREATE TABLE IF NOT EXISTS bonus_requests (
 
 -- 영업 활동 관리
 CREATE TABLE IF NOT EXISTS sales_activity_managements (
-    activity_no         VARCHAR(20)  PRIMARY KEY,
+    id                  BIGINT       AUTO_INCREMENT PRIMARY KEY,
+    activity_no         VARCHAR(20)  UNIQUE,
     manager_name        VARCHAR(100),
     channel_name        VARCHAR(100),
     activity_type       VARCHAR(50),
@@ -425,7 +430,8 @@ CREATE TABLE IF NOT EXISTS sales_activity_managements (
 
 -- 영업 조직 평가
 CREATE TABLE IF NOT EXISTS sales_org_evaluations (
-    evaluation_no      VARCHAR(20)  PRIMARY KEY,
+    id                 BIGINT       AUTO_INCREMENT PRIMARY KEY,
+    evaluation_no      VARCHAR(20)  UNIQUE,
     org_name           VARCHAR(100),
     channel_type       VARCHAR(50),
     grade              VARCHAR(20),
