@@ -18,6 +18,7 @@ import org.dpbe.domain.common.entity.BankAccount;
 public class Customer extends User {
 
     private static int sequence = 0;    // 고객번호 자동 부여용
+    private Long id;                     // DB 대리키(PK)
     private String customerId;           // 고객번호 (클래스 다이어그램 기준)
     private String phone;                // 연락처
     private String residentNo;           // 주민등록번호
@@ -65,6 +66,8 @@ public class Customer extends User {
     }
 
     // Getters
+    public Long getId() { return id; }
+    public void setId(Long id) { this.id = id; }
     public String getCustomerId() { return customerId; }
     /** Alias: customerNo == customerId (7·8 도메인 호환) */
     public String getCustomerNo() { return customerId; }

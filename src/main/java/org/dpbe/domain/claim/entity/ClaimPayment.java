@@ -19,6 +19,7 @@ public class ClaimPayment {
 
     private static int sequence = 0;            // 지급번호 자동 부여용
 
+    private Long id;                             // DB 대리키(PK)
     private String paymentNo;                   // 지급번호
     private ClaimCalculation calculation;       // 산출 건
     private RecipientInfo recipient;            // 수령인 - 자동 로드
@@ -156,7 +157,10 @@ public class ClaimPayment {
     }
 
     // Getter
+    public Long getId() { return id; }
+    public void setId(Long id) { this.id = id; }
     public String getPaymentNo() { return paymentNo; }
+    public void setPaymentNo(String paymentNo) { this.paymentNo = paymentNo; }
     public ClaimCalculation getCalculation() { return calculation; }
     public RecipientInfo getRecipient() { return recipient; }
     public BankAccount getAccount() { return account; }

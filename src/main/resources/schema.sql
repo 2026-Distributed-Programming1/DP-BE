@@ -25,7 +25,8 @@ CREATE DATABASE IF NOT EXISTS insurance_db
 -- ============================================================
 
 CREATE TABLE IF NOT EXISTS customers (
-    customer_id   VARCHAR(20)   PRIMARY KEY,
+    id            BIGINT        AUTO_INCREMENT PRIMARY KEY,
+    customer_id   VARCHAR(20)   UNIQUE NOT NULL,
     name          VARCHAR(100)  NOT NULL,
     resident_no   VARCHAR(20),
     phone         VARCHAR(20),
@@ -130,7 +131,8 @@ CREATE TABLE IF NOT EXISTS overdue_notice_settings (
 
 -- 계약 (contracts.customer_id → customers.customer_id)
 CREATE TABLE IF NOT EXISTS contracts (
-    contract_no      VARCHAR(20)  PRIMARY KEY,
+    id               BIGINT       AUTO_INCREMENT PRIMARY KEY,
+    contract_no      VARCHAR(20)  UNIQUE,
     policy_no        VARCHAR(20),
     customer_id      VARCHAR(20),           -- → customers.customer_id
     customer_name    VARCHAR(100),
@@ -165,7 +167,8 @@ CREATE TABLE IF NOT EXISTS customer_registrations (
 
 -- 보험료 납부 요청
 CREATE TABLE IF NOT EXISTS payments (
-    payment_no     VARCHAR(20)  PRIMARY KEY,
+    id             BIGINT       AUTO_INCREMENT PRIMARY KEY,
+    payment_no     VARCHAR(20)  UNIQUE,
     customer_id    VARCHAR(20),             -- → customers.customer_id
     customer_name  VARCHAR(100),
     total_amount   BIGINT       DEFAULT 0,
@@ -176,7 +179,8 @@ CREATE TABLE IF NOT EXISTS payments (
 
 -- 사고 접수
 CREATE TABLE IF NOT EXISTS accident_reports (
-    accident_no      VARCHAR(20)  PRIMARY KEY,
+    id               BIGINT       AUTO_INCREMENT PRIMARY KEY,
+    accident_no      VARCHAR(20)  UNIQUE,
     customer_id      VARCHAR(20),              -- → customers.customer_id
     customer_name    VARCHAR(100),
     accident_type    VARCHAR(50),
@@ -195,7 +199,8 @@ CREATE TABLE IF NOT EXISTS accident_reports (
 
 -- 보험 청구 접수
 CREATE TABLE IF NOT EXISTS claim_requests (
-    claim_no       VARCHAR(20)  PRIMARY KEY,
+    id             BIGINT       AUTO_INCREMENT PRIMARY KEY,
+    claim_no       VARCHAR(20)  UNIQUE,
     customer_id    VARCHAR(20),             -- → customers.customer_id
     customer_name  VARCHAR(100),
     contract_no    VARCHAR(20),             -- → contracts.contract_no
@@ -205,6 +210,7 @@ CREATE TABLE IF NOT EXISTS claim_requests (
     bank_name      VARCHAR(100),
     account_no     VARCHAR(50),
     account_holder VARCHAR(100),
+    personal_info_agreed BOOLEAN DEFAULT FALSE,
     requested_at   TIMESTAMP,
     status         VARCHAR(20)
 );
@@ -474,7 +480,8 @@ CREATE TABLE IF NOT EXISTS expiring_contract_notices (
 
 -- 납부 기록
 CREATE TABLE IF NOT EXISTS payment_records (
-    record_no       VARCHAR(20)  PRIMARY KEY,
+    id              BIGINT       AUTO_INCREMENT PRIMARY KEY,
+    record_no       VARCHAR(20)  UNIQUE,
     contract_no     VARCHAR(20),            -- → contracts.contract_no
     customer_name   VARCHAR(100),
     amount          BIGINT       DEFAULT 0,
@@ -516,7 +523,8 @@ CREATE TABLE IF NOT EXISTS contract_statistics (
 
 -- 현장 출동
 CREATE TABLE IF NOT EXISTS dispatches (
-    dispatch_no VARCHAR(20)  PRIMARY KEY,
+    id          BIGINT       AUTO_INCREMENT PRIMARY KEY,
+    dispatch_no VARCHAR(20)  UNIQUE,
     accident_no VARCHAR(20),                -- → accident_reports.accident_no
     status      VARCHAR(20)
 );
@@ -527,7 +535,8 @@ CREATE TABLE IF NOT EXISTS dispatches (
 
 -- 피해 조사
 CREATE TABLE IF NOT EXISTS damage_investigations (
-    investigation_no  VARCHAR(20)  PRIMARY KEY,
+    id                BIGINT       AUTO_INCREMENT PRIMARY KEY,
+    investigation_no  VARCHAR(20)  UNIQUE,
     claim_no          VARCHAR(20),          -- → claim_requests.claim_no
     claim_customer    VARCHAR(100),
     customer_id       VARCHAR(20),          -- → customers.customer_id
@@ -585,10 +594,13 @@ CREATE TABLE IF NOT EXISTS refund_calculations (
 
 -- 보상금 산출
 CREATE TABLE IF NOT EXISTS claim_calculations (
-    calculation_no      VARCHAR(20)  PRIMARY KEY,
+    id                  BIGINT       AUTO_INCREMENT PRIMARY KEY,
+    calculation_no      VARCHAR(20)  UNIQUE,
     investigation_no    VARCHAR(20),        -- → damage_investigations.investigation_no
     recognized_damage   BIGINT       DEFAULT 0,
     fault_ratio         DOUBLE       DEFAULT 0,
+    deductible          BIGINT       DEFAULT 0,
+    coverage_limit      BIGINT       DEFAULT 0,
     final_amount        BIGINT       DEFAULT 0,
     exceeded_deductible BOOLEAN      DEFAULT FALSE,
     adjusted            BOOLEAN      DEFAULT FALSE,
@@ -601,7 +613,8 @@ CREATE TABLE IF NOT EXISTS claim_calculations (
 
 -- 출동 기록
 CREATE TABLE IF NOT EXISTS dispatch_records (
-    record_no        VARCHAR(20)  PRIMARY KEY,
+    id               BIGINT       AUTO_INCREMENT PRIMARY KEY,
+    record_no        VARCHAR(20)  UNIQUE,
     dispatch_no      VARCHAR(20),                -- → dispatches.dispatch_no
     agent_name       VARCHAR(100),
     police_required  BOOLEAN      DEFAULT FALSE,
@@ -666,7 +679,8 @@ CREATE TABLE IF NOT EXISTS payment_items (
 
 -- 보험금 지급
 CREATE TABLE IF NOT EXISTS claim_payments (
-    payment_no      VARCHAR(20)  PRIMARY KEY,
+    id              BIGINT       AUTO_INCREMENT PRIMARY KEY,
+    payment_no      VARCHAR(20)  UNIQUE,
     calculation_no  VARCHAR(20),             -- → claim_calculations.calculation_no
     final_amount    BIGINT       DEFAULT 0,
     paid_at         DATETIME     NULL,

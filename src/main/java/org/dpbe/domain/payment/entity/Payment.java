@@ -20,6 +20,7 @@ public class Payment {
 
     private static int sequence = 0;          // 납입 신청번호 자동 부여용
 
+    private Long id;                          // DB 대리키(PK)
     private String paymentNo;                 // 납입 신청번호
     private Customer customer;                // 고객
     private List<PaymentItem> items;          // 납입 항목 목록 - N:M 매핑
@@ -151,6 +152,8 @@ public class Payment {
     public void setStatus(PaymentStatus status) { this.status = status; }
 
     // DB 복원용 setter
+    public Long getId() { return id; }
+    public void setId(Long id) { this.id = id; }
     public void setPaymentNo(String paymentNo) { this.paymentNo = paymentNo; }
     public void setPaymentMethod(PaymentMethod paymentMethod) { this.paymentMethod = paymentMethod; }
     public void setRequestedAt(LocalDateTime requestedAt) { this.requestedAt = requestedAt; }

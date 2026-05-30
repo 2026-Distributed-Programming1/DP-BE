@@ -6,7 +6,7 @@ import org.springframework.stereotype.Repository;
 
 /**
  * 납부 내역 저장 리포지토리 (Spring 트랜잭션 통합 경로).
- * 기존 {@code PaymentRecordDAO.save}와 동일하나 SqlExecutor 경유.
+ * PK는 surrogate id. record_no는 INSERT 후 id에서 파생(저장형).
  */
 @Repository
 public class PaymentRecordRepository {
@@ -24,15 +24,14 @@ public class PaymentRecordRepository {
         String status         = r.getStatus() != null ? r.getStatus().name() : null;
         String rejectCategory = r.getRejectCategory() != null ? r.getRejectCategory().name() : null;
 
-        sql.executeUpdate(
-            "INSERT INTO payment_records (record_no, contract_no, customer_name, amount,"
-            + " method, payment_date, status, confirmed_at, rejected_at, reject_category, reject_reason)"
-            + " VALUES (?,?,?,?,?,?,?,?,?,?,?)"
-            + " ON DUPLICATE KEY UPDATE status=VALUES(status),"
-            + " confirmed_at=VALUES(confirmed_at), rejected_at=VALUES(rejected_at),"
-            + " reject_category=VALUES(reject_category), reject_reason=VALUES(reject_reason)",
-            r.getRecordNo(), contractNo, customerName,
-            r.getAmount(), r.getMethod(), r.getPaymentDate(), status,
-            r.getConfirmedAt(), r.getRejectedAt(), rejectCategory, r.getRejectReason());
+        long id = sql.executeInsertReturningKey(
+                "INSERT INTO payment_records (contract_no, customer_name, amount, method, payment_date,"
+                + " status, confirmed_at, rejected_at, reject_category, reject_reason)"
+                + " VALUES (?,?,?,?,?,?,?,?,?,?)",
+                contractNo, customerName, r.getAmount(), r.getMethod(), r.getPaymentDate(),
+                status, r.getConfirmedAt(), r.getRejectedAt(), rejectCategory, r.getRejectReason());
+        r.setId(id);
+        r.setRecordNo("PRC" + String.format("%05d", id));
+        sql.executeUpdate("UPDATE payment_records SET record_no=? WHERE id=?", r.getRecordNo(), id);
     }
 }

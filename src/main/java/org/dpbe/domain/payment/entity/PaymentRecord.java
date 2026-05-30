@@ -17,6 +17,7 @@ public class PaymentRecord {
 
     private static int sequence = 0;          // 결제번호 자동 부여용
 
+    private Long id;                          // DB 대리키(PK)
     private String recordNo;                  // 결제번호
     private Contract contract;       // 대상 계약
     private LocalDate paymentDate;            // 결제 일자
@@ -116,7 +117,10 @@ public class PaymentRecord {
     }
 
     // Getter
+    public Long getId() { return id; }
+    public void setId(Long id) { this.id = id; }
     public String getRecordNo() { return recordNo; }
+    public void setRecordNo(String recordNo) { this.recordNo = recordNo; }
     public Contract getContract() { return contract; }
     public LocalDate getPaymentDate() { return paymentDate; }
     public long getAmount() { return amount; }

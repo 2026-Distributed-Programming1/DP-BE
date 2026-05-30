@@ -2,7 +2,10 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-> **현재 상태**: 콘솔(Runner) 구조를 Spring REST API 구조로 전환 중. 대표 UC 2개(계약 조회·보험료 납입)가 파일럿으로 전환 완료. 신규 웹 경로와 레거시 콘솔 경로가 **공존**한다. 전환 계획·현황·결정 근거는 **`src/main/resources/design/ApiMigrationPlan.md`** 에 정리되어 있다 — 작업 전 반드시 참고.
+> **현재 상태 (2026-05-30)**: 콘솔(Runner) 구조를 Spring REST API 구조로 전환 중. 신규 웹 경로와 레거시 콘솔(`old/`)이 **공존**한다.
+> - 완료: 패키지 개편(domain/global/old) · 파일럿 UC 2개(계약 조회·보험료 납입, `@Transactional`) · 웹 시더 · surrogate-PK 배치 1(contract·payment) · 배치 2(claim) **PK 파운데이션**(7테이블 id PK + 엔터티 `Long id`).
+> - **다음 작업**: 배치 2a — claim 보상 UC(요청·조사·산출·지급) 신규 전환.
+> - **작업 전 반드시 참고**: 전환 계획·현황·결정은 **`src/main/resources/design/ApiMigrationPlan.md`**, 배치 2 세부는 **`design/Batch2_Claim_Plan.md`**.
 
 ## 빌드 및 실행
 
@@ -63,9 +66,10 @@ org.dpbe
 - **Repository** (`domain.<feature>.repository`): `@Repository`. `SqlExecutor` 주입, raw JDBC. 커넥션은 `DataSourceUtils` 경유라 `@Transactional`에 자동 참여.
 - **DTO** (`domain.<feature>.dto`): record 기반 요청/응답.
 - **예외**: 검증/조회 실패 시 `throw ApiException`(notFound/badRequest) → `ApiExceptionHandler`가 4xx/5xx + `ErrorResponse`로 변환.
-- **SqlExecutor** (`global.jdbc`): `executeUpdate`/`executeQuery`/`queryOne`. SQLException은 런타임 예외로 변환(롤백 유도). 파라미터로 `String/Integer/Long/Double/Boolean/LocalDate/LocalDateTime` 직접 전달.
+- **SqlExecutor** (`global.jdbc`): `executeUpdate`/`executeQuery`/`queryOne`/`executeInsertReturningKey`. SQLException은 런타임 예외로 변환(롤백 유도). 파라미터로 `String/Integer/Long/Double/Boolean/LocalDate/LocalDateTime` 직접 전달.
 - **다단계 입력 흐름**은 클라이언트 주도: 조회 `GET` + (선택)`preview POST` + 제출 `POST`(완성 DTO). 서버 무상태.
 - **시더** `DataSeeder`(`CommandLineRunner`): 멱등(데이터 있으면 skip), `app.seed.enabled=false`로 비활성화, slf4j 로깅.
+- **surrogate-PK(전환된 도메인)**: PK는 DB `id`(AUTO_INCREMENT), 업무번호(contract_no 등)는 `id`에서 파생해 저장(`save()`: INSERT→`executeInsertReturningKey`→파생 UPDATE). 엔터티에 `Long id` 보유.
 
 ## 레거시 콘솔 계층 (`old/`)
 
@@ -76,7 +80,7 @@ org.dpbe
 **DAO 패턴** (`old/dao/`)
 - `save()` — `INSERT ... ON DUPLICATE KEY UPDATE` upsert.
 - `findAll()`/`findBy~()` — `DBA.executeQuery(sql, rs -> {...})` 람다 매핑.
-- PK는 도메인 클래스의 `static int sequence`로 생성.
+- PK는 도메인 클래스의 `static int sequence`로 생성(미전환 도메인 한정).
 
 **DBA** (`old/db/DBA.java`) — 자체 HikariCP 풀 + `ThreadLocal<Connection>` 트랜잭션. **레거시 전용**. 신규 코드는 DBA 대신 `SqlExecutor`+`@Transactional`을 쓴다.
 ```java
@@ -198,7 +202,7 @@ JVM 재시작 시 도메인 클래스의 `static int sequence`가 0으로 리셋
 | **신규/레거시 공존** | 웹(Service+@Transactional)과 콘솔(Runner+DBA)이 같은 MySQL을 각자 풀로 사용 | 파일럿 외 UC는 아직 레거시 경로. 전체 전환 시 DBA 제거 |
 | **Service 레이어** | 파일럿(contract·payment)에 도입 완료. 나머지는 Runner가 UC 조정 겸함 | §ApiMigrationPlan §8 패턴으로 확장 |
 | **트랜잭션** | 신규: Spring `@Transactional`. 레거시: DBA `ThreadLocal` TX(5개 Runner) | |
-| **static sequence PK** | 모든 도메인이 JVM 카운터로 PK 생성 — 동시 요청 시 충돌 가능 | 전체 surrogate-PK 전환은 추후(ApiMigrationPlan 부록 A) |
+| **PK 방식 (전환 중)** | 신규 전환 도메인(contract·payment)은 DB `id`(AUTO_INCREMENT) PK + 업무키 UNIQUE, 업무번호는 id 파생(저장형). claim은 PK만 완료. 미전환 도메인은 `static sequence` 잔존 | 배치 단위 진행 (ApiMigrationPlan 부록 A) |
 | **FK 제약** | schema.sql에 NULLABLE FK 23개 (`customer_registrations.customer_id` 제외) | 비-NULL 값만 무결성 검사 |
 | **테스트 컴파일 에러** | `ActivityPlanTest.java` — ScheduleItem 생성자 시그니처 불일치 | `compileJava`(main)는 정상, `build`(test 포함)는 실패 |
 
@@ -213,7 +217,8 @@ JVM 재시작 시 도메인 클래스의 `static int sequence`가 0으로 리셋
 
 ## 설계/이력 문서
 
-- **`src/main/resources/design/ApiMigrationPlan.md`** — API 전환 계획·현황·결정 근거 (주력 문서)
+- **`src/main/resources/design/ApiMigrationPlan.md`** — API 전환 계획·현황·결정 근거 (주력 문서, 상단에 RESUME 포인터)
+- `design/Batch2_Claim_Plan.md` — 배치 2(claim) 세부 계획(서브배치 2a/2b·엔드포인트 초안·진행 현황)
 - `design/Usecase_scenario.md` — UC 시나리오 (Basic/Alternative/Exception). 웹·신규 흐름의 기준
 - `design/Class_Diagram_Domain.md`, `design/Class_Diagram_Mermaid.md`, `design/DAOStructure.md` — 클래스/DAO 구조
 - 버그 이력 (`src/main/resources/bugreport/`): `BugReport.md`, `AdditionalBugReport.md`, `CodeReviewReport.md`, `FinalBugReport.md` — 발견·수정 버그 전체 내역(모두 ✅)
@@ -222,5 +227,6 @@ JVM 재시작 시 도메인 클래스의 `static int sequence`가 0으로 리셋
 
 - **2026-05-28**: `expiring_contract_notices` 신규, `interview_records.interviewed_at` 추가
 - **2026-05-29**: 버그 수정으로 컬럼 6개 추가, 전체 23개 테이블 NULLABLE FK 추가
+- **2026-05-30**: surrogate-PK 배치 1·2 — customers·contracts·payments·payment_records + claim 7테이블에 `id BIGINT AUTO_INCREMENT PK` 추가, 기존 업무키 `UNIQUE` 강등
 
 > **주의**: 스키마 변경 후엔 반드시 `docker compose down -v && docker compose up -d` 실행

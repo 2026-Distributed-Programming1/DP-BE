@@ -2,6 +2,7 @@ package org.dpbe.domain.customer.repository;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.List;
 import org.dpbe.domain.actor.Customer;
 import org.dpbe.global.jdbc.SqlExecutor;
 import org.springframework.stereotype.Repository;
@@ -21,9 +22,26 @@ public class CustomerRepository {
 
     public Customer findById(String customerId) {
         return sql.queryOne(
-                "SELECT customer_id, name, resident_no, phone, email, address, birth_date, registered_at"
+                "SELECT id, customer_id, name, resident_no, phone, email, address, birth_date, registered_at"
                 + " FROM customers WHERE customer_id=?",
                 this::mapRow, customerId);
+    }
+
+    public List<Customer> findAll() {
+        return sql.executeQuery(
+                "SELECT id, customer_id, name, resident_no, phone, email, address, birth_date, registered_at"
+                + " FROM customers",
+                this::mapRow);
+    }
+
+    public void save(Customer c) {
+        sql.executeUpdate(
+                "INSERT INTO customers (customer_id, name, resident_no, phone, email, address, birth_date)"
+                + " VALUES (?,?,?,?,?,?,?)"
+                + " ON DUPLICATE KEY UPDATE name=VALUES(name), phone=VALUES(phone), email=VALUES(email),"
+                + " address=VALUES(address), birth_date=VALUES(birth_date)",
+                c.getCustomerId(), c.getName(), c.getResidentNo(),
+                c.getContact(), c.getEmail(), c.getAddress(), c.getBirthDate());
     }
 
     private Customer mapRow(ResultSet rs) throws SQLException {
@@ -33,6 +51,7 @@ public class CustomerRepository {
                 rs.getString("resident_no"),
                 rs.getString("phone"),
                 rs.getString("email"));
+        c.setId(rs.getLong("id"));
         String addr = rs.getString("address");
         if (addr != null) c.enterAddress(addr);
         java.sql.Date bd = rs.getDate("birth_date");
