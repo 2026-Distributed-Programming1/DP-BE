@@ -221,7 +221,8 @@ JVM 재시작 시 도메인 클래스의 `static int sequence`가 0으로 리셋
 - `design/Batch2_Claim_Plan.md` — 배치 2(claim) 세부 계획(서브배치 2a/2b·엔드포인트 초안·진행 현황)
 - `design/Usecase_scenario.md` — UC 시나리오 (Basic/Alternative/Exception). 웹·신규 흐름의 기준
 - `design/Class_Diagram_Domain.md`, `design/Class_Diagram_Mermaid.md`, `design/DAOStructure.md` — 클래스/DAO 구조
-- 버그 이력 (`src/main/resources/bugreport/`): `BugReport.md`, `AdditionalBugReport.md`, `CodeReviewReport.md`, `FinalBugReport.md` —변경  발견·수정 버그 전체 내역(모두 ✅)
+- 버그 이력 (`src/main/resources/bugreport/`): `BugReport.md`, `AdditionalBugReport.md`, `CodeReviewReport.md`, `FinalBugReport.md` —변경 
+- 발견·수정 버그 전체 내역(모두 ✅)
 
 ## 스키마 변경 이력
 

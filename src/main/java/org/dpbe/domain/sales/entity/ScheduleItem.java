@@ -9,6 +9,7 @@ import java.time.LocalDateTime;
  * 활동 계획에 포함되는 세부 일정 정보를 담는 클래스이다.
  */
 public class ScheduleItem {
+    private Long id;
     private String customerId;              // 대상 고객번호 필수
     private ActivityType activityType;      // 활동 유형 - 방문/상담/전화 필수 (enum)
     private LocalDateTime activityDateTime; // 활동 일시 필수
@@ -25,6 +26,8 @@ public class ScheduleItem {
     }
 
     public void delete() {}
+    public Long getId() { return id; }
+    public void setId(Long id) { this.id = id; }
     public String getCustomerId() { return customerId; }
     public void setCustomerId(String customerId) { this.customerId = customerId; }
     public ActivityType getActivityType() { return activityType; }

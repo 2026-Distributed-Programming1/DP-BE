@@ -10,6 +10,7 @@ import java.time.LocalDateTime;
  * 영업 관리자가 새로운 판매채널을 모집하기 위해 공고를 등록하고 관리하는 클래스이다.
  */
 public class ChannelRecruitment {
+    private Long id;
     private String recruitmentNo;           // 모집번호
     private String managerName;             // 등록 영업 관리자명
     private ChannelType channelType;        // 채널 유형 - 설계사/대리점 (enum) 필수
@@ -56,6 +57,8 @@ public class ChannelRecruitment {
     public void showRequiredError() {}
 
     // Getters / Setters
+    public Long getId() { return id; }
+    public void setId(Long id) { this.id = id; }
     public String getRecruitmentNo() { return recruitmentNo; }
     public String getManagerName() { return managerName; }
     public void setManagerName(String managerName) { this.managerName = managerName; }

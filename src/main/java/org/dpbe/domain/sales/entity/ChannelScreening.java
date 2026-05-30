@@ -13,6 +13,7 @@ import java.util.List;
  * 지원자의 자격과 경력을 심사하여 채용 여부를 결정하는 클래스이다.
  */
 public class ChannelScreening {
+    private Long id;
     private String applicantName;           // 지원자명
     private ChannelType channelType;        // 채널 유형 - 설계사/대리점 (enum)
     private LocalDate applicationDate = LocalDate.now();      // 지원일
@@ -64,6 +65,8 @@ public class ChannelScreening {
     public void closeDetailPanel() {}
 
     // Getters / Setters
+    public Long getId() { return id; }
+    public void setId(Long id) { this.id = id; }
     public String getApplicantName() { return applicantName; }
     public void setApplicantName(String applicantName) { this.applicantName = applicantName; }
     public ChannelType getChannelType() { return channelType; }

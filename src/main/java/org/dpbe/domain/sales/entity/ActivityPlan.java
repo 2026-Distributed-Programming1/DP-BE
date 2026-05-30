@@ -13,6 +13,7 @@ import java.util.List;
  * 판매채널이 작성하는 영업 활동 계획서 클래스이다.
  */
 public class ActivityPlan {
+    private Long id;
     private String planId;                       // 계획 ID
     private String planName;                     // 계획명 필수
     private LocalDate startDate;                 // 시작일 필수
@@ -93,6 +94,8 @@ public class ActivityPlan {
     public void retainValues() {}
 
     // Runner에서 실제 사용하는 getter/setter만 유지
+    public Long getId() { return id; }
+    public void setId(Long id) { this.id = id; }
     public String getPlanId() { return planId; }
     public void setPlanId(String planId) { this.planId = planId; }
     public String getPlanName() { return planName; }

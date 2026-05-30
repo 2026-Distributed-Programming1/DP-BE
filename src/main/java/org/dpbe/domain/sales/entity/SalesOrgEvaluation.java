@@ -10,6 +10,7 @@ import org.dpbe.domain.common.enums.EvaluationGrade;
  * 실적을 바탕으로 판매채널의 성과를 평가하고 등급을 부여하는 클래스이다.
  */
 public class SalesOrgEvaluation {
+    private Long id;
     private LocalDate filterStartDate;      // 평가 기간 시작일
     private LocalDate filterEndDate;        // 평가 기간 종료일
     private ChannelType channelType;        // 채널 유형 - 설계사/대리점 (enum)
@@ -54,6 +55,8 @@ public class SalesOrgEvaluation {
     public void navigateToBonus() {}
 
     // Runner에서 실제 사용하는 getter/setter만 유지
+    public Long getId() { return id; }
+    public void setId(Long id) { this.id = id; }
     public Long getSalesResult() { return salesResult; }
     public Integer getContractCount() { return contractCount; }
     public String getEvaluationComment() { return evaluationComment; }
