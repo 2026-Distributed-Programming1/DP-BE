@@ -21,6 +21,7 @@ public class ClaimCalculation {
     // 기본 보장한도
     private static final long DEFAULT_COVERAGE_LIMIT = 100_000_000L;
 
+    private Long id;                          // DB 대리키(PK)
     private String calculationNo;             // 산출번호
     private DamageInvestigation investigation; // 손해 조사
     private long recognizedDamage;            // 총 인정 손해액 - 자동 로드
@@ -129,12 +130,17 @@ public class ClaimCalculation {
     }
 
     // Getter
+    public Long getId() { return id; }
+    public void setId(Long id) { this.id = id; }
     public String getCalculationNo() { return calculationNo; }
+    public void setCalculationNo(String calculationNo) { this.calculationNo = calculationNo; }
     public DamageInvestigation getInvestigation() { return investigation; }
     public long getRecognizedDamage() { return recognizedDamage; }
     public double getFaultRatio() { return faultRatio; }
     public long getDeductible() { return deductible; }
+    public void setDeductible(long deductible) { this.deductible = deductible; }
     public long getCoverageLimit() { return coverageLimit; }
+    public void setCoverageLimit(long coverageLimit) { this.coverageLimit = coverageLimit; }
     public long getFinalAmount() { return finalAmount; }
     public boolean isAdjusted() { return adjusted; }
     public boolean isExceededDeductible() { return exceededDeductible; }

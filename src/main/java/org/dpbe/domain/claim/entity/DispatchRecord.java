@@ -17,6 +17,7 @@ public class DispatchRecord {
 
     private static int sequence = 0;            // 기록 ID 자동 부여용
 
+    private Long id;                            // DB 대리키(PK)
     private String recordId;                    // 기록 ID
     private Dispatch dispatch;                  // 출동 건
     private List<Attachment> photos;            // 사진 목록 - 전경/파손/번호판/블랙박스
@@ -80,6 +81,8 @@ public class DispatchRecord {
     }
 
     // Getter
+    public Long getId() { return id; }
+    public void setId(Long id) { this.id = id; }
     public String getRecordId() { return recordId; }
     public Dispatch getDispatch() { return dispatch; }
     public List<Attachment> getPhotos() { return photos; }

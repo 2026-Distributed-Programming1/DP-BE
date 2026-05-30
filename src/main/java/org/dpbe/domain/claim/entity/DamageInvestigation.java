@@ -17,6 +17,7 @@ public class DamageInvestigation {
 
     private static int sequence = 0;                            // 조사번호 자동 부여용
 
+    private Long id;                                            // DB 대리키(PK)
     private String investigationNo;                             // 조사번호
     private ClaimRequest claim;                                 // 대상 청구
     private ClaimsHandler handler;                              // 보상담당자
@@ -132,7 +133,10 @@ public class DamageInvestigation {
     }
 
     // Getter
+    public Long getId() { return id; }
+    public void setId(Long id) { this.id = id; }
     public String getInvestigationNo() { return investigationNo; }
+    public void setInvestigationNo(String investigationNo) { this.investigationNo = investigationNo; }
     public ClaimRequest getClaim() { return claim; }
     public ClaimsHandler getHandler() { return handler; }
     public double getOurFaultRatio() { return ourFaultRatio; }

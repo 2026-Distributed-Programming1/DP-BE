@@ -15,6 +15,7 @@ public class Dispatch {
 
     private static int sequence = 0;          // 출동번호 자동 부여용
 
+    private Long id;                          // DB 대리키(PK)
     private String dispatchNo;                // 출동번호
     private AccidentReport accident;          // 사고 접수
     private DispatchAgent agent;              // 출동 직원
@@ -79,6 +80,8 @@ public class Dispatch {
     }
 
     // Getter
+    public Long getId() { return id; }
+    public void setId(Long id) { this.id = id; }
     public String getDispatchNo() { return dispatchNo; }
     public AccidentReport getAccident() { return accident; }
     public DispatchAgent getAgent() { return agent; }

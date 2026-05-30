@@ -17,6 +17,7 @@ public class AccidentReport {
 
     private static int sequence = 0;             // 접수번호 자동 부여용
 
+    private Long id;                             // DB 대리키(PK)
     private String reportNo;                     // 접수번호
     private Customer customer;                   // 사고자
     private String vehicleNo;                    // 차량번호
@@ -119,6 +120,8 @@ public class AccidentReport {
     }
 
     // Getter
+    public Long getId() { return id; }
+    public void setId(Long id) { this.id = id; }
     public String getReportNo() { return reportNo; }
     public Customer getCustomer() { return customer; }
     public String getVehicleNo() { return vehicleNo; }

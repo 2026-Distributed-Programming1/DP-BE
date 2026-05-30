@@ -5,6 +5,7 @@ import java.sql.Date;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Statement;
 import java.sql.Timestamp;
 import java.sql.Types;
 import java.util.ArrayList;
@@ -45,6 +46,28 @@ public class SqlExecutor {
             return ps.executeUpdate();
         } catch (SQLException e) {
             throw new RuntimeException("[SqlExecutor] update 실패: " + e.getMessage(), e);
+        } finally {
+            DataSourceUtils.releaseConnection(con, dataSource);
+        }
+    }
+
+    /**
+     * INSERT 후 DB가 생성한 AUTO_INCREMENT 키를 반환한다.
+     * surrogate-PK(id) 방식에서 업무번호를 id로부터 파생하기 위해 사용한다.
+     */
+    public long executeInsertReturningKey(String sql, Object... params) {
+        Connection con = DataSourceUtils.getConnection(dataSource);
+        try (PreparedStatement ps = con.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
+            bind(ps, params);
+            ps.executeUpdate();
+            try (ResultSet keys = ps.getGeneratedKeys()) {
+                if (keys.next()) {
+                    return keys.getLong(1);
+                }
+                throw new RuntimeException("[SqlExecutor] 생성키를 반환받지 못했습니다.");
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException("[SqlExecutor] insert 실패: " + e.getMessage(), e);
         } finally {
             DataSourceUtils.releaseConnection(con, dataSource);
         }

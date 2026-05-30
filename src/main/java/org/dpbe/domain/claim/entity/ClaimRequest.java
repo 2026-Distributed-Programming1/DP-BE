@@ -23,6 +23,7 @@ public class ClaimRequest {
 
     private static int sequence = 0;             // 청구번호 자동 부여용
 
+    private Long id;                             // DB 대리키(PK)
     private String claimNo;                      // 청구번호
     private Customer customer;                   // 청구 고객
     private Contract contract;          // 대상 계약
@@ -202,7 +203,10 @@ public class ClaimRequest {
     }
 
     // Getter
+    public Long getId() { return id; }
+    public void setId(Long id) { this.id = id; }
     public String getClaimNo() { return claimNo; }
+    public void setClaimNo(String claimNo) { this.claimNo = claimNo; }
     public Customer getCustomer() { return customer; }
     public Contract getContract() { return contract; }
     public Customer getInsured() { return insured; }

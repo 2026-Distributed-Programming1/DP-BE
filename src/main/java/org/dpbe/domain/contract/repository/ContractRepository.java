@@ -11,14 +11,14 @@ import org.dpbe.domain.common.enums.ContractStatus;
 import org.springframework.stereotype.Repository;
 
 /**
- * 계약 조회 리포지토리 (Spring 트랜잭션 통합 경로).
- * 기존 {@code ContractDAO}와 동일한 매핑이나, SqlExecutor(=Spring DataSource) 경유.
+ * 계약 리포지토리 (Spring 트랜잭션 통합 경로).
+ * PK는 surrogate id(AUTO_INCREMENT). 업무번호(contract_no·policy_no)는 INSERT 후 id에서 파생(저장형).
  */
 @Repository
 public class ContractRepository {
 
     private static final String COLS =
-            "contract_no, policy_no, customer_id, customer_name, contract_date, expiry_date,"
+            "id, contract_no, policy_no, customer_id, customer_name, contract_date, expiry_date,"
             + " monthly_premium, insurance_type, status, is_expiring_soon, is_overdue,"
             + " overdue_count, total_pay_count, paid_count, last_payment_date";
 
@@ -40,6 +40,30 @@ public class ContractRepository {
     public Contract findByContractNo(String contractNo) {
         return sql.queryOne(
                 "SELECT " + COLS + " FROM contracts WHERE contract_no=?", this::mapRow, contractNo);
+    }
+
+    /** 신규 계약 저장 — INSERT 후 생성 id에서 contract_no/policy_no 파생. */
+    public void save(Contract c) {
+        String customerId   = c.getCustomer() != null ? c.getCustomer().getCustomerId() : null;
+        String customerName = c.getCustomer() != null ? c.getCustomer().getName() : null;
+        String status       = c.getStatus() != null ? c.getStatus().name() : "NORMAL";
+        long id = sql.executeInsertReturningKey(
+                "INSERT INTO contracts (customer_id, customer_name, contract_date, expiry_date,"
+                + " monthly_premium, insurance_type, status, is_expiring_soon, is_overdue,"
+                + " overdue_count, total_pay_count, paid_count, last_payment_date)"
+                + " VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)",
+                customerId, customerName, c.getContractDate(), c.getExpiryDate(),
+                c.getMonthlyPremium(), c.getInsuranceType(), status,
+                c.getIsExpiringSoon(), c.getIsOverdue(),
+                c.getOverdueCount() != null ? c.getOverdueCount() : 0,
+                c.getTotalPayCount() != null ? c.getTotalPayCount() : 0,
+                c.getPaidCount() != null ? c.getPaidCount() : 0,
+                c.getLastPaymentDate());
+        c.setId(id);
+        c.setContractNo("CON" + String.format("%05d", id));
+        c.setPolicyNo("POL" + String.format("%05d", id));
+        sql.executeUpdate("UPDATE contracts SET contract_no=?, policy_no=? WHERE id=?",
+                c.getContractNo(), c.getPolicyNo(), id);
     }
 
     private Contract mapRow(ResultSet rs) throws SQLException {
@@ -66,6 +90,7 @@ public class ContractRepository {
                 rs.getBoolean("is_expiring_soon"),
                 rs.getBoolean("is_overdue"),
                 rs.getInt("overdue_count"));
+        c.setId(rs.getLong("id"));
         c.setTotalPayCount(rs.getInt("total_pay_count"));
         c.setPaidCount(rs.getInt("paid_count"));
         c.setLastPaymentDate(toLocalDate(rs.getDate("last_payment_date")));

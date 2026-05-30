@@ -21,6 +21,7 @@ public class Contract {
     private static int policySequence = 0;
 
     // 7·8 도메인 공통 필드
+    private Long id;                    // DB 대리키(PK)
     private String contractNo;
     private String policyNo;
     private Customer customer;
@@ -138,8 +139,11 @@ public class Contract {
 
     // ── Getters / Setters ─────────────────────────────────────────────────────
 
+    public Long   getId() { return id; }
+    public void   setId(Long id) { this.id = id; }
     public String getContractNo() { return contractNo; }
     public void   setContractNo(String contractNo) { this.contractNo = contractNo; }
+    public void   setPolicyNo(String policyNo) { this.policyNo = policyNo; }
 
     public String getPolicyNo() { return policyNo; }
 
