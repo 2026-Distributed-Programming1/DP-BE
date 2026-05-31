@@ -49,12 +49,6 @@ public class CustomerRegistration {
         this.isSsnMasked = !this.isSsnMasked;
     }
 
-    public void searchAddress() {}
-
-    public void addSpecialClause() {}
-
-    public void removeSpecialClause() {}
-
     public Boolean validateRequired() {
         return name != null && !name.isEmpty()
                 && ssn != null && !ssn.isEmpty()
@@ -75,23 +69,11 @@ public class CustomerRegistration {
         return true;
     }
 
-    public void highlightError() {}
-
-    public void showDuplicateError() {}
-
     public void assignIds() {
         String timestamp = LocalDateTime.now().toString().replaceAll("[^0-9]", "").substring(0, 14);
         this.customerId = "CU-" + timestamp;
         this.contractNo = "CN-" + timestamp;
     }
-
-    public void showSuccessPopup() {}
-
-    public void save() {}
-
-    public void edit() {}
-
-    public void openCalendar() {}
 
     // Runner에서 실제 사용하는 getter/setter만 유지
     public Long getId() { return id; }

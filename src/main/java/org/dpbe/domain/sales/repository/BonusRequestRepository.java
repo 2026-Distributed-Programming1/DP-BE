@@ -16,11 +16,11 @@ public class BonusRequestRepository {
     public void save(BonusRequest r) {
         long id = sql.executeInsertReturningKey(
                 "INSERT INTO bonus_requests"
-                + " (channel_name, evaluation_no, channel_type, evaluation_grade,"
+                + " (channel_name, evaluation_id, channel_type, evaluation_grade,"
                 + "  amount, reason, status, created_at)"
                 + " VALUES (?,?,?,?,?,?,?,?)",
                 r.getChannelName(),
-                r.getEvaluationNo(),
+                parseId(r.getEvaluationNo()),
                 r.getChannelType() != null ? r.getChannelType().name() : null,
                 r.getEvaluationGrade() != null ? r.getEvaluationGrade().name() : null,
                 r.getBonusAmount() != null ? r.getBonusAmount().longValue() : 0L,
@@ -29,7 +29,12 @@ public class BonusRequestRepository {
                 r.getRequestedAt());
         r.setId(id);
         r.setRequestNo("BNS" + String.format("%05d", id));
-        sql.executeUpdate("UPDATE bonus_requests SET request_no=? WHERE id=?",
-                r.getRequestNo(), id);
+    }
+
+    private Long parseId(String businessNo) {
+        if (businessNo == null || businessNo.isBlank()) {
+            return null;
+        }
+        return Long.parseLong(businessNo.replaceAll("\\D", ""));
     }
 }

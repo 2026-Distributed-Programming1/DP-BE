@@ -19,7 +19,7 @@ import org.springframework.stereotype.Repository;
 public class AccidentReportRepository {
 
     private static final String COLS =
-            "id, accident_no, customer_id, customer_name, accident_type, vehicle_no,"
+            "id, customer_id, customer_name, accident_type, vehicle_no,"
             + " owner_name, phone_no, damage_type, location, needs_dispatch,"
             + " casualty_count, injury_severity, emergency_reported, reported_at, status";
 
@@ -48,20 +48,19 @@ public class AccidentReportRepository {
                 r.getReportedAt(), status);
         r.setId(id);
         r.setReportNo("ACC" + String.format("%05d", id));
-        sql.executeUpdate("UPDATE accident_reports SET accident_no=? WHERE id=?", r.getReportNo(), id);
     }
 
     public List<AccidentReport> findAll() {
         return sql.executeQuery("SELECT " + COLS + " FROM accident_reports", this::mapRow);
     }
 
-    public AccidentReport findByReportNo(String reportNo) {
+    public AccidentReport findById(Long id) {
         return sql.queryOne(
-                "SELECT " + COLS + " FROM accident_reports WHERE accident_no=?", this::mapRow, reportNo);
+                "SELECT " + COLS + " FROM accident_reports WHERE id=?", this::mapRow, id);
     }
 
     private AccidentReport mapRow(ResultSet rs) throws SQLException {
-        AccidentReport r = new AccidentReport(rs.getString("accident_no"));
+        AccidentReport r = new AccidentReport("ACC" + String.format("%05d", rs.getLong("id")));
         r.setId(rs.getLong("id"));
         String cid = rs.getString("customer_id");
         String cname = rs.getString("customer_name");

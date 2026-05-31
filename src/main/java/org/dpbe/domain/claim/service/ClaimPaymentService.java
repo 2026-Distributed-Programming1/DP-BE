@@ -43,10 +43,18 @@ public class ClaimPaymentService {
         return PaymentResponse.from(p);
     }
 
+    private Long parseId(String no) {
+        try {
+            return Long.parseLong(no.replaceAll("\\D", ""));
+        } catch (NumberFormatException e) {
+            throw ApiException.notFound("유효하지 않은 번호: " + no);
+        }
+    }
+
     /** 지급 생성 — 승인된 산출 건에 대해 지급건을 만든다(WAITING/SCHEDULED). */
     @Transactional
     public PaymentResponse create(String calculationNo, PaymentCreateRequest request) {
-        ClaimCalculation calc = calculationRepository.findByCalculationNo(calculationNo);
+        ClaimCalculation calc = calculationRepository.findById(parseId(calculationNo));
         if (calc == null) {
             throw ApiException.notFound("산출을 찾을 수 없습니다: " + calculationNo);
         }
@@ -58,7 +66,7 @@ public class ClaimPaymentService {
         }
 
         // 산출액·청구 계좌를 조인으로 한 번에 로드
-        ClaimPaymentRepository.PayoutSource src = paymentRepository.loadPayoutSource(calculationNo);
+        ClaimPaymentRepository.PayoutSource src = paymentRepository.loadPayoutSource(parseId(calculationNo));
         if (src == null) {
             throw ApiException.notFound("지급 정보를 구성할 수 없습니다: " + calculationNo);
         }
@@ -66,6 +74,7 @@ public class ClaimPaymentService {
         // 산출 셸 + 금액으로 지급건 구성 (paymentNo는 save에서 파생)
         ClaimCalculation calcShell = new ClaimCalculation(
                 calculationNo, null, 0, 0, src.finalAmount(), false, false, calc.getStatus());
+        calcShell.setId(calc.getId());
         ClaimPayment payment = new ClaimPayment(
                 "TBD", calcShell, src.finalAmount(), ClaimPaymentStatus.WAITING);
 
@@ -93,7 +102,7 @@ public class ClaimPaymentService {
     /** 이체 실행 — OTP 검증 후 이체(COMPLETED) 또는 실패(FAILED). */
     @Transactional
     public PaymentResponse execute(String paymentNo, PaymentExecuteRequest request) {
-        ClaimPayment payment = paymentRepository.findByPaymentNo(paymentNo);
+        ClaimPayment payment = paymentRepository.findById(parseId(paymentNo));
         if (payment == null) {
             throw ApiException.notFound("지급 건을 찾을 수 없습니다: " + paymentNo);
         }
@@ -111,7 +120,7 @@ public class ClaimPaymentService {
         String calcNo = payment.getCalculation() != null
                 ? payment.getCalculation().getCalculationNo() : null;
         ClaimPaymentRepository.PayoutSource src =
-                calcNo != null ? paymentRepository.loadPayoutSource(calcNo) : null;
+                calcNo != null ? paymentRepository.loadPayoutSource(parseId(calcNo)) : null;
         if (src != null) {
             BankAccount account = new BankAccount();
             account.enter(src.bankName(), src.accountNo(), src.accountHolder());

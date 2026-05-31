@@ -26,32 +26,6 @@ public class ExpiringContractManagement {
     private Long renewalPremium;          // 갱신 후 월 보험료 A1
     private Long premiumDiff;             // 변동액 A1
 
-    public void sendNoticeSms() {}
-
-    public void saveNoticeRecord() {}
-
-    public void notifyManager() {}
-
-    public void confirmRenewal() {}
-
-    public void saveRenewalContract() {}
-
-    public void switchToTermination() {}
-
-    public void sendPendingAlert() {}
-
-    public void showExpiredBanner() {}
-
-    public void disableRenewalTab() {}
-
-    public void showSmsError() {}
-
-    public void switchTab() {}
-
-    public void closePopup() {}
-
-    public void updateHistoryTab() {}
-
     // Getters / Setters
     public Long getId()               { return id; }
     public void setId(Long id)        { this.id = id; }

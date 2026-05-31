@@ -11,7 +11,7 @@ import org.springframework.stereotype.Repository;
 public class InterviewRecordRepository {
 
     private static final String COLS =
-            "id, record_no, customer_name, content, customer_reaction,"
+            "id, customer_name, content, customer_reaction,"
             + " follow_up_action, interviewed_at, recorded_at, modified_at";
 
     private final SqlExecutor sql;
@@ -25,10 +25,10 @@ public class InterviewRecordRepository {
                 "SELECT " + COLS + " FROM interview_records ORDER BY id DESC", this::mapRow);
     }
 
-    public InterviewRecord findByRecordNo(String recordNo) {
+    public InterviewRecord findById(Long id) {
         return sql.queryOne(
-                "SELECT " + COLS + " FROM interview_records WHERE record_no=?",
-                this::mapRow, recordNo);
+                "SELECT " + COLS + " FROM interview_records WHERE id=?",
+                this::mapRow, id);
     }
 
     /** 면담기록 등록 — INSERT 후 id에서 record_no 파생. */
@@ -42,8 +42,6 @@ public class InterviewRecordRepository {
                 r.getFollowUpAction(), r.getInterviewedAt(), r.getRecordedAt());
         r.setId(id);
         r.setRecordNo("REC" + String.format("%05d", id));
-        sql.executeUpdate("UPDATE interview_records SET record_no=? WHERE id=?",
-                r.getRecordNo(), id);
     }
 
     /** 면담기록 수정. */
@@ -68,7 +66,7 @@ public class InterviewRecordRepository {
                 rs.getString("customer_reaction"),
                 rs.getString("follow_up_action"));
         r.setId(rs.getLong("id"));
-        r.setRecordNo(rs.getString("record_no"));
+        r.setRecordNo("REC" + String.format("%05d", rs.getLong("id")));
         r.setRecordedAt(recTs != null ? recTs.toLocalDateTime() : null);
         r.setModifiedAt(modTs != null ? modTs.toLocalDateTime() : null);
         return r;

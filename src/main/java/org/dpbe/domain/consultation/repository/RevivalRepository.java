@@ -20,14 +20,16 @@ public class RevivalRepository {
         String customerName = r.getCustomer() != null ? r.getCustomer().getName() : null;
         long id = sql.executeInsertReturningKey(
                 "INSERT INTO revivals"
-                + " (contract_no, customer_name, contact, unpaid_amount, payment_method, revived_at)"
+                + " (contract_id, customer_name, contact, unpaid_amount, payment_method, revived_at)"
                 + " VALUES (?,?,?,?,?,?)",
-                r.getContractNo(), customerName,
+                parseId(r.getContractNo()), customerName,
                 r.getContact(), r.getUnpaidAmount(),
                 r.getPaymentMethod(), r.getAppliedAt());
         r.setId(id);
         r.setRevivalNo("REV" + String.format("%05d", id));
-        sql.executeUpdate("UPDATE revivals SET revival_no=? WHERE id=?",
-                r.getRevivalNo(), id);
+    }
+
+    private Long parseId(String businessNo) {
+        return Long.parseLong(businessNo.replaceAll("\\D", ""));
     }
 }

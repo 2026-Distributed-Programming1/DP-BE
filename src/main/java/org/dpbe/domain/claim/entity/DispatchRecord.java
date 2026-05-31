@@ -15,8 +15,6 @@ import org.dpbe.domain.common.enums.DispatchRecordStatus;
  */
 public class DispatchRecord {
 
-    private static int sequence = 0;            // 기록 ID 자동 부여용
-
     private Long id;                            // DB 대리키(PK)
     private String recordId;                    // 기록 ID
     private Dispatch dispatch;                  // 출동 건
@@ -27,10 +25,8 @@ public class DispatchRecord {
     private LocalDateTime transmittedAt;        // 전송일시
     private DispatchRecordStatus status;        // 상태
 
-    /** 생성자 - 기록 ID 자동 부여 */
+    /** 신규 기록 생성자 */
     public DispatchRecord(Dispatch dispatch) {
-        sequence += 1;
-        this.recordId = "DRC" + String.format("%05d", sequence);
         this.dispatch = dispatch;
         this.photos = new ArrayList<>();
         this.status = DispatchRecordStatus.DRAFT;

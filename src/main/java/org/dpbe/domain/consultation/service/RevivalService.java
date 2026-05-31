@@ -27,6 +27,14 @@ public class RevivalService {
         this.customerRepo = customerRepo;
     }
 
+    private Long parseContractId(String contractNo) {
+        try {
+            return Long.parseLong(contractNo.replaceAll("\\D", ""));
+        } catch (NumberFormatException e) {
+            throw ApiException.notFound("유효하지 않은 계약번호: " + contractNo);
+        }
+    }
+
     /** 부활 신청 — 계약 존재 확인 후 저장. */
     @Transactional
     public RevivalResponse create(RevivalRequest req) {
@@ -43,7 +51,7 @@ public class RevivalService {
         if (customer == null)
             throw ApiException.notFound("고객을 찾을 수 없습니다: " + req.customerId());
 
-        if (contractRepo.findByContractNo(req.contractNo()) == null)
+        if (contractRepo.findById(parseContractId(req.contractNo())) == null)
             throw ApiException.notFound("계약을 찾을 수 없습니다: " + req.contractNo());
 
         Revival r = new Revival();

@@ -37,17 +37,25 @@ public class EducationExecutionService {
                 .toList();
     }
 
+    private Long parseId(String no) {
+        try {
+            return Long.parseLong(no.replaceAll("\\D", ""));
+        } catch (NumberFormatException e) {
+            throw ApiException.badRequest("유효하지 않은 번호: " + no);
+        }
+    }
+
     @Transactional(readOnly = true)
     public EducationExecutionResponse getExecution(String executionNo) {
-        EducationExecution exec = repository.findByExecutionNo(executionNo);
+        EducationExecution exec = repository.findById(parseId(executionNo));
         if (exec == null) throw ApiException.notFound("교육 진행 기록을 찾을 수 없습니다: " + executionNo);
-        List<AttendanceDetail> attendances = repository.findAttendances(executionNo);
+        List<AttendanceDetail> attendances = repository.findAttendances(exec.getExecutionNo());
         return EducationExecutionResponse.from(exec, attendances);
     }
 
     @Transactional
     public EducationExecutionResponse createExecution(EducationExecutionRequest req) {
-        if (prepRepository.findByPrepNo(req.prepNo()) == null) {
+        if (prepRepository.findById(parseId(req.prepNo())) == null) {
             throw ApiException.notFound("교육 제반을 찾을 수 없습니다: " + req.prepNo());
         }
         if (req.attendances() == null || req.attendances().isEmpty()) {

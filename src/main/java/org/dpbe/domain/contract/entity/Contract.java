@@ -1,7 +1,6 @@
 package org.dpbe.domain.contract.entity;
 
 import org.dpbe.domain.actor.Customer;
-import org.dpbe.domain.common.entity.BankAccount;
 import org.dpbe.domain.common.enums.ContractStatus;
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
@@ -16,9 +15,6 @@ import java.util.List;
  * - 기본 생성자: 6 도메인 계약 관리 담당자 화면에서 수동 입력
  */
 public class Contract {
-
-    private static int sequence = 0;
-    private static int policySequence = 0;
 
     // 7·8 도메인 공통 필드
     private Long id;                    // DB 대리키(PK)
@@ -41,12 +37,8 @@ public class Contract {
     private List<String> specialClauses;
     private List<Long> clausePremiums;
 
-    /** 7·8 도메인 생성자 — 계약번호·증권번호 자동 부여 */
+    /** 7·8 도메인 생성자 — 계약번호·증권번호는 외부에서 setContractNo/setPolicyNo로 주입 */
     public Contract(Customer customer, LocalDate contractDate, LocalDate expiryDate, long monthlyPremium) {
-        sequence += 1;
-        policySequence += 1;
-        this.contractNo = "CON" + String.format("%05d", sequence);
-        this.policyNo   = "POL" + String.format("%05d", policySequence);
         this.customer      = customer;
         this.contractDate  = contractDate;
         this.expiryDate    = expiryDate;
@@ -96,17 +88,6 @@ public class Contract {
         return c;
     }
 
-    // ── 클래스 다이어그램 정의 메서드 (스텁) ──────────────────────────────────
-
-    public void search() {}
-    public void getDetail() {}
-    public void edit() {}
-    public void navigateToExpiry() {}
-    public void navigateToStats() {}
-    public void retry() {}
-    public void showNoSpecialClause() {}
-    public void showNotFoundMessage() {}
-
     /** 만기 임박 여부 (30일 이내) */
     public boolean isMaturityNear() {
         if (expiryDate == null) return false;
@@ -127,15 +108,7 @@ public class Contract {
         }
     }
 
-    public void changePaymentMethod(String method, BankAccount account) {}
-
     public boolean verifyAccount(int amount, String code) { return true; }
-
-    public void getCertificatePDF() {}
-
-    public void getPolicyPDF() {}
-
-    public void initiateCancellation() {}
 
     // ── Getters / Setters ─────────────────────────────────────────────────────
 

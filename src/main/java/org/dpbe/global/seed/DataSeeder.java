@@ -49,17 +49,17 @@ public class DataSeeder implements CommandLineRunner {
         }
         log.info("[seed] 초기 데이터 적재 시작");
 
-        Customer c1 = new Customer("김고객", "900101-1234567", "010-1111-2222", "kim@test.com");
+        Customer c1 = new Customer("CUS00001", "김고객", "900101-1234567", "010-1111-2222", "kim@test.com");
         c1.enterAddress("서울시 강남구 테헤란로 123");
         c1.enterBirthDate(LocalDate.of(1990, 1, 1));
         customerRepository.save(c1);
 
-        Customer c2 = new Customer("이고객", "850515-2345678", "010-3333-4444", "lee@test.com");
+        Customer c2 = new Customer("CUS00002", "이고객", "850515-2345678", "010-3333-4444", "lee@test.com");
         c2.enterAddress("서울시 서초구 반포대로 45");
         c2.enterBirthDate(LocalDate.of(1985, 5, 15));
         customerRepository.save(c2);
 
-        Customer c3 = new Customer("최고객", "950820-1456789", "010-5555-6666", "choi@test.com");
+        Customer c3 = new Customer("CUS00003", "최고객", "950820-1456789", "010-5555-6666", "choi@test.com");
         c3.enterAddress("경기도 성남시 분당구");
         c3.enterBirthDate(LocalDate.of(1995, 8, 20));
         customerRepository.save(c3);

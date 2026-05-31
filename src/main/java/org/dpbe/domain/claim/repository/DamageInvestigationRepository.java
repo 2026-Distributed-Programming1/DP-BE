@@ -22,7 +22,7 @@ import org.springframework.stereotype.Repository;
 public class DamageInvestigationRepository {
 
     private static final String COLS =
-            "id, investigation_no, claim_no, claim_customer, customer_id, handler_emp_id,"
+            "id, claim_id, claim_customer, customer_id, handler_emp_id,"
             + " handler_name, our_fault_ratio, counter_ratio, recognized_damage, opinion,"
             + " result, reject_reason, investigated_at, status";
 
@@ -34,7 +34,7 @@ public class DamageInvestigationRepository {
 
     /** 신규 조사 저장 — INSERT 후 생성 id에서 investigation_no 파생. */
     public void save(DamageInvestigation inv) {
-        String claimNo  = inv.getClaim() != null ? inv.getClaim().getClaimNo() : null;
+        Long claimId    = inv.getClaim() != null ? inv.getClaim().getId() : null;
         String claimCus = inv.getClaim() != null && inv.getClaim().getCustomer() != null
                 ? inv.getClaim().getCustomer().getName() : null;
         String customerId = inv.getClaim() != null && inv.getClaim().getCustomer() != null
@@ -45,30 +45,28 @@ public class DamageInvestigationRepository {
         String status    = inv.getStatus() != null ? inv.getStatus().name() : null;
 
         long id = sql.executeInsertReturningKey(
-                "INSERT INTO damage_investigations (claim_no, claim_customer, customer_id,"
+                "INSERT INTO damage_investigations (claim_id, claim_customer, customer_id,"
                 + " handler_emp_id, handler_name, our_fault_ratio, counter_ratio,"
                 + " recognized_damage, opinion, result, reject_reason, investigated_at, status)"
                 + " VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)",
-                claimNo, claimCus, customerId, handlerId, handlerName,
+                claimId, claimCus, customerId, handlerId, handlerName,
                 inv.getOurFaultRatio(), inv.getCounterFaultRatio(),
                 inv.getRecognizedDamage(), inv.getOpinion(),
                 result, inv.getRejectReason(), inv.getInvestigatedAt(), status);
         inv.setId(id);
         inv.setInvestigationNo("INV" + String.format("%05d", id));
-        sql.executeUpdate("UPDATE damage_investigations SET investigation_no=? WHERE id=?",
-                inv.getInvestigationNo(), id);
     }
 
     public DamageInvestigation findByClaimNo(String claimNo) {
         return sql.queryOne(
-                "SELECT " + COLS + " FROM damage_investigations WHERE claim_no=?",
-                this::mapRow, claimNo);
+                "SELECT " + COLS + " FROM damage_investigations WHERE claim_id=?",
+                this::mapRow, parseId(claimNo));
     }
 
-    public DamageInvestigation findByInvestigationNo(String investigationNo) {
+    public DamageInvestigation findById(Long id) {
         return sql.queryOne(
-                "SELECT " + COLS + " FROM damage_investigations WHERE investigation_no=?",
-                this::mapRow, investigationNo);
+                "SELECT " + COLS + " FROM damage_investigations WHERE id=?",
+                this::mapRow, id);
     }
 
     public List<DamageInvestigation> findAll() {
@@ -76,13 +74,15 @@ public class DamageInvestigationRepository {
     }
 
     private DamageInvestigation mapRow(ResultSet rs) throws SQLException {
-        String cn    = rs.getString("claim_no");
+        long claimId = rs.getLong("claim_id");
+        String cn    = !rs.wasNull() ? "CLM" + String.format("%05d", claimId) : "?";
         String cname = rs.getString("claim_customer");
         String cid   = rs.getString("customer_id");
         Customer custShell = new Customer(
                 cid != null ? cid : "?", cname != null ? cname : "", null, null, null);
         ClaimRequest claimShell = new ClaimRequest(
                 cn != null ? cn : "?", custShell, null, ClaimRequestStatus.RECEIVED);
+        if (claimId > 0) claimShell.setId(claimId);
 
         String st = rs.getString("status");
         InvestigationStatus status = InvestigationStatus.NEW_ASSIGNED;
@@ -91,7 +91,7 @@ public class DamageInvestigationRepository {
             catch (IllegalArgumentException ignored) {}
         }
         DamageInvestigation inv = new DamageInvestigation(
-                rs.getString("investigation_no"),
+                "INV" + String.format("%05d", rs.getLong("id")),
                 claimShell,
                 rs.getString("handler_name"),
                 rs.getDouble("our_fault_ratio"),
@@ -119,5 +119,9 @@ public class DamageInvestigationRepository {
         java.sql.Timestamp iat = rs.getTimestamp("investigated_at");
         if (iat != null) inv.setInvestigatedAt(iat.toLocalDateTime());
         return inv;
+    }
+
+    private Long parseId(String businessNo) {
+        return Long.parseLong(businessNo.replaceAll("\\D", ""));
     }
 }

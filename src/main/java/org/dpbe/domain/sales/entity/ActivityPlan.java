@@ -64,8 +64,6 @@ public class ActivityPlan {
                 && proposedInsuranceType != null;
     }
 
-    public void highlightError() {}
-
     public void tempSave() {
         this.status = PlanStatus.TEMP_SAVE;
         this.planNo = "AP-TEMP-" + LocalDateTime.now().toString().replaceAll("[^0-9]", "").substring(0, 14);
@@ -75,18 +73,6 @@ public class ActivityPlan {
         this.status = PlanStatus.UNDER_REVIEW;
         this.planNo = "AP-" + LocalDateTime.now().toString().replaceAll("[^0-9]", "").substring(0, 14);
     }
-
-    public void notifyManager() {}
-
-    public void showTempSaveMessage() {}
-
-    public void showSubmitMessage() {}
-
-    public void showDateRangeError() {}
-
-    public void openCalendar() {}
-
-    public void retainValues() {}
 
     // Runner에서 실제 사용하는 getter/setter만 유지
     public Long getId() { return id; }

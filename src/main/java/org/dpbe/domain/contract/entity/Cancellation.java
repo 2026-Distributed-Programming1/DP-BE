@@ -9,8 +9,6 @@ import java.time.LocalDateTime;
  */
 public class Cancellation {
 
-    private static int sequence = 0;
-
     private Long id;
     private String cancellationNo;       // 해지번호 - 자동 부여
     private Contract contract;           // 대상 계약
@@ -22,10 +20,8 @@ public class Cancellation {
     private LocalDateTime canceledAt;    // 해지일시 - confirm() 시 설정
     private String status;               // 상태 - 작성중/완료/실패
 
-    /** 생성자 - 해지번호 자동 부여 */
+    /** 신규 생성용 생성자 */
     public Cancellation(Contract contract) {
-        sequence += 1;
-        this.cancellationNo = "CAN" + String.format("%05d", sequence);
         this.contract = contract;
         this.status   = "작성중";
     }

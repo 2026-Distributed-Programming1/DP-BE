@@ -40,10 +40,18 @@ public class PaymentRecordService {
         return list.stream().map(this::toDetail).collect(Collectors.toList());
     }
 
+    private Long parseId(String recordNo) {
+        try {
+            return Long.parseLong(recordNo.replaceAll("\\D", ""));
+        } catch (NumberFormatException e) {
+            throw ApiException.badRequest("유효하지 않은 납부내역번호: " + recordNo);
+        }
+    }
+
     /** 수납 확정 */
     @Transactional
     public PaymentRecordDetail confirm(String recordNo) {
-        PaymentRecord record = paymentRecordRepository.findByRecordNo(recordNo)
+        PaymentRecord record = paymentRecordRepository.findById(parseId(recordNo))
                 .orElseThrow(() -> ApiException.notFound("납부 내역을 찾을 수 없습니다: " + recordNo));
 
         if (record.getStatus() != PaymentRecordStatus.WAITING) {
@@ -62,7 +70,7 @@ public class PaymentRecordService {
             throw ApiException.badRequest("반려 분류를 입력해야 합니다.");
         }
 
-        PaymentRecord record = paymentRecordRepository.findByRecordNo(recordNo)
+        PaymentRecord record = paymentRecordRepository.findById(parseId(recordNo))
                 .orElseThrow(() -> ApiException.notFound("납부 내역을 찾을 수 없습니다: " + recordNo));
 
         if (record.getStatus() != PaymentRecordStatus.WAITING) {

@@ -13,7 +13,7 @@ import org.springframework.stereotype.Repository;
 public class InquiryRepository {
 
     private static final String COLS =
-            "id, inquiry_no, customer_name, inquiry_type, title, content,"
+            "id, customer_name, inquiry_type, title, content,"
             + " attachment_file_name, attachment_file_size,"
             + " answer_content, answered_at, status, created_at";
 
@@ -46,9 +46,9 @@ public class InquiryRepository {
                 this::mapRow, customerName, status);
     }
 
-    public Inquiry findByInquiryNo(String inquiryNo) {
+    public Inquiry findById(Long id) {
         return sql.queryOne(
-                "SELECT " + COLS + " FROM inquiries WHERE inquiry_no=?", this::mapRow, inquiryNo);
+                "SELECT " + COLS + " FROM inquiries WHERE id=?", this::mapRow, id);
     }
 
     /** INSERT → id 회수 → inquiry_no 파생 UPDATE */
@@ -66,7 +66,6 @@ public class InquiryRepository {
                 status, inquiry.getReceivedAt());
         inquiry.setId(id);
         inquiry.setInquiryNo("INQ" + String.format("%05d", id));
-        sql.executeUpdate("UPDATE inquiries SET inquiry_no=? WHERE id=?", inquiry.getInquiryNo(), id);
     }
 
     /** 답변 등록 — answer_content, answered_at, status 갱신 */
@@ -80,7 +79,7 @@ public class InquiryRepository {
     private Inquiry mapRow(ResultSet rs) throws SQLException {
         Inquiry i = new Inquiry();
         i.setId(rs.getLong("id"));
-        i.setInquiryNo(rs.getString("inquiry_no"));
+        i.setInquiryNo("INQ" + String.format("%05d", rs.getLong("id")));
         i.setCustomerName(rs.getString("customer_name"));
         String it = rs.getString("inquiry_type");
         if (it != null) { try { i.setInquiryType(InquiryType.valueOf(it)); } catch (IllegalArgumentException ignored) {} }

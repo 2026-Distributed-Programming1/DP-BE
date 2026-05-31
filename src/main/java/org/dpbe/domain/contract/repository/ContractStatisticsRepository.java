@@ -41,19 +41,17 @@ public class ContractStatisticsRepository {
                 s.getTotalCount(), s.getActiveCount(), s.getExpiredCount(), s.getCancelledCount());
         s.setId(id);
         s.setStatsNo("STA" + String.format("%05d", id));
-        sql.executeUpdate("UPDATE contract_statistics SET stats_no=? WHERE id=?",
-                s.getStatsNo(), id);
     }
 
     public List<ContractStatistics> findAll() {
         return sql.executeQuery(
-                "SELECT id, stats_no, total_count, active_count, expired_count,"
+                "SELECT id, total_count, active_count, expired_count,"
                 + " cancelled_count, created_at"
                 + " FROM contract_statistics ORDER BY id DESC",
                 rs -> {
                     ContractStatistics s = new ContractStatistics();
                     s.setId(rs.getLong("id"));
-                    s.setStatsNo(rs.getString("stats_no"));
+                    s.setStatsNo("STA" + String.format("%05d", rs.getLong("id")));
                     s.setTotalCount(rs.getInt("total_count"));
                     s.setActiveCount(rs.getInt("active_count"));
                     s.setExpiredCount(rs.getInt("expired_count"));

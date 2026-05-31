@@ -21,7 +21,7 @@ import org.springframework.stereotype.Repository;
 public class DispatchRecordRepository {
 
     private static final String COLS =
-            "id, record_no, dispatch_no, agent_name, police_required, towing_required,"
+            "id, dispatch_id, agent_name, police_required, towing_required,"
             + " notes, transmitted_at, status";
 
     private final SqlExecutor sql;
@@ -32,64 +32,65 @@ public class DispatchRecordRepository {
 
     /** 신규 출동 기록 저장 — INSERT 후 생성 id에서 record_no 파생. */
     public void save(DispatchRecord r, String agentName) {
-        String dispatchNo = r.getDispatch() != null ? r.getDispatch().getDispatchNo() : null;
+        Long dispatchId = r.getDispatch() != null ? r.getDispatch().getId() : null;
         String status     = r.getStatus() != null ? r.getStatus().name() : null;
 
         long id = sql.executeInsertReturningKey(
-                "INSERT INTO dispatch_records (dispatch_no, agent_name, police_required,"
+                "INSERT INTO dispatch_records (dispatch_id, agent_name, police_required,"
                 + " towing_required, notes, transmitted_at, status)"
                 + " VALUES (?,?,?,?,?,?,?)",
-                dispatchNo, agentName, r.isPoliceRequired(), r.isTowingRequired(),
+                dispatchId, agentName, r.isPoliceRequired(), r.isTowingRequired(),
                 r.getNotes(), r.getTransmittedAt(), status);
         r.setId(id);
         r.setRecordId("DRC" + String.format("%05d", id));
-        sql.executeUpdate("UPDATE dispatch_records SET record_no=? WHERE id=?", r.getRecordId(), id);
     }
 
     /** 전송 결과 반영 (transmitted_at·status 갱신). */
     public void markTransmitted(DispatchRecord r) {
         String status = r.getStatus() != null ? r.getStatus().name() : null;
         sql.executeUpdate(
-                "UPDATE dispatch_records SET transmitted_at=?, status=? WHERE record_no=?",
-                r.getTransmittedAt(), status, r.getRecordId());
+                "UPDATE dispatch_records SET transmitted_at=?, status=? WHERE id=?",
+                r.getTransmittedAt(), status, r.getId());
     }
 
-    /** 사진 메타 1건 저장 (record_no FK). */
+    /** 사진 메타 1건 저장 (record_id FK). */
     public void savePhoto(String recordNo, Attachment photo) {
         sql.executeUpdate(
-                "INSERT INTO dispatch_photos (record_no, file_name, file_path, file_size,"
+                "INSERT INTO dispatch_photos (record_id, file_name, file_path, file_size,"
                 + " mime_type, uploaded_at) VALUES (?,?,?,?,?,?)",
-                recordNo, photo.getFileName(), photo.getFilePath(), photo.getFileSize(),
+                parseId(recordNo), photo.getFileName(), photo.getFilePath(), photo.getFileSize(),
                 photo.getMimeType(), photo.getUploadedAt());
     }
 
     /** 한 기록의 사진 파일명 목록. */
     public List<String> findPhotoNames(String recordNo) {
         return sql.executeQuery(
-                "SELECT file_name FROM dispatch_photos WHERE record_no=? ORDER BY id",
-                rs -> rs.getString("file_name"), recordNo);
+                "SELECT file_name FROM dispatch_photos WHERE record_id=? ORDER BY id",
+                rs -> rs.getString("file_name"), parseId(recordNo));
     }
 
     public List<DispatchRecord> findAll() {
         return sql.executeQuery("SELECT " + COLS + " FROM dispatch_records", this::mapRow);
     }
 
-    public DispatchRecord findByRecordNo(String recordNo) {
+    public DispatchRecord findById(Long id) {
         return sql.queryOne(
-                "SELECT " + COLS + " FROM dispatch_records WHERE record_no=?", this::mapRow, recordNo);
+                "SELECT " + COLS + " FROM dispatch_records WHERE id=?", this::mapRow, id);
     }
 
     public DispatchRecord findByDispatchNo(String dispatchNo) {
         return sql.queryOne(
-                "SELECT " + COLS + " FROM dispatch_records WHERE dispatch_no=?", this::mapRow, dispatchNo);
+                "SELECT " + COLS + " FROM dispatch_records WHERE dispatch_id=?", this::mapRow, parseId(dispatchNo));
     }
 
     private DispatchRecord mapRow(ResultSet rs) throws SQLException {
-        String dno = rs.getString("dispatch_no");
+        long dispatchId = rs.getLong("dispatch_id");
+        String dno = !rs.wasNull() ? "DSP" + String.format("%05d", dispatchId) : null;
         Dispatch dispatchShell = dno != null ? new Dispatch(dno, null, null) : null;
+        if (dispatchShell != null) dispatchShell.setId(dispatchId);
         DispatchRecord rec = new DispatchRecord(dispatchShell);
         rec.setId(rs.getLong("id"));
-        rec.setRecordId(rs.getString("record_no"));
+        rec.setRecordId("DRC" + String.format("%05d", rs.getLong("id")));
         rec.setPoliceRequired(rs.getBoolean("police_required"));
         rec.setTowingRequired(rs.getBoolean("towing_required"));
         String n = rs.getString("notes");
@@ -102,5 +103,9 @@ public class DispatchRecordRepository {
             catch (IllegalArgumentException ignored) {}
         }
         return rec;
+    }
+
+    private Long parseId(String businessNo) {
+        return Long.parseLong(businessNo.replaceAll("\\D", ""));
     }
 }

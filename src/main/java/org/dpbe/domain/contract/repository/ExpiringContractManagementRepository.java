@@ -11,7 +11,7 @@ import org.springframework.stereotype.Repository;
 public class ExpiringContractManagementRepository {
 
     private static final String COLS =
-            "id, notice_no, contract_no, contractor_name, expiry_date, phone, email,"
+            "id, contract_id, contractor_name, expiry_date, phone, email,"
             + " is_renewable, expected_premium, notice_date, notice_memo,"
             + " customer_response, renewal_premium, premium_diff";
 
@@ -25,35 +25,33 @@ public class ExpiringContractManagementRepository {
     public void save(ExpiringContractManagement m) {
         long id = sql.executeInsertReturningKey(
                 "INSERT INTO expiring_contract_notices"
-                + " (contract_no, contractor_name, expiry_date, phone, email,"
+                + " (contract_id, contractor_name, expiry_date, phone, email,"
                 + "  is_renewable, expected_premium, notice_date, notice_memo)"
                 + " VALUES (?,?,?,?,?,?,?,?,?)",
-                m.getContractNo(), m.getContractorName(), m.getExpiryDate(),
+                parseId(m.getContractNo()), m.getContractorName(), m.getExpiryDate(),
                 m.getPhone(), m.getEmail(), m.getIsRenewable(),
                 m.getExpectedPremium(), m.getNoticeDate(), m.getNoticeMemo());
         m.setId(id);
         m.setNoticeNo("EXP" + String.format("%05d", id));
-        sql.executeUpdate("UPDATE expiring_contract_notices SET notice_no=? WHERE id=?",
-                m.getNoticeNo(), id);
     }
 
     /** 고객 응답 업데이트 */
-    public void updateResponse(String noticeNo, String customerResponse,
+    public void updateResponse(Long id, String customerResponse,
                                Long renewalPremium, Long premiumDiff) {
         sql.executeUpdate(
                 "UPDATE expiring_contract_notices"
                 + " SET customer_response=?, renewal_premium=?, premium_diff=?"
-                + " WHERE notice_no=?",
+                + " WHERE id=?",
                 customerResponse,
                 renewalPremium != null ? renewalPremium : 0L,
                 premiumDiff != null ? premiumDiff : 0L,
-                noticeNo);
+                id);
     }
 
-    public Optional<ExpiringContractManagement> findByNoticeNo(String noticeNo) {
+    public Optional<ExpiringContractManagement> findById(Long id) {
         List<ExpiringContractManagement> list = sql.executeQuery(
-                "SELECT " + COLS + " FROM expiring_contract_notices WHERE notice_no=?",
-                rowMapper(), noticeNo);
+                "SELECT " + COLS + " FROM expiring_contract_notices WHERE id=?",
+                rowMapper(), id);
         return list.isEmpty() ? Optional.empty() : Optional.of(list.get(0));
     }
 
@@ -65,16 +63,17 @@ public class ExpiringContractManagementRepository {
 
     public List<ExpiringContractManagement> findByContractNo(String contractNo) {
         return sql.executeQuery(
-                "SELECT " + COLS + " FROM expiring_contract_notices WHERE contract_no=? ORDER BY id DESC",
-                rowMapper(), contractNo);
+                "SELECT " + COLS + " FROM expiring_contract_notices WHERE contract_id=? ORDER BY id DESC",
+                rowMapper(), parseId(contractNo));
     }
 
     private SqlExecutor.RowMapper<ExpiringContractManagement> rowMapper() {
         return rs -> {
             ExpiringContractManagement m = new ExpiringContractManagement();
             m.setId(rs.getLong("id"));
-            m.setNoticeNo(rs.getString("notice_no"));
-            m.setContractNo(rs.getString("contract_no"));
+            m.setNoticeNo("EXP" + String.format("%05d", rs.getLong("id")));
+            long contractId = rs.getLong("contract_id");
+            if (!rs.wasNull()) m.setContractNo("CON" + String.format("%05d", contractId));
             m.setContractorName(rs.getString("contractor_name"));
             java.sql.Date ed = rs.getDate("expiry_date");
             if (ed != null) m.setExpiryDate(ed.toLocalDate());
@@ -96,5 +95,9 @@ public class ExpiringContractManagementRepository {
             m.setPremiumDiff(pd == 0 ? null : pd);
             return m;
         };
+    }
+
+    private Long parseId(String businessNo) {
+        return Long.parseLong(businessNo.replaceAll("\\D", ""));
     }
 }

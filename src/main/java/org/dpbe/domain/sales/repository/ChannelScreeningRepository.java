@@ -15,7 +15,7 @@ import org.springframework.stereotype.Repository;
 public class ChannelScreeningRepository {
 
     private static final String COLS =
-            "id, screening_no, applicant_name, channel_type, career, certifications,"
+            "id, applicant_name, channel_type, career, certifications,"
             + " application_date, rejection_reason, status, reviewed_at";
 
     private final SqlExecutor sql;
@@ -30,10 +30,10 @@ public class ChannelScreeningRepository {
                 this::mapRow);
     }
 
-    public ChannelScreening findByScreeningNo(String screeningNo) {
+    public ChannelScreening findById(Long id) {
         return sql.queryOne(
-                "SELECT " + COLS + " FROM channel_screenings WHERE screening_no=?",
-                this::mapRow, screeningNo);
+                "SELECT " + COLS + " FROM channel_screenings WHERE id=?",
+                this::mapRow, id);
     }
 
     public void save(ChannelScreening s) {
@@ -54,8 +54,6 @@ public class ChannelScreeningRepository {
                 s.getReviewedAt());
         s.setId(id);
         s.setScreeningNo("SCN" + String.format("%05d", id));
-        sql.executeUpdate("UPDATE channel_screenings SET screening_no=? WHERE id=?",
-                s.getScreeningNo(), id);
     }
 
     public void updateReview(ChannelScreening s) {
@@ -73,7 +71,7 @@ public class ChannelScreeningRepository {
     private ChannelScreening mapRow(ResultSet rs) throws SQLException {
         ChannelScreening s = new ChannelScreening();
         s.setId(rs.getLong("id"));
-        s.setScreeningNo(rs.getString("screening_no"));
+        s.setScreeningNo("SCN" + String.format("%05d", rs.getLong("id")));
         s.setApplicantName(rs.getString("applicant_name"));
         String ct = rs.getString("channel_type");
         if (ct != null) {

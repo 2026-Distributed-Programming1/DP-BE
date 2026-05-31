@@ -10,12 +10,6 @@ public class ClaimsHandler extends Employee {
 
     private long transferLimit;    // 전결 한도
 
-    /** 생성자 */
-    public ClaimsHandler(String name, String dept, String position, long limit) {
-        super(name, dept, position);
-        this.transferLimit = limit;
-    }
-
     /** DB 로딩용 생성자 */
     public ClaimsHandler(String employeeId, String name, String dept, String position, long limit) {
         super(employeeId, name, dept, position);

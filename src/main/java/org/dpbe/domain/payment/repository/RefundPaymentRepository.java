@@ -23,21 +23,20 @@ public class RefundPaymentRepository {
     }
 
     public void save(RefundPayment p) {
-        String refundNo = p.getRefund() != null ? p.getRefund().getRefundNo() : null;
-        String cancNo   = p.getRefund() != null && p.getRefund().getCancellation() != null
-                ? p.getRefund().getCancellation().getCancellationNo() : null;
+        Long refundId = p.getRefund() != null ? p.getRefund().getId() : null;
+        Long cancId   = p.getRefund() != null && p.getRefund().getCancellation() != null
+                ? p.getRefund().getCancellation().getId() : null;
         String status   = p.getStatus() != null ? p.getStatus().name() : null;
 
         long id = sql.executeInsertReturningKey(
                 "INSERT INTO refund_payments"
-                + " (refund_no, cancellation_no, final_amount,"
+                + " (refund_id, cancellation_id, final_amount,"
                 + "  transferred_at, notice_sent, otp_fail_count, status)"
                 + " VALUES (?,?,?,?,?,?,?)",
-                refundNo, cancNo, p.getFinalAmount(),
+                refundId, cancId, p.getFinalAmount(),
                 p.getTransferredAt(), p.isNoticeSent(), p.getOtpFailCount(), status);
         p.setId(id);
         p.setPaymentNo("RPY" + String.format("%05d", id));
-        sql.executeUpdate("UPDATE refund_payments SET payment_no=? WHERE id=?", p.getPaymentNo(), id);
     }
 
     public void update(RefundPayment p) {
@@ -48,44 +47,46 @@ public class RefundPaymentRepository {
                 p.isNoticeSent(), p.getOtpFailCount(), p.getId());
     }
 
-    public Optional<RefundPayment> findByPaymentNo(String paymentNo) {
+    private static final String COLS =
+            "id, refund_id, cancellation_id, final_amount,"
+            + " transferred_at, notice_sent, otp_fail_count, status";
+
+    public Optional<RefundPayment> findById(Long id) {
         List<RefundPayment> list = sql.executeQuery(
-                "SELECT id, payment_no, refund_no, cancellation_no, final_amount,"
-                + " transferred_at, notice_sent, otp_fail_count, status"
-                + " FROM refund_payments WHERE payment_no=?",
-                rowMapper(), paymentNo);
+                "SELECT " + COLS + " FROM refund_payments WHERE id=?",
+                rowMapper(), id);
         return list.isEmpty() ? Optional.empty() : Optional.of(list.get(0));
     }
 
     public Optional<RefundPayment> findByRefundNo(String refundNo) {
         List<RefundPayment> list = sql.executeQuery(
-                "SELECT id, payment_no, refund_no, cancellation_no, final_amount,"
-                + " transferred_at, notice_sent, otp_fail_count, status"
-                + " FROM refund_payments WHERE refund_no=?",
-                rowMapper(), refundNo);
+                "SELECT " + COLS + " FROM refund_payments WHERE refund_id=?",
+                rowMapper(), parseId(refundNo));
         return list.isEmpty() ? Optional.empty() : Optional.of(list.get(0));
     }
 
     public List<RefundPayment> findAll() {
         return sql.executeQuery(
-                "SELECT id, payment_no, refund_no, cancellation_no, final_amount,"
-                + " transferred_at, notice_sent, otp_fail_count, status"
-                + " FROM refund_payments ORDER BY id DESC",
+                "SELECT " + COLS + " FROM refund_payments ORDER BY id DESC",
                 rowMapper());
     }
 
     private RowMapper<RefundPayment> rowMapper() {
         return rs -> {
-            String refundNo = rs.getString("refund_no");
-            String cancNo   = rs.getString("cancellation_no");
+            long refundId = rs.getLong("refund_id");
+            String refundNo = !rs.wasNull() ? "RFC" + String.format("%05d", refundId) : "?";
+            long cancellationId = rs.getLong("cancellation_id");
+            String cancNo = !rs.wasNull() ? "CAN" + String.format("%05d", cancellationId) : "?";
 
             Customer custShell = new Customer("?", "", null, null, null);
             Contract contractShell = Contract.shellOf(null, custShell, 0L);
             Cancellation cancShell = new Cancellation(
                     cancNo != null ? cancNo : "?", contractShell, null, 0L, "완료");
+            if (cancellationId > 0) cancShell.setId(cancellationId);
             RefundCalculation refundShell = new RefundCalculation(
                     refundNo != null ? refundNo : "?", cancShell,
                     0L, null, 0L, 0.0, 0L, 0L, 0L, RefundStatus.CALCULATED);
+            if (refundId > 0) refundShell.setId(refundId);
 
             String st = rs.getString("status");
             RefundPaymentStatus status = RefundPaymentStatus.WAITING;
@@ -93,7 +94,7 @@ public class RefundPaymentRepository {
                 try { status = RefundPaymentStatus.valueOf(st); } catch (IllegalArgumentException ignored) {}
             }
             RefundPayment p = new RefundPayment(
-                    rs.getString("payment_no"), refundShell,
+                    "RPY" + String.format("%05d", rs.getLong("id")), refundShell,
                     rs.getLong("final_amount"), status);
             p.setId(rs.getLong("id"));
             java.sql.Timestamp tat = rs.getTimestamp("transferred_at");
@@ -102,5 +103,9 @@ public class RefundPaymentRepository {
             p.setOtpFailCount(rs.getInt("otp_fail_count"));
             return p;
         };
+    }
+
+    private Long parseId(String businessNo) {
+        return Long.parseLong(businessNo.replaceAll("\\D", ""));
     }
 }

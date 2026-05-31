@@ -32,7 +32,7 @@ public class RefundService {
     /** 환급금 산출 — POST /api/cancellations/{cancellationNo}/refund-calculation */
     @Transactional
     public RefundCalculation calculate(String cancellationNo) {
-        Cancellation cancellation = cancellationRepository.findByCancellationNo(cancellationNo)
+        Cancellation cancellation = cancellationRepository.findById(parseId(cancellationNo))
                 .orElseThrow(() -> ApiException.notFound("해지 건을 찾을 수 없습니다: " + cancellationNo));
 
         if (refundCalculationRepository.findByCancellationNo(cancellationNo).isPresent()) {
@@ -48,10 +48,18 @@ public class RefundService {
         return refund;
     }
 
+    private Long parseId(String businessNo) {
+        try {
+            return Long.parseLong(businessNo.replaceAll("\\D", ""));
+        } catch (NumberFormatException e) {
+            throw ApiException.badRequest("유효하지 않은 번호: " + businessNo);
+        }
+    }
+
     /** 환급금 확정 + 지급 이관 — POST /api/refund-calculations/{refundNo}/confirm */
     @Transactional
     public RefundPayment confirm(String refundNo) {
-        RefundCalculation refund = refundCalculationRepository.findByRefundNo(refundNo)
+        RefundCalculation refund = refundCalculationRepository.findById(parseId(refundNo))
                 .orElseThrow(() -> ApiException.notFound("환급금 산출 건을 찾을 수 없습니다: " + refundNo));
 
         if (refund.getStatus() != RefundStatus.CALCULATED) {
@@ -69,7 +77,7 @@ public class RefundService {
     /** OTP 인증 후 이체 실행 — POST /api/refund-payments/{paymentNo}/execute */
     @Transactional
     public RefundPayment execute(String paymentNo, String otpInput) {
-        RefundPayment payment = refundPaymentRepository.findByPaymentNo(paymentNo)
+        RefundPayment payment = refundPaymentRepository.findById(parseId(paymentNo))
                 .orElseThrow(() -> ApiException.notFound("환급금 지급 건을 찾을 수 없습니다: " + paymentNo));
 
         if (payment.getStatus() == RefundPaymentStatus.COMPLETED) {
@@ -105,7 +113,7 @@ public class RefundService {
     /** 환급금 산출 단건 조회 */
     @Transactional(readOnly = true)
     public RefundCalculation getCalculation(String refundNo) {
-        return refundCalculationRepository.findByRefundNo(refundNo)
+        return refundCalculationRepository.findById(parseId(refundNo))
                 .orElseThrow(() -> ApiException.notFound("환급금 산출 건을 찾을 수 없습니다: " + refundNo));
     }
 
@@ -118,7 +126,7 @@ public class RefundService {
     /** 환급금 지급 단건 조회 */
     @Transactional(readOnly = true)
     public RefundPayment getPayment(String paymentNo) {
-        return refundPaymentRepository.findByPaymentNo(paymentNo)
+        return refundPaymentRepository.findById(parseId(paymentNo))
                 .orElseThrow(() -> ApiException.notFound("환급금 지급 건을 찾을 수 없습니다: " + paymentNo));
     }
 

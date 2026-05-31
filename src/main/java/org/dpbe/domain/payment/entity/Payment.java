@@ -18,8 +18,6 @@ import org.dpbe.domain.common.enums.PaymentStatus;
  */
 public class Payment {
 
-    private static int sequence = 0;          // 납입 신청번호 자동 부여용
-
     private Long id;                          // DB 대리키(PK)
     private String paymentNo;                 // 납입 신청번호
     private Customer customer;                // 고객
@@ -32,10 +30,8 @@ public class Payment {
     private LocalDateTime requestedAt;        // 신청일시
     private PaymentStatus status;             // 상태
 
-    /** 생성자 - 납입 신청번호 자동 부여 */
+    /** 신규 납입 신청 생성자 */
     public Payment(Customer customer) {
-        sequence += 1;
-        this.paymentNo = "PAY" + String.format("%05d", sequence);
         this.customer = customer;
         this.items = new ArrayList<>();
         this.status = PaymentStatus.DRAFT;
@@ -131,11 +127,6 @@ public class Payment {
     public void handleProcessingError() {
         this.status = PaymentStatus.ERROR;
         System.out.println("[Payment] 납입 처리 오류 발생: " + paymentNo);
-    }
-
-    /** 취소 */
-    public void cancel() {
-        System.out.println("[Payment] 납입 신청 취소: " + paymentNo);
     }
 
     // Getter

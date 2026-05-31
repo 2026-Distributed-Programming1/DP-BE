@@ -27,9 +27,17 @@ public class EducationPlanService {
         return plans.stream().map(EducationPlanResponse::from).toList();
     }
 
+    private Long parseId(String planNo) {
+        try {
+            return Long.parseLong(planNo.replaceAll("\\D", ""));
+        } catch (NumberFormatException e) {
+            throw ApiException.badRequest("유효하지 않은 계획안 번호: " + planNo);
+        }
+    }
+
     @Transactional(readOnly = true)
     public EducationPlanResponse getPlan(String planNo) {
-        EducationPlan plan = repository.findByPlanNo(planNo);
+        EducationPlan plan = repository.findById(parseId(planNo));
         if (plan == null) throw ApiException.notFound("교육 계획안을 찾을 수 없습니다: " + planNo);
         return EducationPlanResponse.from(plan);
     }
@@ -57,7 +65,7 @@ public class EducationPlanService {
 
     @Transactional
     public EducationPlanResponse approvePlan(String planNo) {
-        EducationPlan plan = repository.findByPlanNo(planNo);
+        EducationPlan plan = repository.findById(parseId(planNo));
         if (plan == null) throw ApiException.notFound("교육 계획안을 찾을 수 없습니다: " + planNo);
         if (!"승인요청".equals(plan.getStatus())) {
             throw ApiException.badRequest("승인 요청 상태의 계획안만 승인할 수 있습니다.");
@@ -69,7 +77,7 @@ public class EducationPlanService {
 
     @Transactional
     public EducationPlanResponse rejectPlan(String planNo, EducationPlanRejectRequest req) {
-        EducationPlan plan = repository.findByPlanNo(planNo);
+        EducationPlan plan = repository.findById(parseId(planNo));
         if (plan == null) throw ApiException.notFound("교육 계획안을 찾을 수 없습니다: " + planNo);
         if (!"승인요청".equals(plan.getStatus())) {
             throw ApiException.badRequest("승인 요청 상태의 계획안만 반려할 수 있습니다.");

@@ -13,7 +13,7 @@ import org.springframework.stereotype.Repository;
 public class InsuranceApplicationRepository {
 
     private static final String COLS =
-            "id, application_no, customer_id, customer_name, product_name,"
+            "id, customer_id, customer_name, product_name,"
             + " monthly_premium, payment_method, applied_at, status";
 
     private final SqlExecutor sql;
@@ -45,8 +45,6 @@ public class InsuranceApplicationRepository {
                 a.getStatus() != null ? a.getStatus() : "신청");
         a.setId(id);
         a.setApplicationNo("APP" + String.format("%05d", id));
-        sql.executeUpdate("UPDATE insurance_applications SET application_no=? WHERE id=?",
-                a.getApplicationNo(), id);
     }
 
     /** 심사 결과 반영 (status 갱신). */
@@ -66,7 +64,7 @@ public class InsuranceApplicationRepository {
                 0, customerId, customerName, productName, premium,
                 rs.getString("payment_method"));
         a.setId(rs.getLong("id"));
-        a.setApplicationNo(rs.getString("application_no"));
+        a.setApplicationNo("APP" + String.format("%05d", rs.getLong("id")));
         a.setStatus(rs.getString("status"));
         if (ts != null) a.apply();
         return a;

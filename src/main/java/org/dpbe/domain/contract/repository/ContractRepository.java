@@ -18,7 +18,7 @@ import org.springframework.stereotype.Repository;
 public class ContractRepository {
 
     private static final String COLS =
-            "id, contract_no, policy_no, customer_id, customer_name, contract_date, expiry_date,"
+            "id, customer_id, customer_name, contract_date, expiry_date,"
             + " monthly_premium, insurance_type, status, is_expiring_soon, is_overdue,"
             + " overdue_count, total_pay_count, paid_count, last_payment_date";
 
@@ -37,9 +37,9 @@ public class ContractRepository {
                 "SELECT " + COLS + " FROM contracts WHERE customer_id=?", this::mapRow, customerId);
     }
 
-    public Contract findByContractNo(String contractNo) {
+    public Contract findById(Long id) {
         return sql.queryOne(
-                "SELECT " + COLS + " FROM contracts WHERE contract_no=?", this::mapRow, contractNo);
+                "SELECT " + COLS + " FROM contracts WHERE id=?", this::mapRow, id);
     }
 
     /** 신규 계약 저장 — INSERT 후 생성 id에서 contract_no/policy_no 파생. */
@@ -62,18 +62,14 @@ public class ContractRepository {
         c.setId(id);
         c.setContractNo("CON" + String.format("%05d", id));
         c.setPolicyNo("POL" + String.format("%05d", id));
-        sql.executeUpdate("UPDATE contracts SET contract_no=?, policy_no=? WHERE id=?",
-                c.getContractNo(), c.getPolicyNo(), id);
     }
 
-    public void updateStatus(String contractNo, ContractStatus status) {
-        sql.executeUpdate("UPDATE contracts SET status=? WHERE contract_no=?",
-                status.name(), contractNo);
+    public void updateStatus(Long id, ContractStatus status) {
+        sql.executeUpdate("UPDATE contracts SET status=? WHERE id=?", status.name(), id);
     }
 
-    public void updatePremium(String contractNo, long monthlyPremium) {
-        sql.executeUpdate("UPDATE contracts SET monthly_premium=? WHERE contract_no=?",
-                monthlyPremium, contractNo);
+    public void updatePremium(Long id, long monthlyPremium) {
+        sql.executeUpdate("UPDATE contracts SET monthly_premium=? WHERE id=?", monthlyPremium, id);
     }
 
     private Contract mapRow(ResultSet rs) throws SQLException {
@@ -88,9 +84,10 @@ public class ContractRepository {
         Customer customer = cid != null
                 ? new Customer(cid, name != null ? name : "", null, null, null)
                 : null;
+        long rowId = rs.getLong("id");
         Contract c = new Contract(
-                rs.getString("contract_no"),
-                rs.getString("policy_no"),
+                "CON" + String.format("%05d", rowId),
+                "POL" + String.format("%05d", rowId),
                 customer,
                 toLocalDate(rs.getDate("contract_date")),
                 toLocalDate(rs.getDate("expiry_date")),
@@ -100,7 +97,7 @@ public class ContractRepository {
                 rs.getBoolean("is_expiring_soon"),
                 rs.getBoolean("is_overdue"),
                 rs.getInt("overdue_count"));
-        c.setId(rs.getLong("id"));
+        c.setId(rowId);
         c.setTotalPayCount(rs.getInt("total_pay_count"));
         c.setPaidCount(rs.getInt("paid_count"));
         c.setLastPaymentDate(toLocalDate(rs.getDate("last_payment_date")));

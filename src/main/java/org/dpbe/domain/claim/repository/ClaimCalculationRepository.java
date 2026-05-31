@@ -19,7 +19,7 @@ import org.springframework.stereotype.Repository;
 public class ClaimCalculationRepository {
 
     private static final String COLS =
-            "id, calculation_no, investigation_no, recognized_damage, fault_ratio,"
+            "id, investigation_id, recognized_damage, fault_ratio,"
             + " deductible, coverage_limit, final_amount, exceeded_deductible, adjusted, status";
 
     private final SqlExecutor sql;
@@ -30,39 +30,37 @@ public class ClaimCalculationRepository {
 
     /** 신규 산출 저장 — INSERT 후 생성 id에서 calculation_no 파생. */
     public void save(ClaimCalculation c) {
-        String invNo  = c.getInvestigation() != null ? c.getInvestigation().getInvestigationNo() : null;
+        Long invId    = c.getInvestigation() != null ? c.getInvestigation().getId() : null;
         String status = c.getStatus() != null ? c.getStatus().name() : null;
 
         long id = sql.executeInsertReturningKey(
-                "INSERT INTO claim_calculations (investigation_no, recognized_damage, fault_ratio,"
+                "INSERT INTO claim_calculations (investigation_id, recognized_damage, fault_ratio,"
                 + " deductible, coverage_limit, final_amount, exceeded_deductible, adjusted, status)"
                 + " VALUES (?,?,?,?,?,?,?,?,?)",
-                invNo, c.getRecognizedDamage(), c.getFaultRatio(),
+                invId, c.getRecognizedDamage(), c.getFaultRatio(),
                 c.getDeductible(), c.getCoverageLimit(), c.getFinalAmount(),
                 c.isExceededDeductible(), c.isAdjusted(), status);
         c.setId(id);
         c.setCalculationNo("CAL" + String.format("%05d", id));
-        sql.executeUpdate("UPDATE claim_calculations SET calculation_no=? WHERE id=?",
-                c.getCalculationNo(), id);
     }
 
     /** 상태 갱신 (승인 등 전이 반영). */
     public void updateStatus(ClaimCalculation c) {
         String status = c.getStatus() != null ? c.getStatus().name() : null;
-        sql.executeUpdate("UPDATE claim_calculations SET status=? WHERE calculation_no=?",
-                status, c.getCalculationNo());
+        sql.executeUpdate("UPDATE claim_calculations SET status=? WHERE id=?",
+                status, c.getId());
     }
 
     public ClaimCalculation findByInvestigationNo(String investigationNo) {
         return sql.queryOne(
-                "SELECT " + COLS + " FROM claim_calculations WHERE investigation_no=?",
-                this::mapRow, investigationNo);
+                "SELECT " + COLS + " FROM claim_calculations WHERE investigation_id=?",
+                this::mapRow, parseId(investigationNo));
     }
 
-    public ClaimCalculation findByCalculationNo(String calculationNo) {
+    public ClaimCalculation findById(Long id) {
         return sql.queryOne(
-                "SELECT " + COLS + " FROM claim_calculations WHERE calculation_no=?",
-                this::mapRow, calculationNo);
+                "SELECT " + COLS + " FROM claim_calculations WHERE id=?",
+                this::mapRow, id);
     }
 
     public List<ClaimCalculation> findAll() {
@@ -70,9 +68,11 @@ public class ClaimCalculationRepository {
     }
 
     private ClaimCalculation mapRow(ResultSet rs) throws SQLException {
-        String invNo = rs.getString("investigation_no");
+        long invId = rs.getLong("investigation_id");
+        String invNo = !rs.wasNull() ? "INV" + String.format("%05d", invId) : "?";
         DamageInvestigation invShell = new DamageInvestigation(
                 invNo != null ? invNo : "?", null, null, 0, 0, 0, null);
+        if (invId > 0) invShell.setId(invId);
 
         String st = rs.getString("status");
         CalculationStatus status = CalculationStatus.CALCULATED;
@@ -81,7 +81,7 @@ public class ClaimCalculationRepository {
             catch (IllegalArgumentException ignored) {}
         }
         ClaimCalculation c = new ClaimCalculation(
-                rs.getString("calculation_no"),
+                "CAL" + String.format("%05d", rs.getLong("id")),
                 invShell,
                 rs.getLong("recognized_damage"),
                 rs.getDouble("fault_ratio"),
@@ -93,5 +93,9 @@ public class ClaimCalculationRepository {
         c.setDeductible(rs.getLong("deductible"));
         c.setCoverageLimit(rs.getLong("coverage_limit"));
         return c;
+    }
+
+    private Long parseId(String businessNo) {
+        return Long.parseLong(businessNo.replaceAll("\\D", ""));
     }
 }

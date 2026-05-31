@@ -17,8 +17,6 @@ import org.dpbe.domain.common.enums.PaymentType;
  */
 public class ClaimPayment {
 
-    private static int sequence = 0;            // 지급번호 자동 부여용
-
     private Long id;                             // DB 대리키(PK)
     private String paymentNo;                   // 지급번호
     private ClaimCalculation calculation;       // 산출 건
@@ -46,15 +44,12 @@ public class ClaimPayment {
         this.noticeOption = new ArrayList<>();
     }
 
-    /** 생성자 - 지급번호 자동 부여, 수령인·계좌 자동 로드 */
+    /** 신규 지급 생성자 - 수령인·계좌 자동 로드 */
     public ClaimPayment(ClaimCalculation calculation) {
-        sequence += 1;
-        this.paymentNo = "CPY" + String.format("%05d", sequence);
         this.calculation = calculation;
         this.noticeOption = new ArrayList<>();
         this.status = ClaimPaymentStatus.WAITING;
 
-        // 수령인·계좌·금액 자동 로드 (산출 건 → 손해 조사 → 청구 건 경유)
         if (calculation != null) {
             this.finalAmount = calculation.getFinalAmount();
             DamageInvestigation inv = calculation.getInvestigation();
@@ -129,14 +124,6 @@ public class ClaimPayment {
         this.failureReason = reason;
         this.status = ClaimPaymentStatus.FAILED;
         System.out.println("[ClaimPayment] 이체 실패: " + reason);
-    }
-
-    /**
-     * 계좌 변경 안내 알림톡 (E2)
-     * 외부 시스템 연동이 필요하므로 더미로 처리한다.
-     */
-    public void sendAccountChangeNotice() {
-        System.out.println("[ClaimPayment] 계좌 변경 안내 알림톡 발송");
     }
 
     /**

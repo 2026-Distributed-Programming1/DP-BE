@@ -9,8 +9,6 @@ import java.time.LocalDateTime;
  */
 public class Revival {
 
-    private static int sequence = 0;
-
     private Long id;
     private String revivalNo;
     private int revivalNumber;
@@ -28,10 +26,7 @@ public class Revival {
         this.paymentMethod = paymentMethod;
     }
 
-    public Revival() {
-        sequence += 1;
-        this.revivalNumber = sequence;
-    }
+    public Revival() {}
 
     public boolean checkEligibility() {
         System.out.println("  [시스템] 부활 가능 여부를 확인합니다.");

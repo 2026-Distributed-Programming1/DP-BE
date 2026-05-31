@@ -29,10 +29,18 @@ public class ClaimCalculationService {
         this.investigationRepository = investigationRepository;
     }
 
+    private Long parseId(String no) {
+        try {
+            return Long.parseLong(no.replaceAll("\\D", ""));
+        } catch (NumberFormatException e) {
+            throw ApiException.notFound("유효하지 않은 번호: " + no);
+        }
+    }
+
     /** 산출 승인 — CALCULATED → APPROVED 전이(지급 가능 상태). 지급건은 별도 생성. */
     @Transactional
     public CalculationResponse approve(String calculationNo) {
-        ClaimCalculation calc = calculationRepository.findByCalculationNo(calculationNo);
+        ClaimCalculation calc = calculationRepository.findById(parseId(calculationNo));
         if (calc == null) {
             throw ApiException.notFound("산출을 찾을 수 없습니다: " + calculationNo);
         }
@@ -55,7 +63,7 @@ public class ClaimCalculationService {
     /** 산출 등록 — 조사 결과로 자동 산출 후 저장(@Transactional). */
     @Transactional
     public CalculationResponse create(String investigationNo) {
-        DamageInvestigation inv = investigationRepository.findByInvestigationNo(investigationNo);
+        DamageInvestigation inv = investigationRepository.findById(parseId(investigationNo));
         if (inv == null) {
             throw ApiException.notFound("조사를 찾을 수 없습니다: " + investigationNo);
         }

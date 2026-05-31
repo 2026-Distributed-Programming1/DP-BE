@@ -1,16 +1,8 @@
 -- ============================================================
 -- DP Insurance System  —  DDL  (MySQL 8.0)
--- 생성 기준: dp/dao 패키지 전체 분석 (44 테이블)
--- 실행 방법: docker-compose up -d
---            또는  mysql -u admin -p1234 insurance_db < schema.sql
+-- 최종 수렴 버전: 업무번호(xxx_no) 컬럼 제거, FK를 surrogate id(BIGINT)로 전환
 --
--- 테이블 생성 순서는 외래키 의존성 계층을 고려하였습니다.
---   Tier 1 : 독립 엔터티 (참조 없음)
---   Tier 2 : customers / education_plans / accident_reports 참조
---   Tier 3 : contracts / claim_requests / dispatches 참조
---   Tier 4 : cancellations / damage_investigations / education_preparations 참조
---   Tier 5 : refund_calculations / claim_calculations 참조
---
+-- 실행 방법: docker-compose down -v && docker-compose up -d
 -- ============================================================
 
 CREATE DATABASE IF NOT EXISTS insurance_db
@@ -112,8 +104,6 @@ CREATE TABLE IF NOT EXISTS agencies (
 -- Tier 1-D : 상품 / 시스템 설정
 -- ============================================================
 
--- product_name 을 PK 로 사용해야 ON DUPLICATE KEY UPDATE 가 동작함
--- (InsuranceProductDAO.save 의 ON DUPLICATE KEY UPDATE 기준이 product_name)
 CREATE TABLE IF NOT EXISTS insurance_products (
     id                BIGINT       AUTO_INCREMENT UNIQUE KEY,
     product_name      VARCHAR(100) PRIMARY KEY,
@@ -136,12 +126,10 @@ CREATE TABLE IF NOT EXISTS overdue_notice_settings (
 -- Tier 2 : customers 참조
 -- ============================================================
 
--- 계약 (contracts.customer_id → customers.customer_id)
+-- 계약
 CREATE TABLE IF NOT EXISTS contracts (
     id               BIGINT       AUTO_INCREMENT PRIMARY KEY,
-    contract_no      VARCHAR(20)  UNIQUE,
-    policy_no        VARCHAR(20),
-    customer_id      VARCHAR(20),           -- → customers.customer_id
+    customer_id      VARCHAR(20),           -- → customers.customer_id (자연키)
     customer_name    VARCHAR(100),
     contract_date    DATE,
     expiry_date      DATE,
@@ -156,10 +144,10 @@ CREATE TABLE IF NOT EXISTS contracts (
     last_payment_date DATE
 );
 
--- 고객 정보 등록 이력 (판매채널이 등록한 원본 양식)
+-- 고객 정보 등록 이력
 CREATE TABLE IF NOT EXISTS customer_registrations (
     id              BIGINT       AUTO_INCREMENT PRIMARY KEY,
-    customer_id     VARCHAR(20),            -- → customers.customer_id
+    customer_id     VARCHAR(20),
     name            VARCHAR(100),
     ssn             VARCHAR(20),
     ssn_masked      VARCHAR(20),
@@ -175,8 +163,7 @@ CREATE TABLE IF NOT EXISTS customer_registrations (
 -- 보험료 납부 요청
 CREATE TABLE IF NOT EXISTS payments (
     id             BIGINT       AUTO_INCREMENT PRIMARY KEY,
-    payment_no     VARCHAR(20)  UNIQUE,
-    customer_id    VARCHAR(20),             -- → customers.customer_id
+    customer_id    VARCHAR(20),
     customer_name  VARCHAR(100),
     total_amount   BIGINT       DEFAULT 0,
     payment_method VARCHAR(50),
@@ -187,8 +174,7 @@ CREATE TABLE IF NOT EXISTS payments (
 -- 사고 접수
 CREATE TABLE IF NOT EXISTS accident_reports (
     id               BIGINT       AUTO_INCREMENT PRIMARY KEY,
-    accident_no      VARCHAR(20)  UNIQUE,
-    customer_id      VARCHAR(20),              -- → customers.customer_id
+    customer_id      VARCHAR(20),
     customer_name    VARCHAR(100),
     accident_type    VARCHAR(50),
     vehicle_no       VARCHAR(50),
@@ -207,10 +193,9 @@ CREATE TABLE IF NOT EXISTS accident_reports (
 -- 보험 청구 접수
 CREATE TABLE IF NOT EXISTS claim_requests (
     id             BIGINT       AUTO_INCREMENT PRIMARY KEY,
-    claim_no       VARCHAR(20)  UNIQUE,
-    customer_id    VARCHAR(20),             -- → customers.customer_id
+    customer_id    VARCHAR(20),
     customer_name  VARCHAR(100),
-    contract_no    VARCHAR(20),             -- → contracts.contract_no
+    contract_id    BIGINT,                  -- → contracts.id
     claim_type     VARCHAR(20),
     diagnosis      VARCHAR(200),
     claim_reasons  VARCHAR(500),
@@ -225,8 +210,7 @@ CREATE TABLE IF NOT EXISTS claim_requests (
 -- 보험 가입 신청
 CREATE TABLE IF NOT EXISTS insurance_applications (
     id              BIGINT       AUTO_INCREMENT PRIMARY KEY,
-    application_no  VARCHAR(20)  UNIQUE,
-    customer_id     VARCHAR(20),            -- → customers.customer_id
+    customer_id     VARCHAR(20),
     customer_name   VARCHAR(100),
     product_name    VARCHAR(100),
     monthly_premium BIGINT       DEFAULT 0,
@@ -238,8 +222,7 @@ CREATE TABLE IF NOT EXISTS insurance_applications (
 -- 청약
 CREATE TABLE IF NOT EXISTS policy_applications (
     id             BIGINT       AUTO_INCREMENT PRIMARY KEY,
-    application_no VARCHAR(20)  UNIQUE,
-    customer_id    VARCHAR(20),             -- → customers.customer_id
+    customer_id    VARCHAR(20),
     customer_name  VARCHAR(100),
     product_name   VARCHAR(100),
     period         INT          DEFAULT 1,
@@ -253,10 +236,8 @@ CREATE TABLE IF NOT EXISTS policy_applications (
 -- Tier 2 : 교육 도메인 (독립)
 -- ============================================================
 
--- 교육 계획안
 CREATE TABLE IF NOT EXISTS education_plans (
     id                BIGINT       AUTO_INCREMENT PRIMARY KEY,
-    plan_no           VARCHAR(20)  UNIQUE,
     trainer_name      VARCHAR(100),
     education_name    VARCHAR(200),
     channel_type      VARCHAR(200),
@@ -276,10 +257,8 @@ CREATE TABLE IF NOT EXISTS education_plans (
 -- Tier 2 : 상담 도메인
 -- ============================================================
 
--- 상담 요청 (consultation_type: 방문/전화/온라인)
 CREATE TABLE IF NOT EXISTS consultation_requests (
     id                BIGINT       AUTO_INCREMENT PRIMARY KEY,
-    consult_no        VARCHAR(20)  UNIQUE,
     consultation_type VARCHAR(50),
     location          VARCHAR(200),
     contact           VARCHAR(100),
@@ -290,10 +269,8 @@ CREATE TABLE IF NOT EXISTS consultation_requests (
     accepted_at       TIMESTAMP    NULL
 );
 
--- 면담 일정
 CREATE TABLE IF NOT EXISTS interview_schedules (
     id            BIGINT       AUTO_INCREMENT PRIMARY KEY,
-    schedule_no   VARCHAR(20)  UNIQUE,
     customer_name VARCHAR(100),
     designer_name VARCHAR(100),
     interview_type VARCHAR(20),
@@ -306,10 +283,8 @@ CREATE TABLE IF NOT EXISTS interview_schedules (
     cancelled_at  TIMESTAMP    NULL
 );
 
--- 면담 기록
 CREATE TABLE IF NOT EXISTS interview_records (
     id                BIGINT       AUTO_INCREMENT PRIMARY KEY,
-    record_no         VARCHAR(20)  UNIQUE,
     customer_name     VARCHAR(100),
     content           TEXT,
     customer_reaction TEXT,
@@ -319,20 +294,16 @@ CREATE TABLE IF NOT EXISTS interview_records (
     modified_at       TIMESTAMP    NULL
 );
 
--- 제안서
 CREATE TABLE IF NOT EXISTS proposals (
     id              BIGINT       AUTO_INCREMENT PRIMARY KEY,
-    proposal_no     VARCHAR(20)  UNIQUE,
     customer_name   VARCHAR(100),
     product_name    VARCHAR(100),
     monthly_premium BIGINT       DEFAULT 0,
     sent_at         TIMESTAMP    DEFAULT CURRENT_TIMESTAMP
 );
 
--- 인수심사
 CREATE TABLE IF NOT EXISTS underwritings (
     id               BIGINT       AUTO_INCREMENT PRIMARY KEY,
-    underwriting_no  VARCHAR(20)  UNIQUE,
     review_type      VARCHAR(20),
     app_no           VARCHAR(20),
     customer_name    VARCHAR(100),
@@ -347,8 +318,7 @@ CREATE TABLE IF NOT EXISTS underwritings (
 -- 부활
 CREATE TABLE IF NOT EXISTS revivals (
     id             BIGINT       AUTO_INCREMENT PRIMARY KEY,
-    revival_no     VARCHAR(20)  UNIQUE,
-    contract_no    VARCHAR(20),              -- → contracts.contract_no
+    contract_id    BIGINT,                   -- → contracts.id
     customer_name  VARCHAR(100),
     contact        VARCHAR(100),
     unpaid_amount  BIGINT       DEFAULT 0,
@@ -360,10 +330,8 @@ CREATE TABLE IF NOT EXISTS revivals (
 -- Tier 2 : 영업 도메인
 -- ============================================================
 
--- 채널 모집
 CREATE TABLE IF NOT EXISTS channel_recruitments (
     id             BIGINT       AUTO_INCREMENT PRIMARY KEY,
-    recruitment_no VARCHAR(20)  UNIQUE,
     manager_name   VARCHAR(100),
     channel_type   VARCHAR(50),
     recruit_count  INT          DEFAULT 0,
@@ -374,10 +342,8 @@ CREATE TABLE IF NOT EXISTS channel_recruitments (
     created_at     TIMESTAMP    DEFAULT CURRENT_TIMESTAMP
 );
 
--- 채널 심사
 CREATE TABLE IF NOT EXISTS channel_screenings (
     id               BIGINT       AUTO_INCREMENT PRIMARY KEY,
-    screening_no     VARCHAR(20)  UNIQUE,
     applicant_name   VARCHAR(100),
     channel_type     VARCHAR(50),
     career           VARCHAR(200),
@@ -389,10 +355,8 @@ CREATE TABLE IF NOT EXISTS channel_screenings (
     reviewed_at      TIMESTAMP
 );
 
--- 활동 계획
 CREATE TABLE IF NOT EXISTS activity_plans (
     id                       BIGINT       AUTO_INCREMENT PRIMARY KEY,
-    plan_no                  VARCHAR(20)  UNIQUE,
     plan_name                VARCHAR(200),
     author_name              VARCHAR(100),
     start_date               DATE,
@@ -408,21 +372,19 @@ CREATE TABLE IF NOT EXISTS activity_plans (
 );
 
 CREATE TABLE IF NOT EXISTS activity_schedule_items (
-    id              BIGINT       AUTO_INCREMENT PRIMARY KEY,
-    plan_no         VARCHAR(20),
-    customer_id     VARCHAR(20),
-    activity_type   VARCHAR(50),
+    id                BIGINT       AUTO_INCREMENT PRIMARY KEY,
+    plan_id           BIGINT,                -- → activity_plans.id
+    customer_id       VARCHAR(20),
+    activity_type     VARCHAR(50),
     activity_datetime TIMESTAMP,
-    location        VARCHAR(200),
-    memo            TEXT
+    location          VARCHAR(200),
+    memo              TEXT
 );
 
--- 성과급 요청
 CREATE TABLE IF NOT EXISTS bonus_requests (
     id               BIGINT       AUTO_INCREMENT PRIMARY KEY,
-    request_no       VARCHAR(20)  UNIQUE,
     channel_name     VARCHAR(100),
-    evaluation_no    VARCHAR(20),
+    evaluation_id    BIGINT,                 -- → sales_org_evaluations.id
     channel_type     VARCHAR(50),
     evaluation_grade VARCHAR(20),
     amount           BIGINT       DEFAULT 0,
@@ -431,10 +393,8 @@ CREATE TABLE IF NOT EXISTS bonus_requests (
     created_at       TIMESTAMP    DEFAULT CURRENT_TIMESTAMP
 );
 
--- 영업 활동 관리
 CREATE TABLE IF NOT EXISTS sales_activity_managements (
     id                  BIGINT       AUTO_INCREMENT PRIMARY KEY,
-    activity_no         VARCHAR(20)  UNIQUE,
     manager_name        VARCHAR(100),
     channel_name        VARCHAR(100),
     activity_type       VARCHAR(50),
@@ -448,10 +408,8 @@ CREATE TABLE IF NOT EXISTS sales_activity_managements (
     created_at          TIMESTAMP    DEFAULT CURRENT_TIMESTAMP
 );
 
--- 영업 조직 평가
 CREATE TABLE IF NOT EXISTS sales_org_evaluations (
     id                 BIGINT       AUTO_INCREMENT PRIMARY KEY,
-    evaluation_no      VARCHAR(20)  UNIQUE,
     channel_name       VARCHAR(100),
     channel_type       VARCHAR(50),
     grade              VARCHAR(20),
@@ -468,7 +426,6 @@ CREATE TABLE IF NOT EXISTS sales_org_evaluations (
 
 CREATE TABLE IF NOT EXISTS inquiries (
     id                    BIGINT       AUTO_INCREMENT PRIMARY KEY,
-    inquiry_no            VARCHAR(20)  UNIQUE,
     customer_name         VARCHAR(100),
     inquiry_type          VARCHAR(50),
     title                 VARCHAR(50),
@@ -482,13 +439,12 @@ CREATE TABLE IF NOT EXISTS inquiries (
 );
 
 -- ============================================================
--- Tier 2 : 만기 계약 안내 (contracts 참조)
+-- Tier 2 : 만기 계약 안내
 -- ============================================================
 
 CREATE TABLE IF NOT EXISTS expiring_contract_notices (
     id                BIGINT       AUTO_INCREMENT PRIMARY KEY,
-    notice_no         VARCHAR(50)  UNIQUE,
-    contract_no       VARCHAR(20),            -- → contracts.contract_no
+    contract_id       BIGINT,                -- → contracts.id
     contractor_name   VARCHAR(100),
     expiry_date       DATE,
     phone             VARCHAR(20),
@@ -506,11 +462,9 @@ CREATE TABLE IF NOT EXISTS expiring_contract_notices (
 -- Tier 3 : contracts 참조
 -- ============================================================
 
--- 납부 기록
 CREATE TABLE IF NOT EXISTS payment_records (
     id              BIGINT       AUTO_INCREMENT PRIMARY KEY,
-    record_no       VARCHAR(20)  UNIQUE,
-    contract_no     VARCHAR(20),            -- → contracts.contract_no
+    contract_id     BIGINT,                  -- → contracts.id
     customer_name   VARCHAR(100),
     amount          BIGINT       DEFAULT 0,
     method          VARCHAR(50),
@@ -522,11 +476,9 @@ CREATE TABLE IF NOT EXISTS payment_records (
     reject_reason   VARCHAR(500)
 );
 
--- 해지
 CREATE TABLE IF NOT EXISTS cancellations (
     id              BIGINT       AUTO_INCREMENT PRIMARY KEY,
-    cancellation_no VARCHAR(20)  UNIQUE,
-    contract_no     VARCHAR(20),            -- → contracts.contract_no
+    contract_id     BIGINT,                  -- → contracts.id
     customer_name   VARCHAR(100),
     monthly_premium BIGINT       DEFAULT 0,
     reason          VARCHAR(500),
@@ -536,10 +488,8 @@ CREATE TABLE IF NOT EXISTS cancellations (
     cancelled_at    TIMESTAMP
 );
 
--- 계약 통계 (스냅샷)
 CREATE TABLE IF NOT EXISTS contract_statistics (
     id              BIGINT       AUTO_INCREMENT PRIMARY KEY,
-    stats_no        VARCHAR(20)  UNIQUE,
     total_count     INT          DEFAULT 0,
     active_count    INT          DEFAULT 0,
     expired_count   INT          DEFAULT 0,
@@ -551,25 +501,21 @@ CREATE TABLE IF NOT EXISTS contract_statistics (
 -- Tier 3 : accident_reports 참조
 -- ============================================================
 
--- 현장 출동
 CREATE TABLE IF NOT EXISTS dispatches (
-    id          BIGINT       AUTO_INCREMENT PRIMARY KEY,
-    dispatch_no VARCHAR(20)  UNIQUE,
-    accident_no VARCHAR(20),                -- → accident_reports.accident_no
-    status      VARCHAR(20)
+    id           BIGINT       AUTO_INCREMENT PRIMARY KEY,
+    accident_id  BIGINT,                     -- → accident_reports.id
+    status       VARCHAR(20)
 );
 
 -- ============================================================
 -- Tier 3 : claim_requests 참조
 -- ============================================================
 
--- 피해 조사
 CREATE TABLE IF NOT EXISTS damage_investigations (
     id                BIGINT       AUTO_INCREMENT PRIMARY KEY,
-    investigation_no  VARCHAR(20)  UNIQUE,
-    claim_no          VARCHAR(20),          -- → claim_requests.claim_no
+    claim_id          BIGINT,                -- → claim_requests.id
     claim_customer    VARCHAR(100),
-    customer_id       VARCHAR(20),          -- → customers.customer_id
+    customer_id       VARCHAR(20),
     handler_emp_id    VARCHAR(20),
     handler_name      VARCHAR(100),
     our_fault_ratio   DOUBLE       DEFAULT 0,
@@ -586,12 +532,9 @@ CREATE TABLE IF NOT EXISTS damage_investigations (
 -- Tier 3 : education_plans 참조
 -- ============================================================
 
--- 교육 제반 준비
--- (plan_no 는 앱 코드에서 현재 null 로 삽입됨 — 향후 연결 가능)
 CREATE TABLE IF NOT EXISTS education_preparations (
     id              BIGINT       AUTO_INCREMENT PRIMARY KEY,
-    prep_no         VARCHAR(20)  UNIQUE,
-    plan_no         VARCHAR(20),            -- → education_plans.plan_no
+    plan_id         BIGINT,                  -- → education_plans.id
     instructor_name VARCHAR(100),
     venue           VARCHAR(200),
     material_ready  BOOLEAN      DEFAULT FALSE,
@@ -606,11 +549,9 @@ CREATE TABLE IF NOT EXISTS education_preparations (
 -- Tier 4 : cancellations 참조
 -- ============================================================
 
--- 환급금 계산
 CREATE TABLE IF NOT EXISTS refund_calculations (
     id                 BIGINT       AUTO_INCREMENT PRIMARY KEY,
-    refund_no          VARCHAR(20)  UNIQUE,
-    cancellation_no    VARCHAR(20),         -- → cancellations.cancellation_no
+    cancellation_id    BIGINT,               -- → cancellations.id
     total_paid_premium BIGINT       DEFAULT 0,
     payment_period     VARCHAR(50),
     reserve_amount     BIGINT       DEFAULT 0,
@@ -625,11 +566,9 @@ CREATE TABLE IF NOT EXISTS refund_calculations (
 -- Tier 4 : damage_investigations 참조
 -- ============================================================
 
--- 보상금 산출
 CREATE TABLE IF NOT EXISTS claim_calculations (
     id                  BIGINT       AUTO_INCREMENT PRIMARY KEY,
-    calculation_no      VARCHAR(20)  UNIQUE,
-    investigation_no    VARCHAR(20),        -- → damage_investigations.investigation_no
+    investigation_id    BIGINT,              -- → damage_investigations.id
     recognized_damage   BIGINT       DEFAULT 0,
     fault_ratio         DOUBLE       DEFAULT 0,
     deductible          BIGINT       DEFAULT 0,
@@ -644,11 +583,9 @@ CREATE TABLE IF NOT EXISTS claim_calculations (
 -- Tier 4 : dispatches 참조
 -- ============================================================
 
--- 출동 기록
 CREATE TABLE IF NOT EXISTS dispatch_records (
     id               BIGINT       AUTO_INCREMENT PRIMARY KEY,
-    record_no        VARCHAR(20)  UNIQUE,
-    dispatch_no      VARCHAR(20),                -- → dispatches.dispatch_no
+    dispatch_id      BIGINT,                 -- → dispatches.id
     agent_name       VARCHAR(100),
     police_required  BOOLEAN      DEFAULT FALSE,
     towing_required  BOOLEAN      DEFAULT FALSE,
@@ -657,10 +594,9 @@ CREATE TABLE IF NOT EXISTS dispatch_records (
     status           VARCHAR(20)
 );
 
--- 출동 기록 사진 (dispatch_records 1:N) — 실제 파일은 로컬 파일시스템, 여기엔 메타만
 CREATE TABLE IF NOT EXISTS dispatch_photos (
     id          BIGINT       AUTO_INCREMENT PRIMARY KEY,
-    record_no   VARCHAR(20),                -- → dispatch_records.record_no
+    record_id   BIGINT,                      -- → dispatch_records.id
     file_name   VARCHAR(255),
     file_path   VARCHAR(500),
     file_size   BIGINT       DEFAULT 0,
@@ -672,12 +608,9 @@ CREATE TABLE IF NOT EXISTS dispatch_photos (
 -- Tier 4 : education_preparations 참조
 -- ============================================================
 
--- 교육 실시
--- (prep_no 는 앱 코드에서 현재 null 로 삽입됨 — 향후 연결 가능)
 CREATE TABLE IF NOT EXISTS education_executions (
     id             BIGINT       AUTO_INCREMENT PRIMARY KEY,
-    execution_no   VARCHAR(20)  UNIQUE,
-    prep_no        VARCHAR(20),             -- → education_preparations.prep_no
+    prep_id        BIGINT,                   -- → education_preparations.id
     trainer_name   VARCHAR(100),
     executed_at    TIMESTAMP,
     attendee_count INT          DEFAULT 0,
@@ -686,10 +619,9 @@ CREATE TABLE IF NOT EXISTS education_executions (
     status         VARCHAR(20)
 );
 
--- 개별 출석 이력 (BUG-EDU-06)
 CREATE TABLE IF NOT EXISTS education_attendances (
     id            BIGINT       AUTO_INCREMENT PRIMARY KEY,
-    execution_no  VARCHAR(20),              -- → education_executions.execution_no
+    execution_id  BIGINT,                    -- → education_executions.id
     attendee_name VARCHAR(100),
     is_attended   BOOLEAN      DEFAULT FALSE
 );
@@ -698,12 +630,10 @@ CREATE TABLE IF NOT EXISTS education_attendances (
 -- Tier 5 : refund_calculations 참조
 -- ============================================================
 
--- 환급금 지급
 CREATE TABLE IF NOT EXISTS refund_payments (
     id              BIGINT       AUTO_INCREMENT PRIMARY KEY,
-    payment_no      VARCHAR(20)  UNIQUE,
-    refund_no       VARCHAR(20),            -- → refund_calculations.refund_no
-    cancellation_no VARCHAR(20),
+    refund_id       BIGINT,                  -- → refund_calculations.id
+    cancellation_id BIGINT,                  -- → cancellations.id
     final_amount    BIGINT       DEFAULT 0,
     transferred_at  DATETIME     NULL,
     notice_sent     BOOLEAN      DEFAULT FALSE,
@@ -711,11 +641,11 @@ CREATE TABLE IF NOT EXISTS refund_payments (
     status          VARCHAR(20)
 );
 
--- 계약별 납입 항목 (BUG-FIN-02)
+-- 계약별 납입 항목
 CREATE TABLE IF NOT EXISTS payment_items (
     id          BIGINT       AUTO_INCREMENT PRIMARY KEY,
-    payment_no  VARCHAR(20),                -- → payments.payment_no
-    contract_no VARCHAR(20),
+    payment_id  BIGINT,                      -- → payments.id
+    contract_id BIGINT,                      -- → contracts.id
     count       INT          DEFAULT 0,
     subtotal    BIGINT       DEFAULT 0
 );
@@ -724,11 +654,9 @@ CREATE TABLE IF NOT EXISTS payment_items (
 -- Tier 5 : claim_calculations 참조
 -- ============================================================
 
--- 보험금 지급
 CREATE TABLE IF NOT EXISTS claim_payments (
     id              BIGINT       AUTO_INCREMENT PRIMARY KEY,
-    payment_no      VARCHAR(20)  UNIQUE,
-    calculation_no  VARCHAR(20),             -- → claim_calculations.calculation_no
+    calculation_id  BIGINT,                  -- → claim_calculations.id
     final_amount    BIGINT       DEFAULT 0,
     paid_at         DATETIME     NULL,
     scheduled_at    DATETIME     NULL,
@@ -740,42 +668,41 @@ CREATE TABLE IF NOT EXISTS claim_payments (
 );
 
 -- ============================================================
--- FK 제약 (모두 NULLABLE — NULL 삽입 허용, 비-NULL 값만 참조 무결성 검사)
--- 적용 순서: Tier 2 → 3 → 4 → 5 (부모 테이블이 먼저 생성된 순서)
--- ※ customer_registrations.customer_id 제외
---    (판매채널이 고객 DB 등록 전에 registration 먼저 저장하는 흐름 존재)
+-- FK 제약 (NULLABLE — NULL 허용, 비-NULL 값만 무결성 검사)
+-- 모든 FK는 surrogate id(BIGINT) 참조
 -- ============================================================
 
--- Tier 2: customers 참조
-ALTER TABLE contracts              ADD CONSTRAINT fk_contracts_customer              FOREIGN KEY (customer_id)      REFERENCES customers(customer_id);
-ALTER TABLE payments               ADD CONSTRAINT fk_payments_customer               FOREIGN KEY (customer_id)      REFERENCES customers(customer_id);
-ALTER TABLE accident_reports       ADD CONSTRAINT fk_accident_reports_customer       FOREIGN KEY (customer_id)      REFERENCES customers(customer_id);
-ALTER TABLE claim_requests         ADD CONSTRAINT fk_claim_requests_customer         FOREIGN KEY (customer_id)      REFERENCES customers(customer_id);
-ALTER TABLE insurance_applications ADD CONSTRAINT fk_insurance_applications_customer FOREIGN KEY (customer_id)      REFERENCES customers(customer_id);
-ALTER TABLE policy_applications    ADD CONSTRAINT fk_policy_applications_customer    FOREIGN KEY (customer_id)      REFERENCES customers(customer_id);
+-- customers 자연키 참조 (customer_id VARCHAR — 변경 없음)
+ALTER TABLE contracts              ADD CONSTRAINT fk_contracts_customer              FOREIGN KEY (customer_id)   REFERENCES customers(customer_id);
+ALTER TABLE payments               ADD CONSTRAINT fk_payments_customer               FOREIGN KEY (customer_id)   REFERENCES customers(customer_id);
+ALTER TABLE accident_reports       ADD CONSTRAINT fk_accident_reports_customer       FOREIGN KEY (customer_id)   REFERENCES customers(customer_id);
+ALTER TABLE claim_requests         ADD CONSTRAINT fk_claim_requests_customer         FOREIGN KEY (customer_id)   REFERENCES customers(customer_id);
+ALTER TABLE insurance_applications ADD CONSTRAINT fk_insurance_applications_customer FOREIGN KEY (customer_id)   REFERENCES customers(customer_id);
+ALTER TABLE policy_applications    ADD CONSTRAINT fk_policy_applications_customer    FOREIGN KEY (customer_id)   REFERENCES customers(customer_id);
 
--- Tier 2/3: contracts 참조
-ALTER TABLE claim_requests             ADD CONSTRAINT fk_claim_requests_contract           FOREIGN KEY (contract_no) REFERENCES contracts(contract_no);
-ALTER TABLE revivals                   ADD CONSTRAINT fk_revivals_contract                 FOREIGN KEY (contract_no) REFERENCES contracts(contract_no);
-ALTER TABLE payment_records            ADD CONSTRAINT fk_payment_records_contract           FOREIGN KEY (contract_no) REFERENCES contracts(contract_no);
-ALTER TABLE cancellations              ADD CONSTRAINT fk_cancellations_contract             FOREIGN KEY (contract_no) REFERENCES contracts(contract_no);
-ALTER TABLE expiring_contract_notices  ADD CONSTRAINT fk_expiring_contract_notices_contract FOREIGN KEY (contract_no) REFERENCES contracts(contract_no);
+-- contracts.id 참조
+ALTER TABLE claim_requests             ADD CONSTRAINT fk_claim_requests_contract            FOREIGN KEY (contract_id)        REFERENCES contracts(id);
+ALTER TABLE revivals                   ADD CONSTRAINT fk_revivals_contract                  FOREIGN KEY (contract_id)        REFERENCES contracts(id);
+ALTER TABLE payment_records            ADD CONSTRAINT fk_payment_records_contract            FOREIGN KEY (contract_id)        REFERENCES contracts(id);
+ALTER TABLE cancellations              ADD CONSTRAINT fk_cancellations_contract              FOREIGN KEY (contract_id)        REFERENCES contracts(id);
+ALTER TABLE expiring_contract_notices  ADD CONSTRAINT fk_expiring_contract_notices_contract  FOREIGN KEY (contract_id)        REFERENCES contracts(id);
 
--- Tier 3: 중간 엔터티 참조
-ALTER TABLE dispatches             ADD CONSTRAINT fk_dispatches_accident            FOREIGN KEY (accident_no)      REFERENCES accident_reports(accident_no);
-ALTER TABLE damage_investigations  ADD CONSTRAINT fk_damage_investigations_claim    FOREIGN KEY (claim_no)         REFERENCES claim_requests(claim_no);
-ALTER TABLE education_preparations ADD CONSTRAINT fk_education_preparations_plan    FOREIGN KEY (plan_no)          REFERENCES education_plans(plan_no);
+-- 중간 엔터티 id 참조
+ALTER TABLE dispatches             ADD CONSTRAINT fk_dispatches_accident            FOREIGN KEY (accident_id)       REFERENCES accident_reports(id);
+ALTER TABLE damage_investigations  ADD CONSTRAINT fk_damage_investigations_claim    FOREIGN KEY (claim_id)          REFERENCES claim_requests(id);
+ALTER TABLE education_preparations ADD CONSTRAINT fk_education_preparations_plan    FOREIGN KEY (plan_id)           REFERENCES education_plans(id);
 
--- Tier 4: 처리 레코드 참조
-ALTER TABLE dispatch_records       ADD CONSTRAINT fk_dispatch_records_dispatch      FOREIGN KEY (dispatch_no)      REFERENCES dispatches(dispatch_no);
-ALTER TABLE dispatch_photos        ADD CONSTRAINT fk_dispatch_photos_record         FOREIGN KEY (record_no)        REFERENCES dispatch_records(record_no);
-ALTER TABLE claim_calculations     ADD CONSTRAINT fk_claim_calculations_investigation FOREIGN KEY (investigation_no) REFERENCES damage_investigations(investigation_no);
-ALTER TABLE education_executions   ADD CONSTRAINT fk_education_executions_prep      FOREIGN KEY (prep_no)          REFERENCES education_preparations(prep_no);
-ALTER TABLE education_attendances  ADD CONSTRAINT fk_education_attendances_execution FOREIGN KEY (execution_no)    REFERENCES education_executions(execution_no);
-ALTER TABLE refund_calculations    ADD CONSTRAINT fk_refund_calculations_cancellation FOREIGN KEY (cancellation_no) REFERENCES cancellations(cancellation_no);
-ALTER TABLE activity_schedule_items ADD CONSTRAINT fk_activity_schedule_items_plan  FOREIGN KEY (plan_no)          REFERENCES activity_plans(plan_no);
+-- 처리 레코드 id 참조
+ALTER TABLE dispatch_records       ADD CONSTRAINT fk_dispatch_records_dispatch      FOREIGN KEY (dispatch_id)       REFERENCES dispatches(id);
+ALTER TABLE dispatch_photos        ADD CONSTRAINT fk_dispatch_photos_record         FOREIGN KEY (record_id)         REFERENCES dispatch_records(id);
+ALTER TABLE claim_calculations     ADD CONSTRAINT fk_claim_calculations_investigation FOREIGN KEY (investigation_id) REFERENCES damage_investigations(id);
+ALTER TABLE education_executions   ADD CONSTRAINT fk_education_executions_prep      FOREIGN KEY (prep_id)           REFERENCES education_preparations(id);
+ALTER TABLE education_attendances  ADD CONSTRAINT fk_education_attendances_execution FOREIGN KEY (execution_id)     REFERENCES education_executions(id);
+ALTER TABLE refund_calculations    ADD CONSTRAINT fk_refund_calculations_cancellation FOREIGN KEY (cancellation_id)  REFERENCES cancellations(id);
+ALTER TABLE activity_schedule_items ADD CONSTRAINT fk_activity_schedule_items_plan  FOREIGN KEY (plan_id)           REFERENCES activity_plans(id);
 
--- Tier 5: 최종 처리 참조
-ALTER TABLE claim_payments  ADD CONSTRAINT fk_claim_payments_calculation  FOREIGN KEY (calculation_no) REFERENCES claim_calculations(calculation_no);
-ALTER TABLE refund_payments ADD CONSTRAINT fk_refund_payments_refund      FOREIGN KEY (refund_no)      REFERENCES refund_calculations(refund_no);
-ALTER TABLE payment_items   ADD CONSTRAINT fk_payment_items_payment       FOREIGN KEY (payment_no)     REFERENCES payments(payment_no);
+-- 최종 처리 id 참조
+ALTER TABLE claim_payments  ADD CONSTRAINT fk_claim_payments_calculation  FOREIGN KEY (calculation_id) REFERENCES claim_calculations(id);
+ALTER TABLE refund_payments ADD CONSTRAINT fk_refund_payments_refund      FOREIGN KEY (refund_id)      REFERENCES refund_calculations(id);
+ALTER TABLE payment_items   ADD CONSTRAINT fk_payment_items_payment       FOREIGN KEY (payment_id)     REFERENCES payments(id);
+ALTER TABLE bonus_requests  ADD CONSTRAINT fk_bonus_requests_evaluation   FOREIGN KEY (evaluation_id)  REFERENCES sales_org_evaluations(id);

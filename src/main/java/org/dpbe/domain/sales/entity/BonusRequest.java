@@ -21,30 +21,16 @@ public class BonusRequest {
     private String requestNo;              // 요청 번호
     private LocalDateTime requestedAt;     // 요청일시
 
-    public void loadRequestScreen() {}
-
     public Double calculateBonus() {
         if (baseSalary == null || bonusRatio == null) return (double) 0L;
         this.bonusAmount = (double) Math.round(baseSalary * bonusRatio);
         return this.bonusAmount;
     }
 
-    public void showConfirmPopup() {}
-
     public void submit() {
         this.requestedAt = LocalDateTime.now();
         this.requestNo = "BR-" + requestedAt.toString().replaceAll("[^0-9]", "").substring(0, 14);
     }
-
-    public void showRequestResult() {}
-
-    public void showRequestError() {}
-
-    public void retry() {}
-
-    public void cancel() {}
-
-    public void returnToEvaluation() {}
 
     // Runner에서 실제 사용하는 getter/setter만 유지
     public String getEvaluationNo() { return evaluationNo; }

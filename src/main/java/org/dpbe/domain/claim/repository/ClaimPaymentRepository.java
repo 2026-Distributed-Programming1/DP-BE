@@ -20,7 +20,7 @@ import org.springframework.stereotype.Repository;
 public class ClaimPaymentRepository {
 
     private static final String COLS =
-            "id, payment_no, calculation_no, final_amount, paid_at, scheduled_at,"
+            "id, calculation_id, final_amount, paid_at, scheduled_at,"
             + " payment_type, recipient_name, account_no, failure_reason, status";
 
     private final SqlExecutor sql;
@@ -41,39 +41,38 @@ public class ClaimPaymentRepository {
             String accountHolder) {
     }
 
-    public PayoutSource loadPayoutSource(String calculationNo) {
+    public PayoutSource loadPayoutSource(Long calculationId) {
         return sql.queryOne(
                 "SELECT cal.final_amount, cr.customer_name, cr.bank_name, cr.account_no, cr.account_holder"
                 + " FROM claim_calculations cal"
-                + " JOIN damage_investigations di ON di.investigation_no = cal.investigation_no"
-                + " JOIN claim_requests cr ON cr.claim_no = di.claim_no"
-                + " WHERE cal.calculation_no = ?",
+                + " JOIN damage_investigations di ON di.id = cal.investigation_id"
+                + " JOIN claim_requests cr ON cr.id = di.claim_id"
+                + " WHERE cal.id = ?",
                 rs -> new PayoutSource(
                         rs.getLong("final_amount"),
                         rs.getString("customer_name"),
                         rs.getString("bank_name"),
                         rs.getString("account_no"),
                         rs.getString("account_holder")),
-                calculationNo);
+                calculationId);
     }
 
     /** 신규 지급 저장 — INSERT 후 생성 id에서 payment_no 파생. */
     public void save(ClaimPayment p) {
-        String calcNo = p.getCalculation() != null ? p.getCalculation().getCalculationNo() : null;
+        Long calcId = p.getCalculation() != null ? p.getCalculation().getId() : null;
         String status = p.getStatus() != null ? p.getStatus().name() : null;
         String paymentType = p.getPaymentType() != null ? p.getPaymentType().name() : null;
         String recipientName = p.getRecipient() != null ? p.getRecipient().getName() : null;
         String accountNo = p.getAccount() != null ? p.getAccount().getAccountNo() : null;
 
         long id = sql.executeInsertReturningKey(
-                "INSERT INTO claim_payments (calculation_no, final_amount, paid_at, scheduled_at,"
+                "INSERT INTO claim_payments (calculation_id, final_amount, paid_at, scheduled_at,"
                 + " payment_type, recipient_name, account_no, failure_reason, status)"
                 + " VALUES (?,?,?,?,?,?,?,?,?)",
-                calcNo, p.getFinalAmount(), p.getPaidAt(), p.getScheduledAt(),
+                calcId, p.getFinalAmount(), p.getPaidAt(), p.getScheduledAt(),
                 paymentType, recipientName, accountNo, p.getFailureReason(), status);
         p.setId(id);
         p.setPaymentNo("CPY" + String.format("%05d", id));
-        sql.executeUpdate("UPDATE claim_payments SET payment_no=? WHERE id=?", p.getPaymentNo(), id);
     }
 
     /** 지급 상태 갱신 (실행/실패 결과 반영). */
@@ -82,21 +81,21 @@ public class ClaimPaymentRepository {
         String paymentType = p.getPaymentType() != null ? p.getPaymentType().name() : null;
         sql.executeUpdate(
                 "UPDATE claim_payments SET final_amount=?, paid_at=?, scheduled_at=?,"
-                + " payment_type=?, failure_reason=?, status=? WHERE payment_no=?",
+                + " payment_type=?, failure_reason=?, status=? WHERE id=?",
                 p.getFinalAmount(), p.getPaidAt(), p.getScheduledAt(),
-                paymentType, p.getFailureReason(), status, p.getPaymentNo());
+                paymentType, p.getFailureReason(), status, p.getId());
     }
 
     public ClaimPayment findByCalculationNo(String calculationNo) {
         return sql.queryOne(
-                "SELECT " + COLS + " FROM claim_payments WHERE calculation_no=?",
-                this::mapRow, calculationNo);
+                "SELECT " + COLS + " FROM claim_payments WHERE calculation_id=?",
+                this::mapRow, parseId(calculationNo));
     }
 
-    public ClaimPayment findByPaymentNo(String paymentNo) {
+    public ClaimPayment findById(Long id) {
         return sql.queryOne(
-                "SELECT " + COLS + " FROM claim_payments WHERE payment_no=?",
-                this::mapRow, paymentNo);
+                "SELECT " + COLS + " FROM claim_payments WHERE id=?",
+                this::mapRow, id);
     }
 
     public List<ClaimPayment> findAll() {
@@ -104,9 +103,11 @@ public class ClaimPaymentRepository {
     }
 
     private ClaimPayment mapRow(ResultSet rs) throws SQLException {
-        String cno = rs.getString("calculation_no");
+        long calcId = rs.getLong("calculation_id");
+        String cno = !rs.wasNull() ? "CAL" + String.format("%05d", calcId) : "?";
         ClaimCalculation calcShell = new ClaimCalculation(
                 cno != null ? cno : "?", null, 0, 0, 0, false, false, null);
+        if (calcId > 0) calcShell.setId(calcId);
 
         String st = rs.getString("status");
         ClaimPaymentStatus status = ClaimPaymentStatus.WAITING;
@@ -115,7 +116,7 @@ public class ClaimPaymentRepository {
             catch (IllegalArgumentException ignored) {}
         }
         ClaimPayment cp = new ClaimPayment(
-                rs.getString("payment_no"), calcShell, rs.getLong("final_amount"), status);
+                "CPY" + String.format("%05d", rs.getLong("id")), calcShell, rs.getLong("final_amount"), status);
         cp.setId(rs.getLong("id"));
         cp.setRecipientFromName(rs.getString("recipient_name"));
         cp.setAccountFromNo(rs.getString("account_no"));
@@ -130,5 +131,9 @@ public class ClaimPaymentRepository {
         }
         cp.setFailureReason(rs.getString("failure_reason"));
         return cp;
+    }
+
+    private Long parseId(String businessNo) {
+        return Long.parseLong(businessNo.replaceAll("\\D", ""));
     }
 }

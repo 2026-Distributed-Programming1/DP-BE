@@ -8,8 +8,6 @@ import java.time.LocalDateTime;
  */
 public class Proposal {
 
-    private static int sequence = 0;
-
     private Long id;
     private String proposalNo;
     private int proposalId;
@@ -24,10 +22,7 @@ public class Proposal {
         this.insuranceProduct = insuranceProduct;
     }
 
-    public Proposal() {
-        sequence += 1;
-        this.proposalId = sequence;
-    }
+    public Proposal() {}
 
     public void selectProduct(InsuranceProduct product) {
         this.insuranceProduct = product;

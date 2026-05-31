@@ -33,29 +33,15 @@ public class ChannelRecruitment {
         return r;
     }
 
-    public void loadRecruitmentList() {}
-    public void openRegistrationForm() {}
-
     public Boolean validateRequired() {
         return channelType != null && recruitCount != null && recruitCount > 0
                 && startDate != null && endDate != null;
     }
 
-    public void highlightError() {}
-
     public void save() {
         this.registeredAt = LocalDateTime.now();
         this.recruitmentNo = "RC-" + registeredAt.toString().replaceAll("[^0-9]", "").substring(0, 14);
     }
-
-    public void showSaveSuccess() {}
-    public void showSaveResult() {}
-    public void cancel() {}
-    public void showCancelConfirm() {}
-    public void close() {}
-    public void returnToActivityManagement() {}
-    public void openCalendar() {}
-    public void showRequiredError() {}
 
     // Getters / Setters
     public Long getId() { return id; }

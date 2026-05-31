@@ -11,7 +11,7 @@ import org.springframework.stereotype.Repository;
 public class SalesActivityManagementRepository {
 
     private static final String COLS =
-            "id, activity_no, manager_name, channel_name, activity_type,"
+            "id, manager_name, channel_name, activity_type,"
             + " start_date, end_date, visit_count, contract_count, achievement_rate,"
             + " improvement_content, revised_target, created_at";
 
@@ -47,14 +47,12 @@ public class SalesActivityManagementRepository {
                 a.getRegisteredAt());
         a.setId(id);
         a.setActivityNo("SAM" + String.format("%05d", id));
-        sql.executeUpdate("UPDATE sales_activity_managements SET activity_no=? WHERE id=?",
-                a.getActivityNo(), id);
     }
 
     private SalesActivityManagement mapRow(ResultSet rs) throws SQLException {
         SalesActivityManagement a = new SalesActivityManagement();
         a.setId(rs.getLong("id"));
-        a.setActivityNo(rs.getString("activity_no"));
+        a.setActivityNo("SAM" + String.format("%05d", rs.getLong("id")));
         a.setManagerName(rs.getString("manager_name"));
         a.setChannelName(rs.getString("channel_name"));
         a.setActivityType(rs.getString("activity_type"));

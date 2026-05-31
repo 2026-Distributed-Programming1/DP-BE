@@ -155,8 +155,16 @@ public class PaymentService {
                 recordDtos);
     }
 
+    private Long parseContractId(String contractNo) {
+        try {
+            return Long.parseLong(contractNo.replaceAll("\\D", ""));
+        } catch (NumberFormatException e) {
+            throw ApiException.notFound("유효하지 않은 계약번호: " + contractNo);
+        }
+    }
+
     private Contract requireContract(String contractNo) {
-        Contract c = contractRepository.findByContractNo(contractNo);
+        Contract c = contractRepository.findById(parseContractId(contractNo));
         if (c == null) {
             throw ApiException.notFound("계약을 찾을 수 없습니다: " + contractNo);
         }

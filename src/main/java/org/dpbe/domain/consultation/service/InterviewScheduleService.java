@@ -27,8 +27,16 @@ public class InterviewScheduleService {
                 .collect(Collectors.toList());
     }
 
+    private Long parseId(String no) {
+        try {
+            return Long.parseLong(no.replaceAll("\\D", ""));
+        } catch (NumberFormatException e) {
+            throw ApiException.notFound("유효하지 않은 번호: " + no);
+        }
+    }
+
     public InterviewScheduleResponse findByScheduleNo(String scheduleNo) {
-        InterviewSchedule s = scheduleRepo.findByScheduleNo(scheduleNo);
+        InterviewSchedule s = scheduleRepo.findById(parseId(scheduleNo));
         if (s == null) throw ApiException.notFound("면담일정을 찾을 수 없습니다: " + scheduleNo);
         return InterviewScheduleResponse.from(s);
     }
@@ -56,7 +64,7 @@ public class InterviewScheduleService {
     /** 면담일정 수정 — E2: 필수항목 검증. */
     @Transactional
     public InterviewScheduleResponse update(String scheduleNo, InterviewScheduleUpdateRequest req) {
-        InterviewSchedule s = scheduleRepo.findByScheduleNo(scheduleNo);
+        InterviewSchedule s = scheduleRepo.findById(parseId(scheduleNo));
         if (s == null) throw ApiException.notFound("면담일정을 찾을 수 없습니다: " + scheduleNo);
         if ("취소".equals(s.getStatus()))
             throw ApiException.badRequest("취소된 면담일정은 수정할 수 없습니다.");
@@ -76,7 +84,7 @@ public class InterviewScheduleService {
     /** 면담 취소 (A5). */
     @Transactional
     public InterviewScheduleResponse cancel(String scheduleNo) {
-        InterviewSchedule s = scheduleRepo.findByScheduleNo(scheduleNo);
+        InterviewSchedule s = scheduleRepo.findById(parseId(scheduleNo));
         if (s == null) throw ApiException.notFound("면담일정을 찾을 수 없습니다: " + scheduleNo);
         if ("취소".equals(s.getStatus()))
             throw ApiException.badRequest("이미 취소된 면담일정입니다.");

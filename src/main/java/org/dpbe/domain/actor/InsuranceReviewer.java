@@ -9,10 +9,6 @@ import org.dpbe.domain.consultation.entity.Underwriting;
  */
 public class InsuranceReviewer extends Employee {
 
-    public InsuranceReviewer(String name, String contact, String email) {
-        super(name, contact, email);
-    }
-
     /** DB 로딩용 생성자 */
     public InsuranceReviewer(String employeeId, String name, String dept, String position) {
         super(employeeId, name, dept, position);

@@ -13,8 +13,6 @@ import java.time.LocalDateTime;
  */
 public class ClaimCalculation {
 
-    private static int sequence = 0;          // 산출번호 자동 부여용
-
     // 본 구현에서 사용하는 가상의 약관 기본값 (시나리오·다이어그램 외부의 외부 시스템 데이터)
     // 기본 공제액
     private static final long DEFAULT_DEDUCTIBLE = 100_000L;
@@ -36,10 +34,8 @@ public class ClaimCalculation {
     private LocalDateTime calculatedAt;       // 산출일시
     private CalculationStatus status;         // 상태
 
-    /** 생성자 - 산출번호 자동 부여, 산출 데이터 자동 로드, calculate() 자동 호출 */
+    /** 신규 산출 생성자 - 산출 데이터 자동 로드, calculate() 자동 호출 */
     public ClaimCalculation(DamageInvestigation investigation) {
-        sequence += 1;
-        this.calculationNo = "CAL" + String.format("%05d", sequence);
         this.investigation = investigation;
         this.calculatedAt = LocalDateTime.now();
         loadCalculationData();

@@ -15,8 +15,6 @@ import org.dpbe.domain.common.enums.AccidentType;
  */
 public class AccidentReport {
 
-    private static int sequence = 0;             // 접수번호 자동 부여용
-
     private Long id;                             // DB 대리키(PK)
     private String reportNo;                     // 접수번호
     private Customer customer;                   // 사고자
@@ -34,10 +32,8 @@ public class AccidentReport {
     private String injurySeverity;               // 부상 정도 (인명사고 A1)
     private boolean emergencyReported;           // 119 신고 여부 (인명사고 A1)
 
-    /** 생성자 - 접수번호 자동 부여, 접수일시 = now() */
+    /** 신규 사고 접수 생성자 */
     public AccidentReport(Customer customer) {
-        sequence += 1;
-        this.reportNo = "ACC" + String.format("%05d", sequence);
         this.customer = customer;
         this.reportedAt = LocalDateTime.now();
         this.status = AccidentReportStatus.DRAFT;

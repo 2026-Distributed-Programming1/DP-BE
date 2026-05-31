@@ -18,52 +18,52 @@ public class CancellationRepository {
     }
 
     public void save(Cancellation c) {
-        String contractNo   = c.getContract() != null ? c.getContract().getContractNo() : null;
+        Long contractId     = c.getContract() != null ? c.getContract().getId() : null;
         String customerName = c.getContract() != null && c.getContract().getCustomer() != null
                 ? c.getContract().getCustomer().getName() : null;
         long monthlyPremium = c.getContract() != null ? c.getContract().getMonthlyPremium() : 0L;
 
         long id = sql.executeInsertReturningKey(
                 "INSERT INTO cancellations"
-                + " (contract_no, customer_name, monthly_premium, reason, detail_reason,"
+                + " (contract_id, customer_name, monthly_premium, reason, detail_reason,"
                 + "  expected_refund, status, cancelled_at)"
                 + " VALUES (?,?,?,?,?,?,?,?)",
-                contractNo, customerName, monthlyPremium,
+                contractId, customerName, monthlyPremium,
                 c.getReason(), c.getDetailReason(),
                 c.getExpectedRefund(), c.getStatus(), c.getCanceledAt());
         c.setId(id);
         c.setCancellationNo("CAN" + String.format("%05d", id));
-        sql.executeUpdate("UPDATE cancellations SET cancellation_no=? WHERE id=?",
-                c.getCancellationNo(), id);
     }
 
-    public Optional<Cancellation> findByCancellationNo(String cancellationNo) {
+    private static final String COLS =
+            "id, contract_id, customer_name, monthly_premium,"
+            + " reason, detail_reason, expected_refund, status, cancelled_at";
+
+    public Optional<Cancellation> findById(Long id) {
         List<Cancellation> list = sql.executeQuery(
-                "SELECT id, cancellation_no, contract_no, customer_name, monthly_premium,"
-                + " reason, detail_reason, expected_refund, status, cancelled_at"
-                + " FROM cancellations WHERE cancellation_no=?",
-                rowMapper(), cancellationNo);
+                "SELECT " + COLS + " FROM cancellations WHERE id=?",
+                rowMapper(), id);
         return list.isEmpty() ? Optional.empty() : Optional.of(list.get(0));
     }
 
     public List<Cancellation> findAll() {
         return sql.executeQuery(
-                "SELECT id, cancellation_no, contract_no, customer_name, monthly_premium,"
-                + " reason, detail_reason, expected_refund, status, cancelled_at"
-                + " FROM cancellations ORDER BY id DESC",
+                "SELECT " + COLS + " FROM cancellations ORDER BY id DESC",
                 rowMapper());
     }
 
     private SqlExecutor.RowMapper<Cancellation> rowMapper() {
         return rs -> {
-            String cno   = rs.getString("contract_no");
+            long contractId = rs.getLong("contract_id");
+            String cno = !rs.wasNull() ? "CON" + String.format("%05d", contractId) : null;
             String cname = rs.getString("customer_name");
             long premium = rs.getLong("monthly_premium");
             Customer custShell = new Customer("?", cname != null ? cname : "", null, null, null);
             Contract contractShell = Contract.shellOf(cno, custShell, premium);
+            if (contractId > 0) contractShell.setId(contractId);
 
             Cancellation c = new Cancellation(
-                    rs.getString("cancellation_no"),
+                    "CAN" + String.format("%05d", rs.getLong("id")),
                     contractShell,
                     rs.getString("reason"),
                     rs.getLong("expected_refund"),

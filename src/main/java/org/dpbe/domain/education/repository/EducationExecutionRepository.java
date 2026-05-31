@@ -15,7 +15,7 @@ import org.springframework.stereotype.Repository;
 public class EducationExecutionRepository {
 
     private static final String EXEC_COLS =
-            "id, execution_no, prep_no, trainer_name, executed_at, attendee_count, total_count, memo, status";
+            "id, prep_id, trainer_name, executed_at, attendee_count, total_count, memo, status";
 
     private final SqlExecutor sql;
 
@@ -30,49 +30,51 @@ public class EducationExecutionRepository {
 
     public List<EducationExecution> findByPrepNo(String prepNo) {
         return sql.executeQuery(
-                "SELECT " + EXEC_COLS + " FROM education_executions WHERE prep_no=? ORDER BY id DESC",
-                this::mapRow, prepNo);
+                "SELECT " + EXEC_COLS + " FROM education_executions WHERE prep_id=? ORDER BY id DESC",
+                this::mapRow, parseId(prepNo));
     }
 
-    public EducationExecution findByExecutionNo(String executionNo) {
+    public EducationExecution findById(Long id) {
         return sql.queryOne(
-                "SELECT " + EXEC_COLS + " FROM education_executions WHERE execution_no=?",
-                this::mapRow, executionNo);
+                "SELECT " + EXEC_COLS + " FROM education_executions WHERE id=?",
+                this::mapRow, id);
     }
 
     public List<AttendanceDetail> findAttendances(String executionNo) {
         return sql.executeQuery(
-                "SELECT attendee_name, is_attended FROM education_attendances WHERE execution_no=?",
+                "SELECT attendee_name, is_attended FROM education_attendances WHERE execution_id=?",
                 rs -> new AttendanceDetail(rs.getString("attendee_name"), rs.getBoolean("is_attended")),
-                executionNo);
+                parseId(executionNo));
     }
 
-    /** INSERT execution → id → execution_no 파생 UPDATE → INSERT attendances */
+    /** INSERT execution → id → execution_no 파생 → INSERT attendances */
     public void save(EducationExecution exec) {
-        String prepNo = exec.getPreparation() != null ? exec.getPreparation().getPrepNo() : null;
+        Long prepId = exec.getPreparation() != null ? parseId(exec.getPreparation().getPrepNo()) : null;
         String trainerName = exec.getPreparation() != null ? exec.getPreparation().getInstructorName() : null;
         long id = sql.executeInsertReturningKey(
-                "INSERT INTO education_executions (prep_no, trainer_name, executed_at, attendee_count, total_count, memo, status)"
+                "INSERT INTO education_executions (prep_id, trainer_name, executed_at, attendee_count, total_count, memo, status)"
                 + " VALUES (?,?,?,?,?,?,?)",
-                prepNo, trainerName,
+                prepId, trainerName,
                 exec.getExecutedAt(), exec.getAttendanceCount(), exec.getTotalCount(),
                 exec.getMemo(), exec.getStatus());
         exec.setId(id);
         exec.setExecutionNo("EXC" + String.format("%05d", id));
-        sql.executeUpdate("UPDATE education_executions SET execution_no=? WHERE id=?",
-                exec.getExecutionNo(), id);
 
         for (Attendance a : exec.getPreparation().getAttendanceList()) {
             sql.executeUpdate(
-                    "INSERT INTO education_attendances (execution_no, attendee_name, is_attended) VALUES (?,?,?)",
-                    exec.getExecutionNo(), a.getAttendeeName(), a.isAttended());
+                    "INSERT INTO education_attendances (execution_id, attendee_name, is_attended) VALUES (?,?,?)",
+                    exec.getId(), a.getAttendeeName(), a.isAttended());
         }
     }
 
     private EducationExecution mapRow(ResultSet rs) throws SQLException {
         EducationPreparation prepShell = new EducationPreparation(
                 0, null, null, rs.getString("trainer_name"), null, null, new ArrayList<>());
-        prepShell.setPrepNo(rs.getString("prep_no"));
+        long prepId = rs.getLong("prep_id");
+        if (!rs.wasNull()) {
+            prepShell.setId(prepId);
+            prepShell.setPrepNo("PRP" + String.format("%05d", prepId));
+        }
 
         java.sql.Timestamp ts = rs.getTimestamp("executed_at");
         EducationExecution exec = new EducationExecution(
@@ -83,8 +85,12 @@ public class EducationExecutionRepository {
                 rs.getString("memo"),
                 prepShell);
         exec.setId(rs.getLong("id"));
-        exec.setExecutionNo(rs.getString("execution_no"));
+        exec.setExecutionNo("EXC" + String.format("%05d", rs.getLong("id")));
         exec.setStatus(rs.getString("status"));
         return exec;
+    }
+
+    private Long parseId(String businessNo) {
+        return Long.parseLong(businessNo.replaceAll("\\D", ""));
     }
 }

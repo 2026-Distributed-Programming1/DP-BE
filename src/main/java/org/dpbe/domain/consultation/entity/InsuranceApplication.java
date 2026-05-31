@@ -11,8 +11,6 @@ import org.dpbe.domain.actor.Customer;
  */
 public class InsuranceApplication {
 
-    private static int sequence = 0;
-
     private Long id;
     private String applicationNo;
     private int applicationNumber;
@@ -34,8 +32,6 @@ public class InsuranceApplication {
     }
 
     public InsuranceApplication() {
-        sequence += 1;
-        this.applicationNumber = sequence;
         this.selectedSpecialTerms = new ArrayList<>();
     }
 
@@ -64,10 +60,6 @@ public class InsuranceApplication {
 
     public void setProduct(InsuranceProduct product) { this.product = product; }
     public InsuranceProduct getProduct() { return product; }
-
-    public void enterPersonalInfo(String name, String birthDate, String contact, String address) {
-        System.out.println("  [시스템] 개인정보가 입력되었습니다.");
-    }
 
     public void selectSpecialTerms(List<String> selectedSpecialTerms) {
         this.selectedSpecialTerms = selectedSpecialTerms;

@@ -11,7 +11,7 @@ import org.springframework.stereotype.Repository;
 public class InterviewScheduleRepository {
 
     private static final String COLS =
-            "id, schedule_no, customer_name, designer_name, interview_type,"
+            "id, customer_name, designer_name, interview_type,"
             + " scheduled_at, location, preparation, status,"
             + " registered_at, modified_at, cancelled_at";
 
@@ -26,10 +26,10 @@ public class InterviewScheduleRepository {
                 "SELECT " + COLS + " FROM interview_schedules ORDER BY id DESC", this::mapRow);
     }
 
-    public InterviewSchedule findByScheduleNo(String scheduleNo) {
+    public InterviewSchedule findById(Long id) {
         return sql.queryOne(
-                "SELECT " + COLS + " FROM interview_schedules WHERE schedule_no=?",
-                this::mapRow, scheduleNo);
+                "SELECT " + COLS + " FROM interview_schedules WHERE id=?",
+                this::mapRow, id);
     }
 
     /** 면담일정 등록 — INSERT 후 id에서 schedule_no 파생. */
@@ -44,8 +44,6 @@ public class InterviewScheduleRepository {
                 s.getStatus(), s.getRegisteredAt());
         s.setId(id);
         s.setScheduleNo("SCH" + String.format("%05d", id));
-        sql.executeUpdate("UPDATE interview_schedules SET schedule_no=? WHERE id=?",
-                s.getScheduleNo(), id);
     }
 
     /** 면담일정 수정 (scheduledAt, location, preparation, type, modifiedAt). */
@@ -82,7 +80,7 @@ public class InterviewScheduleRepository {
                 modTs != null ? modTs.toLocalDateTime() : null,
                 canTs != null ? canTs.toLocalDateTime() : null);
         s.setId(rs.getLong("id"));
-        s.setScheduleNo(rs.getString("schedule_no"));
+        s.setScheduleNo("SCH" + String.format("%05d", rs.getLong("id")));
         s.setDesignerName(rs.getString("designer_name"));
         return s;
     }
