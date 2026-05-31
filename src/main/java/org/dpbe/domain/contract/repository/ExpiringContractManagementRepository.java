@@ -1,0 +1,100 @@
+package org.dpbe.domain.contract.repository;
+
+import java.util.List;
+import java.util.Optional;
+import org.dpbe.domain.common.enums.CustomerResponse;
+import org.dpbe.domain.contract.entity.ExpiringContractManagement;
+import org.dpbe.global.jdbc.SqlExecutor;
+import org.springframework.stereotype.Repository;
+
+@Repository
+public class ExpiringContractManagementRepository {
+
+    private static final String COLS =
+            "id, notice_no, contract_no, contractor_name, expiry_date, phone, email,"
+            + " is_renewable, expected_premium, notice_date, notice_memo,"
+            + " customer_response, renewal_premium, premium_diff";
+
+    private final SqlExecutor sql;
+
+    public ExpiringContractManagementRepository(SqlExecutor sql) {
+        this.sql = sql;
+    }
+
+    /** 안내 기록 신규 저장 — id 파생으로 notice_no 생성 */
+    public void save(ExpiringContractManagement m) {
+        long id = sql.executeInsertReturningKey(
+                "INSERT INTO expiring_contract_notices"
+                + " (contract_no, contractor_name, expiry_date, phone, email,"
+                + "  is_renewable, expected_premium, notice_date, notice_memo)"
+                + " VALUES (?,?,?,?,?,?,?,?,?)",
+                m.getContractNo(), m.getContractorName(), m.getExpiryDate(),
+                m.getPhone(), m.getEmail(), m.getIsRenewable(),
+                m.getExpectedPremium(), m.getNoticeDate(), m.getNoticeMemo());
+        m.setId(id);
+        m.setNoticeNo("EXP" + String.format("%05d", id));
+        sql.executeUpdate("UPDATE expiring_contract_notices SET notice_no=? WHERE id=?",
+                m.getNoticeNo(), id);
+    }
+
+    /** 고객 응답 업데이트 */
+    public void updateResponse(String noticeNo, String customerResponse,
+                               Long renewalPremium, Long premiumDiff) {
+        sql.executeUpdate(
+                "UPDATE expiring_contract_notices"
+                + " SET customer_response=?, renewal_premium=?, premium_diff=?"
+                + " WHERE notice_no=?",
+                customerResponse,
+                renewalPremium != null ? renewalPremium : 0L,
+                premiumDiff != null ? premiumDiff : 0L,
+                noticeNo);
+    }
+
+    public Optional<ExpiringContractManagement> findByNoticeNo(String noticeNo) {
+        List<ExpiringContractManagement> list = sql.executeQuery(
+                "SELECT " + COLS + " FROM expiring_contract_notices WHERE notice_no=?",
+                rowMapper(), noticeNo);
+        return list.isEmpty() ? Optional.empty() : Optional.of(list.get(0));
+    }
+
+    public List<ExpiringContractManagement> findAll() {
+        return sql.executeQuery(
+                "SELECT " + COLS + " FROM expiring_contract_notices ORDER BY id DESC",
+                rowMapper());
+    }
+
+    public List<ExpiringContractManagement> findByContractNo(String contractNo) {
+        return sql.executeQuery(
+                "SELECT " + COLS + " FROM expiring_contract_notices WHERE contract_no=? ORDER BY id DESC",
+                rowMapper(), contractNo);
+    }
+
+    private SqlExecutor.RowMapper<ExpiringContractManagement> rowMapper() {
+        return rs -> {
+            ExpiringContractManagement m = new ExpiringContractManagement();
+            m.setId(rs.getLong("id"));
+            m.setNoticeNo(rs.getString("notice_no"));
+            m.setContractNo(rs.getString("contract_no"));
+            m.setContractorName(rs.getString("contractor_name"));
+            java.sql.Date ed = rs.getDate("expiry_date");
+            if (ed != null) m.setExpiryDate(ed.toLocalDate());
+            m.setPhone(rs.getString("phone"));
+            m.setEmail(rs.getString("email"));
+            m.setIsRenewable(rs.getBoolean("is_renewable"));
+            m.setExpectedPremium(rs.getLong("expected_premium"));
+            java.sql.Timestamp nd = rs.getTimestamp("notice_date");
+            if (nd != null) m.setNoticeDate(nd.toLocalDateTime());
+            m.setNoticeMemo(rs.getString("notice_memo"));
+            String cr = rs.getString("customer_response");
+            if (cr != null) {
+                try { m.setCustomerResponse(CustomerResponse.valueOf(cr)); }
+                catch (IllegalArgumentException ignored) {}
+            }
+            long rp = rs.getLong("renewal_premium");
+            m.setRenewalPremium(rp == 0 ? null : rp);
+            long pd = rs.getLong("premium_diff");
+            m.setPremiumDiff(pd == 0 ? null : pd);
+            return m;
+        };
+    }
+}

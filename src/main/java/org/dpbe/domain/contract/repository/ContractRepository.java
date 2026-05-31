@@ -66,6 +66,16 @@ public class ContractRepository {
                 c.getContractNo(), c.getPolicyNo(), id);
     }
 
+    public void updateStatus(String contractNo, ContractStatus status) {
+        sql.executeUpdate("UPDATE contracts SET status=? WHERE contract_no=?",
+                status.name(), contractNo);
+    }
+
+    public void updatePremium(String contractNo, long monthlyPremium) {
+        sql.executeUpdate("UPDATE contracts SET monthly_premium=? WHERE contract_no=?",
+                monthlyPremium, contractNo);
+    }
+
     private Contract mapRow(ResultSet rs) throws SQLException {
         String st = rs.getString("status");
         ContractStatus status = ContractStatus.NORMAL;

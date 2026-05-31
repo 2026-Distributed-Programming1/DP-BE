@@ -29,11 +29,6 @@ public class ActivityPlan {
     private String proposalReason;               // 제안 사유 선택
     private PlanStatus status = PlanStatus.TEMP_SAVE;                   // 계획 상태 - 임시저장/검토중 (enum)
 
-//    public ActivityPlan() {
-//        this.schedules = new ArrayList<>();
-//        this.status = PlanStatus.TEMP_SAVE;
-//    }
-
     public Boolean validateDateRange() {
         if (startDate == null || endDate == null) return false;
         return !endDate.isBefore(startDate);

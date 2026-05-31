@@ -486,7 +486,8 @@ CREATE TABLE IF NOT EXISTS inquiries (
 -- ============================================================
 
 CREATE TABLE IF NOT EXISTS expiring_contract_notices (
-    notice_no         VARCHAR(50)  PRIMARY KEY,
+    id                BIGINT       AUTO_INCREMENT PRIMARY KEY,
+    notice_no         VARCHAR(50)  UNIQUE,
     contract_no       VARCHAR(20),            -- → contracts.contract_no
     contractor_name   VARCHAR(100),
     expiry_date       DATE,
@@ -523,7 +524,8 @@ CREATE TABLE IF NOT EXISTS payment_records (
 
 -- 해지
 CREATE TABLE IF NOT EXISTS cancellations (
-    cancellation_no VARCHAR(20)  PRIMARY KEY,
+    id              BIGINT       AUTO_INCREMENT PRIMARY KEY,
+    cancellation_no VARCHAR(20)  UNIQUE,
     contract_no     VARCHAR(20),            -- → contracts.contract_no
     customer_name   VARCHAR(100),
     monthly_premium BIGINT       DEFAULT 0,
@@ -536,7 +538,8 @@ CREATE TABLE IF NOT EXISTS cancellations (
 
 -- 계약 통계 (스냅샷)
 CREATE TABLE IF NOT EXISTS contract_statistics (
-    stats_no        VARCHAR(20)  PRIMARY KEY,
+    id              BIGINT       AUTO_INCREMENT PRIMARY KEY,
+    stats_no        VARCHAR(20)  UNIQUE,
     total_count     INT          DEFAULT 0,
     active_count    INT          DEFAULT 0,
     expired_count   INT          DEFAULT 0,
@@ -605,7 +608,8 @@ CREATE TABLE IF NOT EXISTS education_preparations (
 
 -- 환급금 계산
 CREATE TABLE IF NOT EXISTS refund_calculations (
-    refund_no          VARCHAR(20)  PRIMARY KEY,
+    id                 BIGINT       AUTO_INCREMENT PRIMARY KEY,
+    refund_no          VARCHAR(20)  UNIQUE,
     cancellation_no    VARCHAR(20),         -- → cancellations.cancellation_no
     total_paid_premium BIGINT       DEFAULT 0,
     payment_period     VARCHAR(50),
@@ -696,7 +700,8 @@ CREATE TABLE IF NOT EXISTS education_attendances (
 
 -- 환급금 지급
 CREATE TABLE IF NOT EXISTS refund_payments (
-    payment_no      VARCHAR(20)  PRIMARY KEY,
+    id              BIGINT       AUTO_INCREMENT PRIMARY KEY,
+    payment_no      VARCHAR(20)  UNIQUE,
     refund_no       VARCHAR(20),            -- → refund_calculations.refund_no
     cancellation_no VARCHAR(20),
     final_amount    BIGINT       DEFAULT 0,
