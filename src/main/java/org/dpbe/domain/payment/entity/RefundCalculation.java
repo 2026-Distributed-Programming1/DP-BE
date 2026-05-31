@@ -19,9 +19,9 @@ public class RefundCalculation {
 
     private static int sequence = 0;                // 환급 접수번호 자동 부여용
 
-    // 본 구현에서 사용하는 가상의 기본 이율 (외부 시스템 데이터)
     private static final double DEFAULT_RATE = 0.025;
 
+    private Long id;
     private String refundNo;                        // 환급 접수번호
     private Cancellation cancellation;              // 해지 건
     private long totalPaidPremium;                  // 총 납입 보험료 - 자동 로드
@@ -170,8 +170,11 @@ public class RefundCalculation {
         System.out.println("[RefundCalculation] 확정 저장 오류 발생: " + refundNo);
     }
 
-    // Getter
-    public String getRefundNo() { return refundNo; }
+    // Getter / Setter
+    public Long getId()              { return id; }
+    public void setId(Long id)       { this.id = id; }
+    public String getRefundNo()      { return refundNo; }
+    public void setRefundNo(String refundNo) { this.refundNo = refundNo; }
     public Cancellation getCancellation() { return cancellation; }
     public long getTotalPaidPremium() { return totalPaidPremium; }
     public String getPaymentPeriod() { return paymentPeriod; }

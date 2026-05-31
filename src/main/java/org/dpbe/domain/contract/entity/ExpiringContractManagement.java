@@ -9,6 +9,8 @@ import org.dpbe.domain.common.enums.CustomerResponse;
  * 만기 계약을 관리한다 유스케이스의 주요 도메인 클래스이다.
  */
 public class ExpiringContractManagement {
+    private Long id;
+    private String noticeNo;              // 안내번호 - id 파생 (EXP + %05d)
     private String contractNo;            // 계약번호
     private String contractorName;        // 계약자명
     private String insuranceType;         // 보험종류
@@ -51,6 +53,10 @@ public class ExpiringContractManagement {
     public void updateHistoryTab() {}
 
     // Getters / Setters
+    public Long getId()               { return id; }
+    public void setId(Long id)        { this.id = id; }
+    public String getNoticeNo()       { return noticeNo; }
+    public void setNoticeNo(String noticeNo) { this.noticeNo = noticeNo; }
     public String getContractNo() { return contractNo; }
     public void setContractNo(String contractNo) { this.contractNo = contractNo; }
     public String getContractorName() { return contractorName; }

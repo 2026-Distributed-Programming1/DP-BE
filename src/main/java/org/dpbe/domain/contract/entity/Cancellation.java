@@ -11,6 +11,7 @@ public class Cancellation {
 
     private static int sequence = 0;
 
+    private Long id;
     private String cancellationNo;       // 해지번호 - 자동 부여
     private Contract contract;           // 대상 계약
     private String reason;               // 해지 사유 - 경제적 사정/타사가입/.../기타
@@ -101,8 +102,11 @@ public class Cancellation {
         this.status = "취소";
     }
 
-    // Getter
+    // Getter / Setter
+    public Long getId()               { return id; }
+    public void setId(Long id)        { this.id = id; }
     public String getCancellationNo() { return cancellationNo; }
+    public void setCancellationNo(String cancellationNo) { this.cancellationNo = cancellationNo; }
     public Contract getContract()     { return contract; }
     public String getReason()         { return reason; }
     public String getDetailReason()   { return detailReason; }

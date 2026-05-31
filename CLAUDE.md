@@ -2,9 +2,9 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-> **현재 상태 (2026-05-31)**: 콘솔(Runner) 구조를 Spring REST API 구조로 전환 완료. 신규 웹 경로와 레거시 콘솔(`old/`)이 **공존**한다.
-> - 완료: 패키지 개편 · 파일럿 UC 2개(계약 조회·보험료 납입) · 웹 시더 · surrogate-PK 배치 1(contract·payment) · **배치 2(claim) ✅** · **배치 3(consultation) ✅** · **배치 4(sales) ✅** · **배치 5(education+inquiry+마스터) ✅** — 스키마 컬럼명 통일(education 4개) + PK 파운데이션(13테이블) + 5a(교육계획안 CRUD·승인·반려) + 5b(교육제반 등록·교육진행 완료) + 5c(문의 제출·답변). Controller/Service/Repository/DTO, 흐름·예외 API 검증 완료.
-> - **다음 작업**: 최종 수렴 — `old/`(DBA·DAO·Runner) 삭제 + format-on-read 전환, 또는 CORS/인증·인가 추가.
+> **현재 상태 (2026-05-31)**: 콘솔(Runner) 구조를 Spring REST API 구조로 전환 — **배치 1~6 전 UC 전환 완료**. 신규 웹 경로와 레거시 콘솔(`old/`)이 **공존** 중.
+> - 완료: 패키지 개편 · 파일럿 UC 2개 · 웹 시더 · surrogate-PK 배치 1~6 · **배치 6(해지·환급·계약통계·만기관리) ✅**. 전 UC Controller/Service/Repository/DTO, 흐름·예외 API 검증 완료.
+> - **다음 작업 (최종 수렴)**: `old/`(DBA·DAO·Runner) 삭제 + format-on-read(업무번호 저장 폐기) + FK를 id로 전환. 또는 로깅 slf4j 확대.
 > - **작업 전 반드시 참고**: 전환 계획·현황·결정은 **`src/main/resources/design/ApiMigrationPlan.md`**.
 
 ## 빌드 및 실행
