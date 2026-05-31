@@ -20,7 +20,7 @@ public record CustomerRegistrationResponse(
                 r.getId(),
                 r.getCustomerId(),
                 r.getName(),
-                r.getSsnMasked() != null ? r.getSsnMasked() : r.getMaskedSsn(),
+                r.getMaskedSsn(),
                 r.getPhone(),
                 r.getAddress(),
                 r.getInsuranceType() != null ? r.getInsuranceType().name() : null,
