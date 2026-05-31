@@ -187,6 +187,10 @@ public class ClaimPayment {
             this.account.enter(null, accountNo, null);
         }
     }
+    /** DB 복원용 — 청구 계좌(조인 로드)를 그대로 승계해 검증까지 수행 */
+    public void setAccount(BankAccount account) {
+        this.account = account;
+    }
     public void setPaidAt(LocalDateTime paidAt) { this.paidAt = paidAt; }
     public void setScheduledAt(LocalDateTime scheduledAt) { this.scheduledAt = scheduledAt; }
     public void setPaymentType(PaymentType paymentType) { this.paymentType = paymentType; }

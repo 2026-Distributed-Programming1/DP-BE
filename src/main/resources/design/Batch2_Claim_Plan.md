@@ -137,3 +137,72 @@ UC 2개: **AccidentReport(사고 접수) · DispatchRecord(현장 출동 기록)
 ### 7.6 완료 기준
 
 `./gradlew compileJava` 그린 → `docker compose down -v && up -d` → 기동 → 2a 흐름(청구 등록→조사→산출→지급) API 호출 검증 → 본 문서·메인 A.6에 ✅.
+
+---
+
+## 8. ✅ 배치 2a 완료 (2026-05-31)
+
+claim 보상 핵심 4개 UC를 신규 웹 경로로 전환 완료. `compileJava` 그린 → `down -v && up -d` 재생성 → 기동 → 전체 흐름·예외 분기 API 검증 통과.
+
+### 8.1 엔드포인트 (구현·검증 완료)
+
+| UC | HTTP |
+|---|---|
+| 보험금 요청 | `POST /api/claims` · `GET /api/claims` · `GET /api/claims/{claimNo}` |
+| 손해 조사 | `POST·GET /api/claims/{claimNo}/investigation` |
+| 보험금 산출 | `POST·GET /api/investigations/{no}/calculation` |
+| 산출 승인 | `POST /api/calculations/{no}/approve` (CALCULATED→APPROVED) |
+| 보험금 지급 | `POST·GET /api/calculations/{no}/payment` · `POST /api/payments/{no}/execute` |
+
+### 8.2 설계 결정 (1차 실패 교훈 반영)
+
+- **무상태·단계분리**: 각 단계 1 POST = 자기 테이블 1행 저장. 부모는 URL 업무키로 DB에서 읽어 잇음(서버 무상태).
+- **지급 생성/실행 2단계 분리**: OTP·예약 대응. `payment`(WAITING/SCHEDULED 생성)와 `execute`(OTP 검증→이체)를 분리. **실제 OTP 도입 시 execute의 검증(현재 더미 6자리)만 교체.** 이체 실패(FAILED)는 정상 업무결과라 예외를 던지지 않고 저장(롤백 방지).
+- **지급 계좌 = 조인 1쿼리 승계**: `claim_calculations→damage_investigations→claim_requests` 조인으로 산출액+청구 인증계좌+수령인 로드(셸 체인 우회 안 함).
+- **산출 승인 별도 엔드포인트**: 엔터티 `approve()`(CALCULATED→APPROVED)를 `POST /api/calculations/{no}/approve`로 노출. 승인된 산출만 지급 생성 가능.
+
+### 8.3 스키마 변경 (§7.3 갱신)
+
+`down -v && up -d` 필요. 추가 컬럼:
+- `claim_requests.personal_info_agreed BOOLEAN` — 개인정보 동의(보존가치 있는 기록). authMethod·authenticated는 검증용 휘발(미저장).
+- `claim_calculations.deductible BIGINT`, `coverage_limit BIGINT` — 산출 파라미터(행이 자기 산출결과를 설명하도록 영속화). 미저장 시 GET에서 0 반환되던 결함 해소.
+
+### 8.4 검증 시나리오 결과 (모두 통과)
+
+- 정상 연쇄: 청구(CLM00001)→조사(INV00001, 합100·APPROVED)→산출(CAL00001, 5,000,000×60%−100,000=2,900,000)→승인→지급(CPY00001)→이체(OTP 6자리)=COMPLETED.
+- 산출 GET이 저장된 deductible(100000)·coverage_limit(100000000) 정상 반환.
+- 예외: 미동의 400 · 없는 고객 404 · 과실합≠100 400(E1) · 중복조사 400 · OTP 5자리 400 · 면책(REJECTED) 건 산출 시도 400.
+
+> **다음**: 배치 2b(사고·출동). 메인 A.6에도 2a ✅ 반영 필요.
+
+---
+
+## 9. ✅ 배치 2b 완료 (2026-05-31)
+
+claim 사고·출동 UC 2개를 신규 웹 경로로 전환 완료. `compileJava` 그린 → `down -v && up -d` → 기동 → 흐름·예외 API 검증 통과. **claim 도메인 7테이블 전부 전환 완료.**
+
+### 9.1 엔드포인트 (구현·검증 완료)
+
+| UC | HTTP |
+|---|---|
+| 사고 접수 | `POST /api/accidents` · `GET /api/accidents` · `GET /api/accidents/{no}` |
+| 출동 기록 | `GET /api/dispatches` · `POST /api/dispatches/{no}/record`(multipart) · `GET /api/dispatches/{no}/record` |
+
+### 9.2 설계 결정
+
+- **사고 접수 시 출동 동반 생성**: needs_dispatch=true면 `requestDispatch()`로 Dispatch를 같은 트랜잭션에서 생성(`dispatches` 행). 응답에 dispatchNo 포함.
+- **셸 주입으로 customerName 노출**: accident_reports 자기 행의 customer_id·customer_name을 `AccidentReport.setCustomer`(신규)로 셸 주입(조인 아님 — 같은 행 컬럼). claim 도메인 공통 셸 패턴과 일관.
+- **출동 기록 사진 = multipart 직접 수신 + 로컬 파일시스템 저장**: `POST .../record`는 `multipart/form-data`로 실제 파일 수신 → `uploads/dispatch/{recordNo}/`에 저장 → 메타는 `dispatch_photos`(신규 1:N 테이블)에 기록. `photos`는 `required=false`로 받아 빈 경우 Service가 E1(400)로 처리(필수로 두면 500). record_no(DRC) 확정 후 디렉터리·FK 키로 사용.
+
+### 9.3 스키마 변경
+
+`down -v && up -d` 필요. 신규:
+- `dispatch_photos`(id, record_no FK→dispatch_records, file_name, file_path, file_size, mime_type, uploaded_at) — 출동 기록 사진 1:N. 실제 파일은 `uploads/`(gitignore).
+
+### 9.4 검증 결과 (모두 통과)
+
+- 정상: 사고접수(ACC00001, customerName 노출, needs_dispatch→DSP00001 동반)→출동목록→출동기록(multipart 사진 2장→DRC00001, TRANSMITTED) — 파일 저장·dispatch_photos 메타·조회 복원 확인.
+- 예외: 약관 미동의 400 · 사진 없음 E1 400 · 중복 기록 400.
+- 알려진 사소사항: 사고접수 GET 상세에서 reportedAt이 null(DB로딩 생성자가 reportedAt 미복원) — 기능 영향 없음, 후속 정리 가능.
+
+> **claim 도메인 마이그레이션 완료.** 다음 도메인(education/sales/consultation 등)은 PK 파운데이션부터 별도 배치 필요. 메인 A.6에 2a·2b ✅ 반영.

@@ -37,3 +37,6 @@ out/
 .vscode/
 
 .DS_Store
+
+# 업로드 파일(출동 기록 현장 사진 등)
+uploads/

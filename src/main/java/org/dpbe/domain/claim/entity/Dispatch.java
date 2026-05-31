@@ -83,6 +83,7 @@ public class Dispatch {
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
     public String getDispatchNo() { return dispatchNo; }
+    public void setDispatchNo(String dispatchNo) { this.dispatchNo = dispatchNo; }
     public AccidentReport getAccident() { return accident; }
     public DispatchAgent getAgent() { return agent; }
     public LocalDateTime getEstimatedArrival() { return estimatedArrival; }
