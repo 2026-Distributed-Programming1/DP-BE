@@ -69,6 +69,7 @@ public class CustomerRegistrationRepository {
                 rs.getLong("monthly_premium"));
         r.setId(rs.getLong("id"));
         r.setAddress(rs.getString("address"));
+        r.setSsnMasked(rs.getString("ssn_masked"));
         return r;
     }
 }
