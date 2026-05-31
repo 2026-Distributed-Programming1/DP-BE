@@ -93,6 +93,10 @@ public class CustomerRegistration {
 
     public void openCalendar() {}
 
+    private String ssnMasked;
+    public String getSsnMasked() { return ssnMasked; }
+    public void setSsnMasked(String ssnMasked) { this.ssnMasked = ssnMasked; }
+
     // Runner에서 실제 사용하는 getter/setter만 유지
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
