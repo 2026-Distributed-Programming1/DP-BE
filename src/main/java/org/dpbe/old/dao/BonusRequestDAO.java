@@ -10,7 +10,7 @@ public class BonusRequestDAO {
         String grade = r.getEvaluationGrade() != null ? r.getEvaluationGrade().name() : null;
         DBA.executeUpdate(
             "INSERT INTO bonus_requests"
-            + " (request_no, requester, evaluation_no, channel_type, evaluation_grade,"
+            + " (request_no, channel_name, evaluation_no, channel_type, evaluation_grade,"
             + "  amount, reason, status, created_at)"
             + " VALUES (?,?,?,?,?,?,?,?,?)"
             + " ON DUPLICATE KEY UPDATE amount=VALUES(amount),"

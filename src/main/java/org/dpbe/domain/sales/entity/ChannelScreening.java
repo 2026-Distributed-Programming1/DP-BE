@@ -19,8 +19,10 @@ public class ChannelScreening {
     private String career;                  // 경력 사항
     private List<String> certifications = new ArrayList<>();    // 자격증 목록
     private ScreeningStatus screeningStatus = ScreeningStatus.PENDING; // 심사 상태 - 대기/승인/거절 (enum)
-    private String approvalNo;              // 승인번호
-    private LocalDateTime approvedAt;       // 승인 일시
+    private Long id;
+    private String screeningNo;             // 심사번호 (surrogate-PK 파생)
+    private String approvalNo;              // 승인번호 (레거시)
+    private LocalDateTime reviewedAt;       // 심사 일시 (승인·거절 공통)
     private String rejectionReason;         // 거절 사유
     private LocalDate filterStartDate;      // 조회 시작일
     private LocalDate filterEndDate;        // 조회 종료일
@@ -42,8 +44,8 @@ public class ChannelScreening {
     public void showApprovalConfirm() {}
 
     public void approve() {
-        this.approvedAt = LocalDateTime.now();
-        this.approvalNo = "AP-" + approvedAt.toString().replaceAll("[^0-9]", "").substring(0, 14);
+        this.reviewedAt = LocalDateTime.now();
+        this.approvalNo = "AP-" + reviewedAt.toString().replaceAll("[^0-9]", "").substring(0, 14);
         this.screeningStatus = ScreeningStatus.APPROVED;
     }
 
@@ -58,6 +60,7 @@ public class ChannelScreening {
     public void openRejectionPopup() {}
 
     public void reject() {
+        this.reviewedAt = LocalDateTime.now();
         this.screeningStatus = ScreeningStatus.REJECTED;
     }
 
@@ -79,10 +82,14 @@ public class ChannelScreening {
     }
     public ScreeningStatus getScreeningStatus() { return screeningStatus; }
     public void setScreeningStatus(ScreeningStatus screeningStatus) { this.screeningStatus = screeningStatus; }
+    public Long getId() { return id; }
+    public void setId(Long id) { this.id = id; }
+    public String getScreeningNo() { return screeningNo; }
+    public void setScreeningNo(String screeningNo) { this.screeningNo = screeningNo; }
     public String getApprovalNo() { return approvalNo; }
     public void setApprovalNo(String approvalNo) { this.approvalNo = approvalNo; }
-    public LocalDateTime getApprovedAt() { return approvedAt; }
-    public void setApprovedAt(LocalDateTime approvedAt) { this.approvedAt = approvedAt; }
+    public LocalDateTime getReviewedAt() { return reviewedAt; }
+    public void setReviewedAt(LocalDateTime reviewedAt) { this.reviewedAt = reviewedAt; }
     public String getRejectionReason() { return rejectionReason; }
     public void setRejectionReason(String rejectionReason) { this.rejectionReason = rejectionReason; }
     public LocalDate getFilterStartDate() { return filterStartDate; }

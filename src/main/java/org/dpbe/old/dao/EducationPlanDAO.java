@@ -9,7 +9,7 @@ public class EducationPlanDAO {
     public static void save(EducationPlan p) {
         DBA.executeUpdate(
             "INSERT INTO education_plans"
-            + " (plan_no, trainer_name, title, target_audience, scheduled_date,"
+            + " (plan_no, trainer_name, education_name, channel_type, start_date,"
             + "  end_date, target_count, budget,"
             + "  education_goal, education_content, textbook_list, reject_reason, approved_at, status)"
             + " VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)"
@@ -21,8 +21,8 @@ public class EducationPlanDAO {
             + "  textbook_list=VALUES(textbook_list),"
             + "  reject_reason=VALUES(reject_reason),"
             + "  approved_at=VALUES(approved_at),"
-            + "  trainer_name=VALUES(trainer_name), title=VALUES(title),"
-            + "  target_audience=VALUES(target_audience), scheduled_date=VALUES(scheduled_date)",
+            + "  trainer_name=VALUES(trainer_name), education_name=VALUES(education_name),"
+            + "  channel_type=VALUES(channel_type), start_date=VALUES(start_date)",
             String.valueOf(p.getPlanNumber()),
             p.getTrainerName(),
             p.getEducationName(),
@@ -41,8 +41,8 @@ public class EducationPlanDAO {
 
     public static List<EducationPlan> findAll() {
         return DBA.executeQuery(
-            "SELECT plan_no, trainer_name, title, target_audience,"
-            + " scheduled_date, end_date, target_count, budget,"
+            "SELECT plan_no, trainer_name, education_name, channel_type,"
+            + " start_date, end_date, target_count, budget,"
             + " education_goal, education_content, textbook_list, reject_reason, approved_at, status"
             + " FROM education_plans",
             rs -> {
@@ -52,15 +52,15 @@ public class EducationPlanDAO {
                     try { planNumber = Integer.parseInt(planNo); }
                     catch (NumberFormatException ignored) {}
                 }
-                java.sql.Date sd = rs.getDate("scheduled_date");
+                java.sql.Date sd = rs.getDate("start_date");
                 java.time.LocalDate startDate = sd != null ? sd.toLocalDate() : null;
                 java.sql.Date ed = rs.getDate("end_date");
                 java.time.LocalDate endDate = ed != null ? ed.toLocalDate() : null;
                 EducationPlan plan = EducationPlan.fromDb(
                         planNumber,
                         rs.getString("trainer_name"),
-                        rs.getString("title"),
-                        rs.getString("target_audience"),
+                        rs.getString("education_name"),
+                        rs.getString("channel_type"),
                         startDate,
                         endDate,
                         rs.getInt("target_count"),

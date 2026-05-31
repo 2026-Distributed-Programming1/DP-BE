@@ -173,7 +173,7 @@ public class ActivityPlanRunner {
             ActivityPlanDAO.save(plan);
             plan.showTempSaveMessage();
             ConsoleHelper.printStage("시스템", "임시저장되었습니다.");
-            ConsoleHelper.printInfo("계획ID: " + plan.getPlanId() + " | 상태: 임시저장");
+            ConsoleHelper.printInfo("계획ID: " + plan.getPlanNo() + " | 상태: 임시저장");
             ConsoleHelper.printInfo("[A3] Basic Path 2번으로 돌아갑니다.");
             ConsoleHelper.waitEnter();
             return;
@@ -212,7 +212,7 @@ public class ActivityPlanRunner {
             case AUTO: insuranceTypeStr = "자동차"; break;
             default: insuranceTypeStr = "화재"; break;
         }
-        ConsoleHelper.printInfo("계획ID: " + plan.getPlanId()
+        ConsoleHelper.printInfo("계획ID: " + plan.getPlanNo()
                 + " | 계획명: " + plan.getPlanName()
                 + " | 기간: " + plan.getStartDate() + " ~ " + plan.getEndDate()
                 + " | 목표계약: " + plan.getTargetContractCount() + "건 / " + plan.getTargetContractAmount() + "원"

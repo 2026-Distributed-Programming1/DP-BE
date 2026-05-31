@@ -50,7 +50,7 @@ public class EducationExecutionRunner {
         }
 
         String[] prepOptions = educationPreparations.stream()
-                .map(p -> "#" + p.getSetupNumber() + " - " + p.getLocation()
+                .map(p -> "#" + p.getSetupNumber() + " - " + p.getVenue()
                         + " / 강사: " + p.getInstructorName())
                 .toArray(String[]::new);
         int prepChoice = ConsoleHelper.readMenuChoice(
@@ -68,7 +68,7 @@ public class EducationExecutionRunner {
         // 2. 시스템은 교육 진행 화면을 출력한다. (출석 대상자 명단 자동 로드)
         List<Attendance> list = execution.loadAttendanceList();
         ConsoleHelper.printStage("시스템", "교육 진행 화면을 출력합니다.");
-        ConsoleHelper.printInfo("교육장소: " + preparation.getLocation()
+        ConsoleHelper.printInfo("교육장소: " + preparation.getVenue()
                 + " | 강사명: " + preparation.getInstructorName());
         ConsoleHelper.printStage("시스템", "출석 대상자 명단 (자동 로드):");
         for (Attendance a : list) {
@@ -131,7 +131,7 @@ public class EducationExecutionRunner {
                 .findFirst().orElse("-");
         ConsoleHelper.printStage("시스템", "교육 진행 완료 결과를 출력합니다.");
         ConsoleHelper.printInfo("완료번호: " + execution.getCompletionNumber()
-                + " | 완료일시: " + execution.getCompletedAt()
+                + " | 완료일시: " + execution.getExecutedAt()
                 + " | 교육명: " + educationName
                 + " | 출석인원: " + execution.getAttendanceCount()
                 + " / " + execution.getTotalCount());

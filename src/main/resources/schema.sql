@@ -39,27 +39,31 @@ CREATE TABLE IF NOT EXISTS customers (
 -- ============================================================
 
 CREATE TABLE IF NOT EXISTS education_trainers (
-    employee_id  VARCHAR(20)   PRIMARY KEY,
+    id           BIGINT        AUTO_INCREMENT PRIMARY KEY,
+    employee_id  VARCHAR(20)   UNIQUE NOT NULL,
     name         VARCHAR(100)  NOT NULL,
     department   VARCHAR(100),
     position     VARCHAR(50)
 );
 
 CREATE TABLE IF NOT EXISTS sales_managers (
-    manager_id   VARCHAR(50)   PRIMARY KEY,
+    id           BIGINT        AUTO_INCREMENT PRIMARY KEY,
+    manager_id   VARCHAR(50)   UNIQUE NOT NULL,
     name         VARCHAR(100)  NOT NULL,
     department   VARCHAR(100)
 );
 
 CREATE TABLE IF NOT EXISTS insurance_reviewers (
-    employee_id  VARCHAR(20)   PRIMARY KEY,
+    id           BIGINT        AUTO_INCREMENT PRIMARY KEY,
+    employee_id  VARCHAR(20)   UNIQUE NOT NULL,
     name         VARCHAR(100)  NOT NULL,
     department   VARCHAR(100),
     position     VARCHAR(50)
 );
 
 CREATE TABLE IF NOT EXISTS claims_handlers (
-    employee_id    VARCHAR(20)  PRIMARY KEY,
+    id             BIGINT       AUTO_INCREMENT PRIMARY KEY,
+    employee_id    VARCHAR(20)  UNIQUE NOT NULL,
     name           VARCHAR(100) NOT NULL,
     department     VARCHAR(100),
     position       VARCHAR(50),
@@ -67,7 +71,8 @@ CREATE TABLE IF NOT EXISTS claims_handlers (
 );
 
 CREATE TABLE IF NOT EXISTS dispatch_agents (
-    employee_id  VARCHAR(20)   PRIMARY KEY,
+    id           BIGINT        AUTO_INCREMENT PRIMARY KEY,
+    employee_id  VARCHAR(20)   UNIQUE NOT NULL,
     name         VARCHAR(100)  NOT NULL,
     department   VARCHAR(100),
     position     VARCHAR(50),
@@ -76,7 +81,8 @@ CREATE TABLE IF NOT EXISTS dispatch_agents (
 );
 
 CREATE TABLE IF NOT EXISTS finance_managers (
-    employee_id  VARCHAR(20)   PRIMARY KEY,
+    id           BIGINT        AUTO_INCREMENT PRIMARY KEY,
+    employee_id  VARCHAR(20)   UNIQUE NOT NULL,
     name         VARCHAR(100)  NOT NULL,
     department   VARCHAR(100),
     position     VARCHAR(50)
@@ -87,14 +93,16 @@ CREATE TABLE IF NOT EXISTS finance_managers (
 -- ============================================================
 
 CREATE TABLE IF NOT EXISTS designers (
-    channel_id     VARCHAR(20)  PRIMARY KEY,
+    id             BIGINT       AUTO_INCREMENT PRIMARY KEY,
+    channel_id     VARCHAR(20)  UNIQUE NOT NULL,
     name           VARCHAR(100) NOT NULL,
     location       VARCHAR(200),
     license_number VARCHAR(50)
 );
 
 CREATE TABLE IF NOT EXISTS agencies (
-    channel_id    VARCHAR(20)  PRIMARY KEY,
+    id            BIGINT       AUTO_INCREMENT PRIMARY KEY,
+    channel_id    VARCHAR(20)  UNIQUE NOT NULL,
     name          VARCHAR(100) NOT NULL,
     location      VARCHAR(200),
     agency_number VARCHAR(50)
@@ -247,11 +255,12 @@ CREATE TABLE IF NOT EXISTS policy_applications (
 
 -- 교육 계획안
 CREATE TABLE IF NOT EXISTS education_plans (
-    plan_no           VARCHAR(20)  PRIMARY KEY,
+    id                BIGINT       AUTO_INCREMENT PRIMARY KEY,
+    plan_no           VARCHAR(20)  UNIQUE,
     trainer_name      VARCHAR(100),
-    title             VARCHAR(200),
-    target_audience   VARCHAR(200),
-    scheduled_date    DATE,
+    education_name    VARCHAR(200),
+    channel_type      VARCHAR(200),
+    start_date        DATE,
     end_date          DATE,
     target_count      INT          DEFAULT 0,
     budget            BIGINT       DEFAULT 0,
@@ -353,7 +362,8 @@ CREATE TABLE IF NOT EXISTS revivals (
 
 -- 채널 모집
 CREATE TABLE IF NOT EXISTS channel_recruitments (
-    recruitment_no VARCHAR(20)  PRIMARY KEY,
+    id             BIGINT       AUTO_INCREMENT PRIMARY KEY,
+    recruitment_no VARCHAR(20)  UNIQUE,
     manager_name   VARCHAR(100),
     channel_type   VARCHAR(50),
     recruit_count  INT          DEFAULT 0,
@@ -366,20 +376,23 @@ CREATE TABLE IF NOT EXISTS channel_recruitments (
 
 -- 채널 심사
 CREATE TABLE IF NOT EXISTS channel_screenings (
-    screening_no     VARCHAR(20)  PRIMARY KEY,
-    candidate_name   VARCHAR(100),
+    id               BIGINT       AUTO_INCREMENT PRIMARY KEY,
+    screening_no     VARCHAR(20)  UNIQUE,
+    applicant_name   VARCHAR(100),
     channel_type     VARCHAR(50),
-    qualification    VARCHAR(200),
+    career           VARCHAR(200),
     certifications   TEXT,
     application_date DATE,
     rejection_reason TEXT,
     status           VARCHAR(20),
+    approval_no      VARCHAR(20),
     reviewed_at      TIMESTAMP
 );
 
 -- 활동 계획
 CREATE TABLE IF NOT EXISTS activity_plans (
-    plan_no                  VARCHAR(20)  PRIMARY KEY,
+    id                       BIGINT       AUTO_INCREMENT PRIMARY KEY,
+    plan_no                  VARCHAR(20)  UNIQUE,
     plan_name                VARCHAR(200),
     author_name              VARCHAR(100),
     start_date               DATE,
@@ -406,8 +419,9 @@ CREATE TABLE IF NOT EXISTS activity_schedule_items (
 
 -- 성과급 요청
 CREATE TABLE IF NOT EXISTS bonus_requests (
-    request_no       VARCHAR(20)  PRIMARY KEY,
-    requester        VARCHAR(100),
+    id               BIGINT       AUTO_INCREMENT PRIMARY KEY,
+    request_no       VARCHAR(20)  UNIQUE,
+    channel_name     VARCHAR(100),
     evaluation_no    VARCHAR(20),
     channel_type     VARCHAR(50),
     evaluation_grade VARCHAR(20),
@@ -419,7 +433,8 @@ CREATE TABLE IF NOT EXISTS bonus_requests (
 
 -- 영업 활동 관리
 CREATE TABLE IF NOT EXISTS sales_activity_managements (
-    activity_no         VARCHAR(20)  PRIMARY KEY,
+    id                  BIGINT       AUTO_INCREMENT PRIMARY KEY,
+    activity_no         VARCHAR(20)  UNIQUE,
     manager_name        VARCHAR(100),
     channel_name        VARCHAR(100),
     activity_type       VARCHAR(50),
@@ -435,11 +450,12 @@ CREATE TABLE IF NOT EXISTS sales_activity_managements (
 
 -- 영업 조직 평가
 CREATE TABLE IF NOT EXISTS sales_org_evaluations (
-    evaluation_no      VARCHAR(20)  PRIMARY KEY,
-    org_name           VARCHAR(100),
+    id                 BIGINT       AUTO_INCREMENT PRIMARY KEY,
+    evaluation_no      VARCHAR(20)  UNIQUE,
+    channel_name       VARCHAR(100),
     channel_type       VARCHAR(50),
     grade              VARCHAR(20),
-    score              DOUBLE       DEFAULT 0,
+    achievement_rate   DOUBLE       DEFAULT 0,
     sales_result       BIGINT       DEFAULT 0,
     contract_count     INT          DEFAULT 0,
     evaluation_comment TEXT,
@@ -451,7 +467,8 @@ CREATE TABLE IF NOT EXISTS sales_org_evaluations (
 -- ============================================================
 
 CREATE TABLE IF NOT EXISTS inquiries (
-    inquiry_no            VARCHAR(20)  PRIMARY KEY,
+    id                    BIGINT       AUTO_INCREMENT PRIMARY KEY,
+    inquiry_no            VARCHAR(20)  UNIQUE,
     customer_name         VARCHAR(100),
     inquiry_type          VARCHAR(50),
     title                 VARCHAR(50),
@@ -569,15 +586,17 @@ CREATE TABLE IF NOT EXISTS damage_investigations (
 -- 교육 제반 준비
 -- (plan_no 는 앱 코드에서 현재 null 로 삽입됨 — 향후 연결 가능)
 CREATE TABLE IF NOT EXISTS education_preparations (
-    prep_no         VARCHAR(20)  PRIMARY KEY,
+    id              BIGINT       AUTO_INCREMENT PRIMARY KEY,
+    prep_no         VARCHAR(20)  UNIQUE,
     plan_no         VARCHAR(20),            -- → education_plans.plan_no
-    trainer_name    VARCHAR(100),
+    instructor_name VARCHAR(100),
     venue           VARCHAR(200),
     material_ready  BOOLEAN      DEFAULT FALSE,
-    textbook_status VARCHAR(200),
-    attendance_list TEXT,
-    status          VARCHAR(20),
-    registered_at   TIMESTAMP    NULL
+    textbook_status   VARCHAR(200),
+    attendance_list   TEXT,
+    additional_notice TEXT,
+    status            VARCHAR(20),
+    registered_at     TIMESTAMP    NULL
 );
 
 -- ============================================================
@@ -652,11 +671,13 @@ CREATE TABLE IF NOT EXISTS dispatch_photos (
 -- 교육 실시
 -- (prep_no 는 앱 코드에서 현재 null 로 삽입됨 — 향후 연결 가능)
 CREATE TABLE IF NOT EXISTS education_executions (
-    execution_no   VARCHAR(20)  PRIMARY KEY,
+    id             BIGINT       AUTO_INCREMENT PRIMARY KEY,
+    execution_no   VARCHAR(20)  UNIQUE,
     prep_no        VARCHAR(20),             -- → education_preparations.prep_no
     trainer_name   VARCHAR(100),
     executed_at    TIMESTAMP,
     attendee_count INT          DEFAULT 0,
+    total_count    INT          DEFAULT 0,
     memo           TEXT,
     status         VARCHAR(20)
 );

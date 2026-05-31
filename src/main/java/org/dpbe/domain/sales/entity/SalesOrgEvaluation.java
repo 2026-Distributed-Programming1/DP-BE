@@ -19,6 +19,7 @@ public class SalesOrgEvaluation {
     private Double achievementRate;        // 목표달성률
     private EvaluationGrade evaluationGrade; // 평가 등급 - S/A/B/C/D 필수 (enum)
     private String evaluationComment;      // 평가 의견 선택
+    private Long id;
     private String evaluationNo;           // 평가번호
     private LocalDateTime evaluatedAt;     // 등록 일시
 
@@ -58,6 +59,8 @@ public class SalesOrgEvaluation {
     public Integer getContractCount() { return contractCount; }
     public String getEvaluationComment() { return evaluationComment; }
     public ChannelType getChannelType() { return channelType; }
+    public Long getId() { return id; }
+    public void setId(Long id) { this.id = id; }
     public String getEvaluationNo() { return evaluationNo; }
     public void setEvaluationNo(String evaluationNo) { this.evaluationNo = evaluationNo; }
     public void setFilterStartDate(LocalDate filterStartDate) { this.filterStartDate = filterStartDate; }

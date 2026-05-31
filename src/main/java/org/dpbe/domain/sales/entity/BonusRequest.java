@@ -9,6 +9,7 @@ import org.dpbe.domain.common.enums.EvaluationGrade;
  * 평가 등급에 따라 성과급 지급을 요청하는 클래스이다.
  */
 public class BonusRequest {
+    private Long id;
     private String evaluationNo;            // 평가번호
     private String channelName;             // 채널명
     private ChannelType channelType;        // 채널 유형 - 설계사/대리점 (enum)
@@ -62,6 +63,10 @@ public class BonusRequest {
     public Double getBonusAmount() { return bonusAmount; }
     public void setRequestReason(String requestReason) { this.requestReason = requestReason; }
     public String getRequestReason() { return requestReason; }
+    public Long getId() { return id; }
+    public void setId(Long id) { this.id = id; }
     public String getRequestNo() { return requestNo; }
+    public void setRequestNo(String requestNo) { this.requestNo = requestNo; }
     public LocalDateTime getRequestedAt() { return requestedAt; }
+    public void setRequestedAt(LocalDateTime requestedAt) { this.requestedAt = requestedAt; }
 }

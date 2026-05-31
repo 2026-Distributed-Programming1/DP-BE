@@ -208,7 +208,7 @@ public class SalesActivityRunner {
         activity.showSaveSuccess();
         ConsoleHelper.printStage("시스템", "개선 지시가 등록되었습니다.");
         ConsoleHelper.printStage("시스템", "등록 완료 결과를 출력합니다.");
-        ConsoleHelper.printInfo("관리번호: " + activity.getManagementNo()
+        ConsoleHelper.printInfo("관리번호: " + activity.getActivityNo()
                 + " | 등록일시: " + activity.getRegisteredAt()
                 + " | 담당채널: " + activity.getChannelName());
 

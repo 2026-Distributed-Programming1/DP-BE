@@ -21,8 +21,8 @@ public class ChannelRecruitmentDAO {
             r.getManagerName(),
             channelType,
             r.getRecruitCount(),
-            r.getLocalStartDate(),
-            r.getLocalEndDate(),
+            r.getStartDate(),
+            r.getEndDate(),
             r.getCondition(),
             null,
             r.getRegisteredAt());
@@ -48,9 +48,9 @@ public class ChannelRecruitmentDAO {
                         registeredAt);
                 r.setRecruitCount(rs.getInt("recruit_count"));
                 java.sql.Date sd = rs.getDate("start_date");
-                if (sd != null) r.setLocalStartDate(sd.toLocalDate());
+                if (sd != null) r.setStartDate(sd.toLocalDate());
                 java.sql.Date ed = rs.getDate("end_date");
-                if (ed != null) r.setLocalEndDate(ed.toLocalDate());
+                if (ed != null) r.setEndDate(ed.toLocalDate());
                 r.setCondition(rs.getString("condition_text"));
                 return r;
             });

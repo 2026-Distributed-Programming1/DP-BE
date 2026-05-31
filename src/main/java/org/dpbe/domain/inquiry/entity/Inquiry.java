@@ -10,6 +10,7 @@ import org.dpbe.domain.common.enums.InquiryType;
  * 고객 문의 유스케이스의 주요 도메인 클래스이다.
  */
 public class Inquiry {
+    private Long id;
     private String inquiryNo;               // 문의 번호 - 자동부여
     private String customerName;            // 문의 고객명
     private InquiryType inquiryType;        // 문의 유형 - 보험료/보험금/계약변경/해지/기타 필수 (enum)
@@ -76,6 +77,8 @@ public class Inquiry {
     public void showFileSizeError() {}
 
     // Runner에서 실제 사용하는 getter/setter만 유지
+    public Long getId() { return id; }
+    public void setId(Long id) { this.id = id; }
     public String getInquiryNo() { return inquiryNo; }
     public void setInquiryNo(String inquiryNo) { this.inquiryNo = inquiryNo; }
     public String getCustomerName() { return customerName; }

@@ -9,18 +9,19 @@ import org.dpbe.domain.common.enums.ChannelType;
  * 채널별 활동 현황을 모니터링하고 지표를 관리하는 클래스이다.
  */
 public class SalesActivityManagement {
-    private LocalDate startDate;           // 관리 기간 시작일
-    private LocalDate endDate;             // 관리 기간 종료일
-    private ChannelType channelType;       // 채널 유형 - 설계사/대리점 (enum)
-    private String channelName;            // 채널명
-    private Integer visitCount;            // 방문건수
-    private Integer contractCount;         // 계약건수
-    private Double conversionRate;         // 전환율 - 계약건수/방문건수 %
-    private Double achievementRate;        // 목표달성률 - 실적/목표 %
-    private String improvementContent;     // 개선 지시 내용
-    private Integer revisedTarget;         // 수정 목표
-    private String managerName;            // 담당 영업 관리자명
-    private String managementNo;           // 관리번호
+  private Long id;
+  private LocalDate startDate;           // 관리 기간 시작일
+  private LocalDate endDate;             // 관리 기간 종료일
+  private ChannelType channelType;       // 채널 유형 - 설계사/대리점 (enum)
+  private String channelName;            // 채널명
+  private Integer visitCount;            // 방문건수
+  private Integer contractCount;         // 계약건수
+  private Double conversionRate;         // 전환율 - 계약건수/방문건수 %
+  private Double achievementRate;        // 목표달성률 - 실적/목표 %
+  private String improvementContent;     // 개선 지시 내용
+  private Integer revisedTarget;         // 수정 목표
+  private String managerName;            // 담당 영업 관리자명
+    private String activityNo;           // 관리번호
     private LocalDateTime registeredAt;    // 등록 일시
 
     public void loadActivityTable() {} //전체 현황 테이블 출력
@@ -41,7 +42,7 @@ public class SalesActivityManagement {
 
     public void saveImprovement() {
         this.registeredAt = LocalDateTime.now();
-        this.managementNo = "SA-" + registeredAt.toString().replaceAll("[^0-9]", "").substring(0, 14);
+        this.activityNo = "SA-" + registeredAt.toString().replaceAll("[^0-9]", "").substring(0, 14);
     }
 
     public void showSaveSuccess() {}
@@ -80,8 +81,10 @@ public class SalesActivityManagement {
     public void setAchievementRate(Double achievementRate) { this.achievementRate = achievementRate; }
     public void setImprovementContent(String improvementContent) { this.improvementContent = improvementContent; }
     public void setRevisedTarget(Integer revisedTarget) { this.revisedTarget = revisedTarget; }
-    public String getManagementNo() { return managementNo; }
-    public void setManagementNo(String managementNo) { this.managementNo = managementNo; }
+    public Long getId() { return id; }
+    public void setId(Long id) { this.id = id; }
+    public String getActivityNo() { return activityNo; }
+    public void setActivityNo(String activityNo) { this.activityNo = activityNo; }
     public LocalDateTime getRegisteredAt() { return registeredAt; }
     public void setRegisteredAt(LocalDateTime registeredAt) { this.registeredAt = registeredAt; }
     public String getActivityType() { return channelType != null ? channelType.name() : null; }

@@ -70,7 +70,7 @@ public class ChannelRecruitmentRunner {
                 ConsoleHelper.printInfo("│  " + r.getRecruitmentNo()
                         + " | " + type
                         + " | " + r.getRecruitCount() + "명"
-                        + " | " + r.getLocalStartDate() + "~" + r.getLocalEndDate()
+                        + " | " + r.getStartDate() + "~" + r.getEndDate()
                         + " | " + r.getRegisteredAt());
             }
         }
@@ -117,8 +117,8 @@ public class ChannelRecruitmentRunner {
             ConsoleHelper.printInfo("  [달력 팝업] 모집 기간을 입력합니다.");
             startDate = ConsoleHelper.readDate("  모집 기간 시작일");
             endDate = ConsoleHelper.readDate("  모집 기간 종료일");
-            recruitment.setLocalStartDate(startDate);
-            recruitment.setLocalEndDate(endDate);
+            recruitment.setStartDate(startDate);
+            recruitment.setEndDate(endDate);
 
             // 모집조건 입력 (선택)
             String condition = ConsoleHelper.readLine("  모집조건 (경력, 자격증 등, 없으면 엔터): ");
@@ -182,7 +182,7 @@ public class ChannelRecruitmentRunner {
         ConsoleHelper.printInfo("모집번호: " + recruitment.getRecruitmentNo()
                 + " | 등록일시: " + recruitment.getRegisteredAt()
                 + " | 채널유형: " + channelTypeStr
-                + " | 모집기간: " + recruitment.getLocalStartDate() + " ~ " + recruitment.getLocalEndDate());
+                + " | 모집기간: " + recruitment.getStartDate() + " ~ " + recruitment.getEndDate());
         recruitment.returnToActivityManagement();
         ConsoleHelper.printInfo("[영업 활동을 관리한다] 유스케이스로 복귀합니다.");
 
