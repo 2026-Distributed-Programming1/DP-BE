@@ -209,14 +209,14 @@ public class ChannelScreeningRunner {
         ConsoleHelper.printStage("시스템", "인사 담당자에게 채널 등록 요청 알림을 자동 발송합니다.");
         ConsoleHelper.printInfo("지원자명: " + screening.getApplicantName()
                 + " | 채널유형: " + channelTypeStr
-                + " | 승인일시: " + screening.getApprovedAt());
+                + " | 승인일시: " + screening.getReviewedAt());
 
         // 완료 결과 출력
         ChannelScreeningDAO.save(screening);
         screening.showApprovalResult();
         ConsoleHelper.printStage("시스템", "완료 결과를 출력합니다.");
         ConsoleHelper.printInfo("승인번호: " + screening.getApprovalNo()
-                + " | 승인일시: " + screening.getApprovedAt()
+                + " | 승인일시: " + screening.getReviewedAt()
                 + " | 지원자명: " + screening.getApplicantName());
 
         ConsoleHelper.waitEnter();

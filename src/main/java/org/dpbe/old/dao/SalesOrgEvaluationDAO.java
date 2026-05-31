@@ -13,16 +13,16 @@ public class SalesOrgEvaluationDAO {
         String channelType = e.getChannelType() != null ? e.getChannelType().name() : null;
         DBA.executeUpdate(
             "INSERT INTO sales_org_evaluations"
-            + " (evaluation_no, org_name, channel_type, grade, score,"
+            + " (evaluation_no, channel_name, channel_type, grade, achievement_rate,"
             + "  sales_result, contract_count, evaluation_comment, evaluated_at)"
             + " VALUES (?,?,?,?,?,?,?,?,?)"
-            + " ON DUPLICATE KEY UPDATE org_name=VALUES(org_name),"
+            + " ON DUPLICATE KEY UPDATE channel_name=VALUES(channel_name),"
             + "  grade=VALUES(grade),"
             + "  channel_type=VALUES(channel_type),"
             + "  sales_result=VALUES(sales_result),"
             + "  contract_count=VALUES(contract_count),"
             + "  evaluation_comment=VALUES(evaluation_comment),"
-            + "  score=VALUES(score), evaluated_at=VALUES(evaluated_at)",
+            + "  achievement_rate=VALUES(achievement_rate), evaluated_at=VALUES(evaluated_at)",
             e.getEvaluationNo(),
             e.getChannelName(),
             channelType,
@@ -36,13 +36,13 @@ public class SalesOrgEvaluationDAO {
 
     public static List<SalesOrgEvaluation> findAll() {
         return DBA.executeQuery(
-            "SELECT evaluation_no, org_name, channel_type, grade, score,"
+            "SELECT evaluation_no, channel_name, channel_type, grade, achievement_rate,"
             + " sales_result, contract_count, evaluation_comment, evaluated_at"
             + " FROM sales_org_evaluations",
             rs -> {
                 SalesOrgEvaluation e = new SalesOrgEvaluation();
                 e.setEvaluationNo(rs.getString("evaluation_no"));
-                e.setChannelName(rs.getString("org_name"));
+                e.setChannelName(rs.getString("channel_name"));
                 String ct = rs.getString("channel_type");
                 if (ct != null) {
                     try { e.setChannelType(ChannelType.valueOf(ct)); }
@@ -53,7 +53,7 @@ public class SalesOrgEvaluationDAO {
                     try { e.setEvaluationGrade(EvaluationGrade.valueOf(grade)); }
                     catch (IllegalArgumentException ignored) {}
                 }
-                e.setAchievementRate(rs.getDouble("score"));
+                e.setAchievementRate(rs.getDouble("achievement_rate"));
                 e.setSalesResult(rs.getLong("sales_result"));
                 e.setContractCount(rs.getInt("contract_count"));
                 e.setEvaluationComment(rs.getString("evaluation_comment"));

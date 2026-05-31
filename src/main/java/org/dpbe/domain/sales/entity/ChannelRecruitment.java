@@ -10,6 +10,7 @@ import java.time.LocalDateTime;
  * 영업 관리자가 새로운 판매채널을 모집하기 위해 공고를 등록하고 관리하는 클래스이다.
  */
 public class ChannelRecruitment {
+    private Long id;
     private String recruitmentNo;           // 모집번호
     private String managerName;             // 등록 영업 관리자명
     private ChannelType channelType;        // 채널 유형 - 설계사/대리점 (enum) 필수
@@ -17,6 +18,7 @@ public class ChannelRecruitment {
     private LocalDate startDate;            // 모집 기간 시작일 필수
     private LocalDate endDate;              // 모집 기간 종료일 필수
     private String condition;               // 모집 조건 선택
+    private String status;                  // 상태
     private LocalDateTime registeredAt;     // 등록 일시
 
     public ChannelRecruitment() {}
@@ -56,18 +58,24 @@ public class ChannelRecruitment {
     public void showRequiredError() {}
 
     // Getters / Setters
+    public Long getId() { return id; }
+    public void setId(Long id) { this.id = id; }
     public String getRecruitmentNo() { return recruitmentNo; }
+    public void setRecruitmentNo(String recruitmentNo) { this.recruitmentNo = recruitmentNo; }
     public String getManagerName() { return managerName; }
     public void setManagerName(String managerName) { this.managerName = managerName; }
     public ChannelType getChannelType() { return channelType; }
     public void setChannelType(ChannelType channelType) { this.channelType = channelType; }
     public Integer getRecruitCount() { return recruitCount; }
     public void setRecruitCount(Integer recruitCount) { this.recruitCount = recruitCount; }
-    public LocalDate getLocalStartDate() { return startDate; }
-    public void setLocalStartDate(LocalDate startDate) { this.startDate = startDate; }
-    public LocalDate getLocalEndDate() { return endDate; }
-    public void setLocalEndDate(LocalDate endDate) { this.endDate = endDate; }
+    public LocalDate getStartDate() { return startDate; }
+    public void setStartDate(LocalDate startDate) { this.startDate = startDate; }
+    public LocalDate getEndDate() { return endDate; }
+    public void setEndDate(LocalDate endDate) { this.endDate = endDate; }
     public String getCondition() { return condition; }
     public void setCondition(String condition) { this.condition = condition; }
+    public String getStatus() { return status; }
+    public void setStatus(String status) { this.status = status; }
     public LocalDateTime getRegisteredAt() { return registeredAt; }
+    public void setRegisteredAt(LocalDateTime registeredAt) { this.registeredAt = registeredAt; }
 }

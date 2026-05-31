@@ -11,6 +11,7 @@ import org.dpbe.domain.common.enums.InsuranceType;
  * 판매채널이 확보한 고객 정보를 시스템에 최초 등록하는 클래스이다.
  */
 public class CustomerRegistration {
+    private Long id;
     private String customerId;              // 고객번호 - 자동부여
     private String name;                    // 이름 필수
     private String ssn;                     // 주민등록번호 필수
@@ -93,7 +94,10 @@ public class CustomerRegistration {
     public void openCalendar() {}
 
     // Runner에서 실제 사용하는 getter/setter만 유지
+    public Long getId() { return id; }
+    public void setId(Long id) { this.id = id; }
     public String getCustomerId() { return customerId; }
+    public void setCustomerId(String customerId) { this.customerId = customerId; }
     public String getContractNo() { return contractNo; }
     public String getName() { return name; }
     public void setName(String name) { this.name = name; }

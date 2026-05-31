@@ -3,9 +3,9 @@
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
 > **현재 상태 (2026-05-31)**: 콘솔(Runner) 구조를 Spring REST API 구조로 전환 중. 신규 웹 경로와 레거시 콘솔(`old/`)이 **공존**한다.
-> - 완료: 패키지 개편 · 파일럿 UC 2개(계약 조회·보험료 납입) · 웹 시더 · surrogate-PK 배치 1(contract·payment) · **배치 2(claim) 전체 완료** · **배치 3(consultation) 전체 완료** — PK 파운데이션(9테이블) + 컬럼명 통일 + 3a(상담요청·면담일정·면담기록·보험상품·제안) + 3b(인수심사·보험신청·청약·부활). Controller/Service/Repository/DTO, 흐름·예외 API 검증 완료.
-> - **다음 작업**: 배치 4 — sales 도메인 (PK 파운데이션부터).
-> - **작업 전 반드시 참고**: 전환 계획·현황·결정은 **`src/main/resources/design/ApiMigrationPlan.md`**, 배치 3 세부는 **`design/Batch3_Consultation_Plan.md`**.
+> - 완료: 패키지 개편 · 파일럿 UC 2개(계약 조회·보험료 납입) · 웹 시더 · surrogate-PK 배치 1(contract·payment) · **배치 2(claim) 전체 완료** · **배치 3(consultation) 전체 완료** · **배치 4(sales) 전체 완료** — PK 파운데이션(6테이블) + 컬럼명 통일 + 4a(모집공고·채용심사·고객등록) + 4b(활동계획+일정) + 4c(영업활동관리·조직평가·성과급). Controller/Service/Repository/DTO, 흐름·예외 API 검증 완료.
+> - **다음 작업**: 배치 5 — education + inquiry + 마스터 도메인.
+> - **작업 전 반드시 참고**: 전환 계획·현황·결정은 **`src/main/resources/design/ApiMigrationPlan.md`**, 배치 4 세부는 **`design/Batch4_Sales_Plan.md`**.
 
 ## 빌드 및 실행
 

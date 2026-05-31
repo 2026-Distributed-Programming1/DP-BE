@@ -24,7 +24,7 @@ public class SalesActivityManagementDAO {
             + "  achievement_rate=VALUES(achievement_rate),"
             + "  improvement_content=VALUES(improvement_content),"
             + "  revised_target=VALUES(revised_target)",
-            a.getManagementNo(),
+            a.getActivityNo(),
             a.getManagerName(),
             a.getChannelName(),
             a.getActivityType(),
@@ -47,7 +47,7 @@ public class SalesActivityManagementDAO {
             + " FROM sales_activity_managements",
             rs -> {
                 SalesActivityManagement a = new SalesActivityManagement();
-                a.setManagementNo(rs.getString("activity_no"));
+                a.setActivityNo(rs.getString("activity_no"));
                 a.setManagerName(rs.getString("manager_name"));
                 a.setChannelName(rs.getString("channel_name"));
                 a.setActivityType(rs.getString("activity_type"));

@@ -13,7 +13,8 @@ import java.util.List;
  * 판매채널이 작성하는 영업 활동 계획서 클래스이다.
  */
 public class ActivityPlan {
-    private String planId;                       // 계획 ID
+    private Long id;
+    private String planNo;                       // 계획 ID
     private String planName;                     // 계획명 필수
     private LocalDate startDate;                 // 시작일 필수
     private LocalDate endDate;                   // 종료일 필수
@@ -72,12 +73,12 @@ public class ActivityPlan {
 
     public void tempSave() {
         this.status = PlanStatus.TEMP_SAVE;
-        this.planId = "AP-TEMP-" + LocalDateTime.now().toString().replaceAll("[^0-9]", "").substring(0, 14);
+        this.planNo = "AP-TEMP-" + LocalDateTime.now().toString().replaceAll("[^0-9]", "").substring(0, 14);
     }
 
     public void submit() {
         this.status = PlanStatus.UNDER_REVIEW;
-        this.planId = "AP-" + LocalDateTime.now().toString().replaceAll("[^0-9]", "").substring(0, 14);
+        this.planNo = "AP-" + LocalDateTime.now().toString().replaceAll("[^0-9]", "").substring(0, 14);
     }
 
     public void notifyManager() {}
@@ -93,8 +94,10 @@ public class ActivityPlan {
     public void retainValues() {}
 
     // Runner에서 실제 사용하는 getter/setter만 유지
-    public String getPlanId() { return planId; }
-    public void setPlanId(String planId) { this.planId = planId; }
+    public Long getId() { return id; }
+    public void setId(Long id) { this.id = id; }
+    public String getPlanNo() { return planNo; }
+    public void setPlanNo(String planNo) { this.planNo = planNo; }
     public String getPlanName() { return planName; }
     public void setPlanName(String planName) { this.planName = planName; }
     public String getAuthor() { return author; }

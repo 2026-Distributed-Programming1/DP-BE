@@ -19,8 +19,8 @@ public class ChannelScreeningDAO {
         String certsStr = s.getCertifications().isEmpty() ? null
                 : String.join(",", s.getCertifications());
         DBA.executeUpdate(
-            "INSERT INTO channel_screenings (screening_no, candidate_name, channel_type,"
-            + " qualification, certifications, application_date, rejection_reason, status, reviewed_at)"
+            "INSERT INTO channel_screenings (screening_no, applicant_name, channel_type,"
+            + " career, certifications, application_date, rejection_reason, status, reviewed_at)"
             + " VALUES (?,?,?,?,?,?,?,?,?)"
             + " ON DUPLICATE KEY UPDATE status=VALUES(status),"
             + " application_date=VALUES(application_date),"
@@ -34,23 +34,23 @@ public class ChannelScreeningDAO {
             s.getApplicationDate(),
             s.getRejectionReason(),
             status,
-            s.getApprovedAt());
+            s.getReviewedAt());
     }
 
     public static List<ChannelScreening> findAll() {
         return DBA.executeQuery(
-            "SELECT screening_no, candidate_name, channel_type, qualification,"
+            "SELECT screening_no, applicant_name, channel_type, career,"
             + " certifications, application_date, rejection_reason, status, reviewed_at FROM channel_screenings",
             rs -> {
                 ChannelScreening s = new ChannelScreening();
                 s.setApprovalNo(rs.getString("screening_no"));
-                s.setApplicantName(rs.getString("candidate_name"));
+                s.setApplicantName(rs.getString("applicant_name"));
                 String ct = rs.getString("channel_type");
                 if (ct != null) {
                     try { s.setChannelType(ChannelType.valueOf(ct)); }
                     catch (IllegalArgumentException ignored) {}
                 }
-                s.setCareer(rs.getString("qualification"));
+                s.setCareer(rs.getString("career"));
                 String certsStr = rs.getString("certifications");
                 if (certsStr != null && !certsStr.isEmpty()) {
                     s.setCertifications(Arrays.stream(certsStr.split(","))
@@ -65,7 +65,7 @@ public class ChannelScreeningDAO {
                     catch (IllegalArgumentException ignored) {}
                 }
                 java.sql.Timestamp rat = rs.getTimestamp("reviewed_at");
-                if (rat != null) s.setApprovedAt(rat.toLocalDateTime());
+                if (rat != null) s.setReviewedAt(rat.toLocalDateTime());
                 return s;
             });
     }
