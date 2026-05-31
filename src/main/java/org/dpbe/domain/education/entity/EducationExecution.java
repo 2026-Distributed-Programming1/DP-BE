@@ -11,8 +11,10 @@ public class EducationExecution {
 
     private static int sequence = 0;
 
+    private Long id;
     private int completionNumber;
-    private LocalDateTime completedAt;
+    private String executionNo;
+    private LocalDateTime executedAt;
     private int attendanceCount;
     private int totalCount;
     private String memo;
@@ -20,10 +22,10 @@ public class EducationExecution {
 
     private final EducationPreparation preparation;
 
-    public EducationExecution(int completionNumber, LocalDateTime completedAt, int attendanceCount,
+    public EducationExecution(int completionNumber, LocalDateTime executedAt, int attendanceCount,
                               int totalCount, String memo, EducationPreparation preparation) {
         this.completionNumber = completionNumber;
-        this.completedAt = completedAt;
+        this.executedAt = executedAt;
         this.attendanceCount = attendanceCount;
         this.totalCount = totalCount;
         this.memo = memo;
@@ -57,7 +59,7 @@ public class EducationExecution {
     }
 
     public void complete() {
-        this.completedAt = LocalDateTime.now();
+        this.executedAt = LocalDateTime.now();
         calculateAttendanceCount();
         this.status = "완료";
     }
@@ -70,8 +72,12 @@ public class EducationExecution {
         }
     }
 
+    public Long getId() { return id; }
+    public void setId(Long id) { this.id = id; }
+    public String getExecutionNo() { return executionNo; }
+    public void setExecutionNo(String executionNo) { this.executionNo = executionNo; }
     public int getCompletionNumber() { return completionNumber; }
-    public LocalDateTime getCompletedAt() { return completedAt; }
+    public LocalDateTime getExecutedAt() { return executedAt; }
     public int getAttendanceCount() { return attendanceCount; }
     public int getTotalCount() { return totalCount; }
     public String getMemo() { return memo; }

@@ -21,7 +21,7 @@ public class EducationExecutionDAO {
             execNo,
             e.getPreparation() != null ? String.valueOf(e.getPreparation().getSetupNumber()) : null,
             e.getPreparation() != null ? e.getPreparation().getInstructorName() : null,
-            e.getCompletedAt(),
+            e.getExecutedAt(),
             e.getAttendanceCount(),
             e.getMemo(),
             e.getStatus());

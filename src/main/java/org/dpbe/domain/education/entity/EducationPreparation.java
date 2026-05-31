@@ -12,10 +12,12 @@ public class EducationPreparation {
 
     private static int sequence = 0;
 
+    private Long id;
     private int setupNumber;
+    private String prepNo;
     private String planNo;
     private LocalDateTime registeredAt;
-    private String location;
+    private String venue;
     private String instructorName;
     private String textbookStatus;
     private boolean materialReady;
@@ -24,12 +26,12 @@ public class EducationPreparation {
     private String status;
 
 
-    public EducationPreparation(int setupNumber, LocalDateTime registeredAt, String location,
+    public EducationPreparation(int setupNumber, LocalDateTime registeredAt, String venue,
                                 String instructorName, String textbookStatus, String additionalNotice,
                                 List<Attendance> attendanceList) {
         this.setupNumber = setupNumber;
         this.registeredAt = registeredAt;
-        this.location = location;
+        this.venue = venue;
         this.instructorName = instructorName;
         this.textbookStatus = textbookStatus;
         this.additionalNotice = additionalNotice;
@@ -43,14 +45,14 @@ public class EducationPreparation {
         this.attendanceList = new ArrayList<>();
     }
 
-    public void enterPreparationInfo(String location, String instructorName, String additionalNotice) {
-        this.location = location;
+    public void enterPreparationInfo(String venue, String instructorName, String additionalNotice) {
+        this.venue = venue;
         this.instructorName = instructorName;
         this.additionalNotice = additionalNotice;
     }
 
     public boolean validateRequiredFields() {
-        return location != null && !location.isEmpty()
+        return venue != null && !venue.isEmpty()
                 && instructorName != null && !instructorName.isEmpty()
                 && textbookStatus != null && !textbookStatus.isEmpty()
                 && attendanceList != null && !attendanceList.isEmpty();
@@ -66,12 +68,16 @@ public class EducationPreparation {
         attendanceList.add(new Attendance(attendeeName));
     }
 
+    public Long getId() { return id; }
+    public void setId(Long id) { this.id = id; }
+    public String getPrepNo() { return prepNo; }
+    public void setPrepNo(String prepNo) { this.prepNo = prepNo; }
     public int getSetupNumber() { return setupNumber; }
     public String getPlanNo() { return planNo; }
     public void setPlanNo(String planNo) { this.planNo = planNo; }
     public LocalDateTime getRegisteredAt() { return registeredAt; }
     public void setRegisteredAt(LocalDateTime registeredAt) { this.registeredAt = registeredAt; }
-    public String getLocation() { return location; }
+    public String getVenue() { return venue; }
     public String getInstructorName() { return instructorName; }
     public String getTextbookStatus() { return textbookStatus; }
     public void setTextbookStatus(String textbookStatus) { this.textbookStatus = textbookStatus; }

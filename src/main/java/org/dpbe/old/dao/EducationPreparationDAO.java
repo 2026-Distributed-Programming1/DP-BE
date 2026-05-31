@@ -14,7 +14,7 @@ public class EducationPreparationDAO {
                 .collect(java.util.stream.Collectors.joining(","));
         DBA.executeUpdate(
             "INSERT INTO education_preparations"
-            + " (prep_no, plan_no, trainer_name, venue, material_ready,"
+            + " (prep_no, plan_no, instructor_name, venue, material_ready,"
             + "  textbook_status, attendance_list, status, registered_at)"
             + " VALUES (?,?,?,?,?,?,?,?,?)"
             + " ON DUPLICATE KEY UPDATE"
@@ -22,11 +22,11 @@ public class EducationPreparationDAO {
             + "  textbook_status=VALUES(textbook_status),"
             + "  attendance_list=VALUES(attendance_list), status=VALUES(status),"
             + "  registered_at=VALUES(registered_at),"
-            + "  plan_no=VALUES(plan_no), trainer_name=VALUES(trainer_name)",
+            + "  plan_no=VALUES(plan_no), instructor_name=VALUES(instructor_name)",
             String.valueOf(e.getSetupNumber()),
             e.getPlanNo(),
             e.getInstructorName(),
-            e.getLocation(),
+            e.getVenue(),
             e.isMaterialReady(),
             e.getTextbookStatus(),
             attendanceStr,
@@ -36,7 +36,7 @@ public class EducationPreparationDAO {
 
     public static List<EducationPreparation> findAll() {
         return DBA.executeQuery(
-            "SELECT prep_no, plan_no, trainer_name, venue,"
+            "SELECT prep_no, plan_no, instructor_name, venue,"
             + " material_ready, textbook_status, attendance_list, status, registered_at FROM education_preparations",
             rs -> {
                 String attendanceStr = rs.getString("attendance_list");
@@ -52,7 +52,7 @@ public class EducationPreparationDAO {
                     rs.getInt("prep_no"),
                     null,
                     rs.getString("venue"),
-                    rs.getString("trainer_name"),
+                    rs.getString("instructor_name"),
                     rs.getString("textbook_status"),
                     null,
                     attendees);

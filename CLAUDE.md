@@ -2,10 +2,10 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-> **현재 상태 (2026-05-31)**: 콘솔(Runner) 구조를 Spring REST API 구조로 전환 중. 신규 웹 경로와 레거시 콘솔(`old/`)이 **공존**한다.
-> - 완료: 패키지 개편 · 파일럿 UC 2개(계약 조회·보험료 납입) · 웹 시더 · surrogate-PK 배치 1(contract·payment) · **배치 2(claim) 전체 완료** · **배치 3(consultation) 전체 완료** · **배치 4(sales) 전체 완료** — PK 파운데이션(6테이블) + 컬럼명 통일 + 4a(모집공고·채용심사·고객등록) + 4b(활동계획+일정) + 4c(영업활동관리·조직평가·성과급). Controller/Service/Repository/DTO, 흐름·예외 API 검증 완료.
-> - **다음 작업**: 배치 5 — education + inquiry + 마스터 도메인.
-> - **작업 전 반드시 참고**: 전환 계획·현황·결정은 **`src/main/resources/design/ApiMigrationPlan.md`**, 배치 4 세부는 **`design/Batch4_Sales_Plan.md`**.
+> **현재 상태 (2026-05-31)**: 콘솔(Runner) 구조를 Spring REST API 구조로 전환 완료. 신규 웹 경로와 레거시 콘솔(`old/`)이 **공존**한다.
+> - 완료: 패키지 개편 · 파일럿 UC 2개(계약 조회·보험료 납입) · 웹 시더 · surrogate-PK 배치 1(contract·payment) · **배치 2(claim) ✅** · **배치 3(consultation) ✅** · **배치 4(sales) ✅** · **배치 5(education+inquiry+마스터) ✅** — 스키마 컬럼명 통일(education 4개) + PK 파운데이션(13테이블) + 5a(교육계획안 CRUD·승인·반려) + 5b(교육제반 등록·교육진행 완료) + 5c(문의 제출·답변). Controller/Service/Repository/DTO, 흐름·예외 API 검증 완료.
+> - **다음 작업**: 최종 수렴 — `old/`(DBA·DAO·Runner) 삭제 + format-on-read 전환, 또는 CORS/인증·인가 추가.
+> - **작업 전 반드시 참고**: 전환 계획·현황·결정은 **`src/main/resources/design/ApiMigrationPlan.md`**.
 
 ## 빌드 및 실행
 
@@ -241,6 +241,7 @@ JVM 재시작 시 도메인 클래스의 `static int sequence`가 0으로 리셋
 
 - **`src/main/resources/design/ApiMigrationPlan.md`** — API 전환 계획·현황·결정 근거 (주력 문서, 상단에 RESUME 포인터)
 - `design/Batch2_Claim_Plan.md` — 배치 2(claim) 세부 계획(서브배치 2a/2b·엔드포인트 초안·진행 현황)
+- `design/Batch5_Education_Plan.md` — 배치 5(education+inquiry+마스터) 세부 계획·스키마 컬럼명 통일·검증 결과
 - `design/Usecase_scenario.md` — UC 시나리오 (Basic/Alternative/Exception). 웹·신규 흐름의 기준
 - `design/Class_Diagram_Domain.md`, `design/Class_Diagram_Mermaid.md`, `design/DAOStructure.md` — 클래스/DAO 구조
 - 버그 이력 (`src/main/resources/bugreport/`): `BugReport.md`, `AdditionalBugReport.md`, `CodeReviewReport.md`, `FinalBugReport.md` — 발견·수정 버그 전체 내역(모두 ✅)
@@ -250,5 +251,6 @@ JVM 재시작 시 도메인 클래스의 `static int sequence`가 0으로 리셋
 - **2026-05-28**: `expiring_contract_notices` 신규, `interview_records.interviewed_at` 추가
 - **2026-05-29**: 버그 수정으로 컬럼 6개 추가, 전체 23개 테이블 NULLABLE FK 추가
 - **2026-05-30**: surrogate-PK 배치 1·2 — customers·contracts·payments·payment_records + claim 7테이블에 `id BIGINT AUTO_INCREMENT PK` 추가, 기존 업무키 `UNIQUE` 강등
+- **2026-05-31**: 배치 5 — education 컬럼명 통일(4개 변경) + education_plans·preparations·executions·inquiries + actor 마스터 8테이블에 `id AUTO_INCREMENT` 추가 + `additional_notice`, `total_count` 신규 컬럼 추가
 
 > **주의**: 스키마 변경 후엔 반드시 `docker compose down -v && docker compose up -d` 실행

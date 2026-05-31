@@ -121,7 +121,7 @@ public class EducationPreparationRunner {
         ConsoleHelper.printInfo("등록번호: " + preparation.getSetupNumber()
                 + " | 등록일시: " + preparation.getRegisteredAt()
                 + " | 교육명: " + selectedPlan.getEducationName()
-                + " | 교육장소: " + preparation.getLocation());
+                + " | 교육장소: " + preparation.getVenue());
 
         // A2) 교육 진행이 필요한 경우
         boolean moveToExecution = ConsoleHelper.readYesNo("[영업교육담당자] 교육을 바로 진행하시겠습니까? (A2)");

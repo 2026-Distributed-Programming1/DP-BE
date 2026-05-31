@@ -11,7 +11,9 @@ public class EducationPlan {
 
     private static int sequence = 0;
 
+    private Long id;
     private int planNumber;
+    private String planNo;
     private String trainerName;
     private String educationName;
     private LocalDate startDate;
@@ -111,6 +113,10 @@ public class EducationPlan {
         this.status = "반려";
     }
 
+    public Long getId() { return id; }
+    public void setId(Long id) { this.id = id; }
+    public String getPlanNo() { return planNo; }
+    public void setPlanNo(String planNo) { this.planNo = planNo; }
     public int getPlanNumber() { return planNumber; }
     public String getTrainerName() { return trainerName; }
     public void setTrainerName(String trainerName) { this.trainerName = trainerName; }
