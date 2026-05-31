@@ -1,8 +1,10 @@
 package org.dpbe.domain.sales.service;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
+import org.dpbe.domain.sales.dto.SalesActivityManagementListResponse;
 import org.dpbe.domain.sales.dto.SalesActivityManagementRequest;
 import org.dpbe.domain.sales.dto.SalesActivityManagementResponse;
 import org.dpbe.domain.sales.entity.SalesActivityManagement;
@@ -21,10 +23,32 @@ public class SalesActivityManagementService {
     }
 
     @Transactional(readOnly = true)
-    public List<SalesActivityManagementResponse> findAll() {
-        return repository.findAll().stream()
+    public SalesActivityManagementListResponse findAll(
+            LocalDate startDate, LocalDate endDate, String channelType, int page, int size) {
+        if (page < 1) page = 1;
+        if (size < 1) size = 20;
+
+        List<SalesActivityManagement> filtered = repository.findAll().stream()
+                .filter(a -> startDate == null || (a.getStartDate() != null && !a.getStartDate().isBefore(startDate)))
+                .filter(a -> endDate == null || (a.getEndDate() != null && !a.getEndDate().isAfter(endDate)))
+                .filter(a -> channelType == null || channelType.isBlank()
+                        || (a.getChannelType() != null && a.getChannelType().name().equalsIgnoreCase(channelType)))
+                .sorted((a, b) -> {
+                    double ra = a.getAchievementRate() != null ? a.getAchievementRate() : 0;
+                    double rb = b.getAchievementRate() != null ? b.getAchievementRate() : 0;
+                    return Double.compare(ra, rb);
+                })
+                .collect(Collectors.toList());
+
+        int total = filtered.size();
+        int from = Math.min((page - 1) * size, total);
+        int to = Math.min(from + size, total);
+
+        List<SalesActivityManagementResponse> items = filtered.subList(from, to).stream()
                 .map(SalesActivityManagementResponse::from)
                 .collect(Collectors.toList());
+
+        return new SalesActivityManagementListResponse(page, size, total, items);
     }
 
     @Transactional
