@@ -11,8 +11,6 @@
 --   Tier 4 : cancellations / damage_investigations / education_preparations 참조
 --   Tier 5 : refund_calculations / claim_calculations 참조
 --
--- ※ 앱 코드에서 FK 컬럼에 NULL 삽입이 허용되므로
---    FOREIGN KEY CONSTRAINT 는 선언하지 않고 주석으로 관계를 표시합니다.
 -- ============================================================
 
 CREATE DATABASE IF NOT EXISTS insurance_db
@@ -109,6 +107,7 @@ CREATE TABLE IF NOT EXISTS agencies (
 -- product_name 을 PK 로 사용해야 ON DUPLICATE KEY UPDATE 가 동작함
 -- (InsuranceProductDAO.save 의 ON DUPLICATE KEY UPDATE 기준이 product_name)
 CREATE TABLE IF NOT EXISTS insurance_products (
+    id                BIGINT       AUTO_INCREMENT UNIQUE KEY,
     product_name      VARCHAR(100) PRIMARY KEY,
     category          VARCHAR(50),
     monthly_premium   BIGINT       DEFAULT 0,
@@ -215,9 +214,10 @@ CREATE TABLE IF NOT EXISTS claim_requests (
     status         VARCHAR(20)
 );
 
--- 보험 가입 신청 (InsuranceApplicationDAO)
+-- 보험 가입 신청
 CREATE TABLE IF NOT EXISTS insurance_applications (
-    application_no  INT          PRIMARY KEY,
+    id              BIGINT       AUTO_INCREMENT PRIMARY KEY,
+    application_no  VARCHAR(20)  UNIQUE,
     customer_id     VARCHAR(20),            -- → customers.customer_id
     customer_name   VARCHAR(100),
     product_name    VARCHAR(100),
@@ -227,9 +227,10 @@ CREATE TABLE IF NOT EXISTS insurance_applications (
     status          VARCHAR(20)  DEFAULT '신청'
 );
 
--- 청약 (PolicyApplicationDAO)
+-- 청약
 CREATE TABLE IF NOT EXISTS policy_applications (
-    application_no INT          PRIMARY KEY,
+    id             BIGINT       AUTO_INCREMENT PRIMARY KEY,
+    application_no VARCHAR(20)  UNIQUE,
     customer_id    VARCHAR(20),             -- → customers.customer_id
     customer_name  VARCHAR(100),
     product_name   VARCHAR(100),
@@ -266,25 +267,27 @@ CREATE TABLE IF NOT EXISTS education_plans (
 -- Tier 2 : 상담 도메인
 -- ============================================================
 
--- 상담 요청 (channel: 방문/전화/온라인)
+-- 상담 요청 (consultation_type: 방문/전화/온라인)
 CREATE TABLE IF NOT EXISTS consultation_requests (
-    consult_no   VARCHAR(20)  PRIMARY KEY,
-    channel      VARCHAR(100),
-    location     VARCHAR(200),
-    contact      VARCHAR(100),
-    content      TEXT,
-    status       VARCHAR(20),
-    scheduled_at TIMESTAMP    NULL,
-    requested_at TIMESTAMP    NULL,
-    accepted_at  TIMESTAMP    NULL
+    id                BIGINT       AUTO_INCREMENT PRIMARY KEY,
+    consult_no        VARCHAR(20)  UNIQUE,
+    consultation_type VARCHAR(50),
+    location          VARCHAR(200),
+    contact           VARCHAR(100),
+    content           TEXT,
+    status            VARCHAR(20),
+    scheduled_at      TIMESTAMP    NULL,
+    received_at       TIMESTAMP    NULL,
+    accepted_at       TIMESTAMP    NULL
 );
 
--- 인터뷰 일정
+-- 면담 일정
 CREATE TABLE IF NOT EXISTS interview_schedules (
-    schedule_no   VARCHAR(20)  PRIMARY KEY,
+    id            BIGINT       AUTO_INCREMENT PRIMARY KEY,
+    schedule_no   VARCHAR(20)  UNIQUE,
     customer_name VARCHAR(100),
     designer_name VARCHAR(100),
-    type          VARCHAR(20),
+    interview_type VARCHAR(20),
     scheduled_at  TIMESTAMP,
     location      VARCHAR(200),
     preparation   TEXT,
@@ -294,41 +297,48 @@ CREATE TABLE IF NOT EXISTS interview_schedules (
     cancelled_at  TIMESTAMP    NULL
 );
 
--- 인터뷰 기록
+-- 면담 기록
 CREATE TABLE IF NOT EXISTS interview_records (
-    record_no         VARCHAR(20)  PRIMARY KEY,
+    id                BIGINT       AUTO_INCREMENT PRIMARY KEY,
+    record_no         VARCHAR(20)  UNIQUE,
     customer_name     VARCHAR(100),
     content           TEXT,
     customer_reaction TEXT,
     follow_up_action  TEXT,
     interviewed_at    TIMESTAMP    NULL,
-    recorded_at       TIMESTAMP    DEFAULT CURRENT_TIMESTAMP
+    recorded_at       TIMESTAMP    DEFAULT CURRENT_TIMESTAMP,
+    modified_at       TIMESTAMP    NULL
 );
 
--- 설계서 (제안서)
+-- 제안서
 CREATE TABLE IF NOT EXISTS proposals (
-    proposal_no     VARCHAR(20)  PRIMARY KEY,
+    id              BIGINT       AUTO_INCREMENT PRIMARY KEY,
+    proposal_no     VARCHAR(20)  UNIQUE,
     customer_name   VARCHAR(100),
     product_name    VARCHAR(100),
     monthly_premium BIGINT       DEFAULT 0,
-    created_at      TIMESTAMP    DEFAULT CURRENT_TIMESTAMP
+    sent_at         TIMESTAMP    DEFAULT CURRENT_TIMESTAMP
 );
 
--- 심사 (언더라이팅)
+-- 인수심사
 CREATE TABLE IF NOT EXISTS underwritings (
-    underwriting_no VARCHAR(20)  PRIMARY KEY,
-    app_type        VARCHAR(20),
-    app_no          VARCHAR(20),
-    customer_name   VARCHAR(100),
-    risk_grade      VARCHAR(50),
-    review_opinion  TEXT,
-    result          VARCHAR(20),
-    reviewed_at     TIMESTAMP
+    id               BIGINT       AUTO_INCREMENT PRIMARY KEY,
+    underwriting_no  VARCHAR(20)  UNIQUE,
+    review_type      VARCHAR(20),
+    app_no           VARCHAR(20),
+    customer_name    VARCHAR(100),
+    risk_grade       VARCHAR(50),
+    review_opinion   TEXT,
+    result           VARCHAR(20),
+    result_condition TEXT         NULL,
+    rejection_reason TEXT         NULL,
+    reviewed_at      TIMESTAMP
 );
 
 -- 부활
 CREATE TABLE IF NOT EXISTS revivals (
-    revival_no     VARCHAR(20)  PRIMARY KEY,
+    id             BIGINT       AUTO_INCREMENT PRIMARY KEY,
+    revival_no     VARCHAR(20)  UNIQUE,
     contract_no    VARCHAR(20),              -- → contracts.contract_no
     customer_name  VARCHAR(100),
     contact        VARCHAR(100),

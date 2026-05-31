@@ -3,6 +3,8 @@ package org.dpbe.global.seed;
 import java.time.LocalDate;
 import lombok.extern.slf4j.Slf4j;
 import org.dpbe.domain.actor.Customer;
+import org.dpbe.domain.consultation.entity.InsuranceProduct;
+import org.dpbe.domain.consultation.repository.InsuranceProductRepository;
 import org.dpbe.domain.contract.entity.Contract;
 import org.dpbe.domain.contract.repository.ContractRepository;
 import org.dpbe.domain.customer.repository.CustomerRepository;
@@ -28,10 +30,14 @@ public class DataSeeder implements CommandLineRunner {
 
     private final CustomerRepository customerRepository;
     private final ContractRepository contractRepository;
+    private final InsuranceProductRepository insuranceProductRepository;
 
-    public DataSeeder(CustomerRepository customerRepository, ContractRepository contractRepository) {
+    public DataSeeder(CustomerRepository customerRepository,
+                      ContractRepository contractRepository,
+                      InsuranceProductRepository insuranceProductRepository) {
         this.customerRepository = customerRepository;
         this.contractRepository = contractRepository;
+        this.insuranceProductRepository = insuranceProductRepository;
     }
 
     @Override
@@ -63,7 +69,11 @@ public class DataSeeder implements CommandLineRunner {
         saveContract(c2, LocalDate.of(2024, 3, 1), LocalDate.of(2054, 3, 1), 300_000L, "종신보험");
         saveContract(c3, LocalDate.of(2024, 1, 1), LocalDate.of(2034, 1, 1), 200_000L, "자동차보험");
 
-        log.info("[seed] 완료 — 고객 {}명, 계약 {}건", 3, 4);
+        insuranceProductRepository.save(new InsuranceProduct("실손의료보험", "건강",  50_000L, "의료비 전액 보장", "치과 제외"));
+        insuranceProductRepository.save(new InsuranceProduct("종신보험",    "생명", 150_000L, "사망 시 1억 지급", "없음"));
+        insuranceProductRepository.save(new InsuranceProduct("자동차보험",  "손해",  80_000L, "대인/대물 무제한", "음주운전 제외"));
+
+        log.info("[seed] 완료 — 고객 {}명, 계약 {}건, 보험상품 {}개", 3, 4, 3);
     }
 
     private void saveContract(Customer customer, LocalDate start, LocalDate end, long premium, String type) {

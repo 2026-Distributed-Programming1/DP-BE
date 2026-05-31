@@ -10,6 +10,8 @@ public class Proposal {
 
     private static int sequence = 0;
 
+    private Long id;
+    private String proposalNo;
     private int proposalId;
     private LocalDateTime sentAt;
     private String customerName;
@@ -36,6 +38,10 @@ public class Proposal {
         System.out.println("  [시스템] 보험상품 제안서가 고객에게 발송되었습니다.");
     }
 
+    public Long getId() { return id; }
+    public void setId(Long id) { this.id = id; }
+    public String getProposalNo() { return proposalNo; }
+    public void setProposalNo(String proposalNo) { this.proposalNo = proposalNo; }
     public int getProposalId() { return proposalId; }
     public LocalDateTime getSentAt() { return sentAt; }
     public String getCustomerName() { return customerName; }

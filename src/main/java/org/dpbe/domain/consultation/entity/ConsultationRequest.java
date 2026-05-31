@@ -10,6 +10,8 @@ public class ConsultationRequest {
 
     private static int sequence = 0;
 
+    private Long id;
+    private String consultNo;
     private int consultationNumber;
     private String type;
     private LocalDateTime scheduledAt;
@@ -64,6 +66,10 @@ public class ConsultationRequest {
         this.acceptedAt = LocalDateTime.now();
     }
 
+    public Long getId() { return id; }
+    public void setId(Long id) { this.id = id; }
+    public String getConsultNo() { return consultNo; }
+    public void setConsultNo(String consultNo) { this.consultNo = consultNo; }
     public int getConsultationNumber() { return consultationNumber; }
     public String getType() { return type; }
     public LocalDateTime getScheduledAt() { return scheduledAt; }

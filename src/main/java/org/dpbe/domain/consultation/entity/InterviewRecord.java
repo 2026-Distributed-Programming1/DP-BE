@@ -10,6 +10,8 @@ public class InterviewRecord {
 
     private static int sequence = 0;
 
+    private Long id;
+    private String recordNo;
     private int recordNumber;
     private String customerName;
     private LocalDateTime interviewedAt;
@@ -72,6 +74,10 @@ public class InterviewRecord {
         return new Proposal();
     }
 
+    public Long getId() { return id; }
+    public void setId(Long id) { this.id = id; }
+    public String getRecordNo() { return recordNo; }
+    public void setRecordNo(String recordNo) { this.recordNo = recordNo; }
     public int getRecordNumber() { return recordNumber; }
     public String getCustomerName() { return customerName; }
     public void setCustomerName(String customerName) { this.customerName = customerName; }
@@ -83,4 +89,5 @@ public class InterviewRecord {
     public String getContent() { return content; }
     public String getCustomerReaction() { return customerReaction; }
     public String getFollowUpAction() { return followUpAction; }
+    public void setModifiedAt(java.time.LocalDateTime modifiedAt) { this.modifiedAt = modifiedAt; }
 }

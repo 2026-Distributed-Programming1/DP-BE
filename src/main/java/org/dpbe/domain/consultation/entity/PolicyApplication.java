@@ -11,6 +11,8 @@ public class PolicyApplication {
 
     private static int sequence = 0;
 
+    private Long id;
+    private String applicationNo;
     private int applicationNumber;
     private LocalDateTime submittedAt;
     private LocalDateTime uploadedAt;
@@ -85,6 +87,10 @@ public class PolicyApplication {
         this.submittedAt = LocalDateTime.now();
     }
 
+    public Long getId() { return id; }
+    public void setId(Long id) { this.id = id; }
+    public String getApplicationNo() { return applicationNo; }
+    public void setApplicationNo(String applicationNo) { this.applicationNo = applicationNo; }
     public int getApplicationNumber() { return applicationNumber; }
     public LocalDateTime getSubmittedAt() { return submittedAt; }
     public LocalDateTime getUploadedAt() { return uploadedAt; }

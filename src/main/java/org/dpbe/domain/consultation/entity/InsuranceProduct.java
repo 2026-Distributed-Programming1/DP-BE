@@ -6,6 +6,7 @@ package org.dpbe.domain.consultation.entity;
  */
 public class InsuranceProduct {
 
+    private Long id;
     private String productName;
     private String type;
     private long monthlyPremium;
@@ -25,6 +26,8 @@ public class InsuranceProduct {
 
     public InsuranceProduct() {}
 
+    public Long getId() { return id; }
+    public void setId(Long id) { this.id = id; }
     public String getProductName() { return productName; }
     public String getType() { return type; }
     public long getMonthlyPremium() { return monthlyPremium; }

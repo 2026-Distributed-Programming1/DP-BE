@@ -10,6 +10,8 @@ public class Underwriting {
 
     private static int sequence = 0;
 
+    private Long id;
+    private String underwritingNo;
     private int reviewNumber;
     private String appNo;
     private String customerName;
@@ -62,12 +64,17 @@ public class Underwriting {
         this.reviewResult = new ReviewResult(result, condition, rejectionReason);
     }
 
+    public Long getId() { return id; }
+    public void setId(Long id) { this.id = id; }
+    public String getUnderwritingNo() { return underwritingNo; }
+    public void setUnderwritingNo(String underwritingNo) { this.underwritingNo = underwritingNo; }
     public int getReviewNumber() { return reviewNumber; }
     public String getAppNo() { return appNo; }
     public void setAppNo(String appNo) { this.appNo = appNo; }
     public String getCustomerName() { return customerName; }
     public void setCustomerName(String customerName) { this.customerName = customerName; }
     public LocalDateTime getReviewedAt() { return reviewedAt; }
+    public void setReviewedAt(LocalDateTime reviewedAt) { this.reviewedAt = reviewedAt; }
     public String getRiskGrade() { return riskGrade; }
     public String getReviewType() { return reviewType; }
     public String getReviewOpinion() { return reviewOpinion; }
