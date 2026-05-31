@@ -46,6 +46,13 @@ public class ClaimCalculationRepository {
                 c.getCalculationNo(), id);
     }
 
+    /** 상태 갱신 (승인 등 전이 반영). */
+    public void updateStatus(ClaimCalculation c) {
+        String status = c.getStatus() != null ? c.getStatus().name() : null;
+        sql.executeUpdate("UPDATE claim_calculations SET status=? WHERE calculation_no=?",
+                status, c.getCalculationNo());
+    }
+
     public ClaimCalculation findByInvestigationNo(String investigationNo) {
         return sql.queryOne(
                 "SELECT " + COLS + " FROM claim_calculations WHERE investigation_no=?",

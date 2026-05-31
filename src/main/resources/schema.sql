@@ -624,6 +624,17 @@ CREATE TABLE IF NOT EXISTS dispatch_records (
     status           VARCHAR(20)
 );
 
+-- 출동 기록 사진 (dispatch_records 1:N) — 실제 파일은 로컬 파일시스템, 여기엔 메타만
+CREATE TABLE IF NOT EXISTS dispatch_photos (
+    id          BIGINT       AUTO_INCREMENT PRIMARY KEY,
+    record_no   VARCHAR(20),                -- → dispatch_records.record_no
+    file_name   VARCHAR(255),
+    file_path   VARCHAR(500),
+    file_size   BIGINT       DEFAULT 0,
+    mime_type   VARCHAR(100),
+    uploaded_at TIMESTAMP    NULL
+);
+
 -- ============================================================
 -- Tier 4 : education_preparations 참조
 -- ============================================================
@@ -721,6 +732,7 @@ ALTER TABLE education_preparations ADD CONSTRAINT fk_education_preparations_plan
 
 -- Tier 4: 처리 레코드 참조
 ALTER TABLE dispatch_records       ADD CONSTRAINT fk_dispatch_records_dispatch      FOREIGN KEY (dispatch_no)      REFERENCES dispatches(dispatch_no);
+ALTER TABLE dispatch_photos        ADD CONSTRAINT fk_dispatch_photos_record         FOREIGN KEY (record_no)        REFERENCES dispatch_records(record_no);
 ALTER TABLE claim_calculations     ADD CONSTRAINT fk_claim_calculations_investigation FOREIGN KEY (investigation_no) REFERENCES damage_investigations(investigation_no);
 ALTER TABLE education_executions   ADD CONSTRAINT fk_education_executions_prep      FOREIGN KEY (prep_no)          REFERENCES education_preparations(prep_no);
 ALTER TABLE education_attendances  ADD CONSTRAINT fk_education_attendances_execution FOREIGN KEY (execution_no)    REFERENCES education_executions(execution_no);

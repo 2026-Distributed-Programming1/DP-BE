@@ -2,9 +2,9 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-> **현재 상태 (2026-05-30)**: 콘솔(Runner) 구조를 Spring REST API 구조로 전환 중. 신규 웹 경로와 레거시 콘솔(`old/`)이 **공존**한다.
-> - 완료: 패키지 개편(domain/global/old) · 파일럿 UC 2개(계약 조회·보험료 납입, `@Transactional`) · 웹 시더 · surrogate-PK 배치 1(contract·payment) · 배치 2(claim) **PK 파운데이션**(7테이블 id PK + 엔터티 `Long id`).
-> - **다음 작업**: 배치 2a — claim 보상 UC(요청·조사·산출·지급) 신규 전환.
+> **현재 상태 (2026-05-31)**: 콘솔(Runner) 구조를 Spring REST API 구조로 전환 중. 신규 웹 경로와 레거시 콘솔(`old/`)이 **공존**한다.
+> - 완료: 패키지 개편(domain/global/old) · 파일럿 UC 2개(계약 조회·보험료 납입, `@Transactional`) · 웹 시더 · surrogate-PK 배치 1(contract·payment) · **배치 2(claim) 전체 완료** — PK 파운데이션(7테이블) + 2a 보상 UC 4개(요청·조사·산출·지급) + 2b 사고·출동 UC 2개(사고 접수·현장 출동 기록). Controller/Service/Repository/DTO, 무상태·단계분리, multipart 사진 업로드(로컬 FS), 흐름·예외 API 검증 완료.
+> - **다음 작업**: 배치 3 — 미전환 도메인(education/sales/consultation/inquiry + contract·payment 잔여 UC). 각 도메인 **PK 파운데이션(surrogate id)부터** 선행 필요(claim·contract·payment 외 미적용).
 > - **작업 전 반드시 참고**: 전환 계획·현황·결정은 **`src/main/resources/design/ApiMigrationPlan.md`**, 배치 2 세부는 **`design/Batch2_Claim_Plan.md`**.
 
 ## 빌드 및 실행
@@ -70,6 +70,28 @@ org.dpbe
 - **다단계 입력 흐름**은 클라이언트 주도: 조회 `GET` + (선택)`preview POST` + 제출 `POST`(완성 DTO). 서버 무상태.
 - **시더** `DataSeeder`(`CommandLineRunner`): 멱등(데이터 있으면 skip), `app.seed.enabled=false`로 비활성화, slf4j 로깅.
 - **surrogate-PK(전환된 도메인)**: PK는 DB `id`(AUTO_INCREMENT), 업무번호(contract_no 등)는 `id`에서 파생해 저장(`save()`: INSERT→`executeInsertReturningKey`→파생 UPDATE). 엔터티에 `Long id` 보유.
+
+### 전환(마이그레이션) 작업 원칙 — 반드시 준수
+
+DAO/Runner를 API로 옮기는 작업은 **기계적 이식이 아니다.** 아래를 지킨다.
+
+1. **DAO를 통째로 옮기지 않는다.** 레거시 DAO·Runner의 로직을 한 뭉탱이로 복붙해 한 메서드/엔드포인트에 몰아넣지 말 것. 책임을 **적절히 나눈다** — 조회는 조회대로, 검증은 검증대로, 단계는 단계대로 Service/Repository/DTO로 분해한다. (DAO의 `mapRow`·SQL은 *컬럼·매핑의 정답지*로 참고하되, 구조까지 베끼는 게 아니다.)
+2. **실제 운용에서의 API 사용을 먼저 따진다.** "콘솔이 이렇게 했으니"가 아니라 "프론트/클라이언트가 이 자원을 실제로 어떻게 호출하나"를 기준으로 엔드포인트를 가른다. 무상태·클라이언트 주도 설계(§위 다단계 흐름), 자원의 실제 성격(예: OTP·예약은 생성/실행 분리)을 우선한다. 콘솔의 단계 순서를 그대로 옮기지 않는다.
+3. **예상치 못한 변수가 생기면 임의로 단순화하지 말고 사용자와 대화한다.** 엔터티/스키마/DAO가 가정과 다르거나, 상태 전이가 막히거나, 저장 위치·계좌 출처 같은 설계 선택지가 생기면 — 혼자 "되는 쪽으로" 우회·축소하지 말고 **멈추고 선택지를 제시해 합의**한 뒤 진행한다. (과거 1차 실패는 추측으로 밀어붙여 발생했다.)
+
+### 전환 구현 체크리스트 (모든 UC 공통)
+
+> 배치 2(claim)에서 확립한 절차를 일반화한 것. 어떤 도메인을 전환하든 그대로 적용한다.
+
+**A. 추측 금지 — 코드 전 실물 확인 (가장 자주 깨진 규칙).** 작성 전 반드시 ① 대상 엔터티(`domain/<feature>/entity/*`) ② `schema.sql`의 실제 컬럼명 ③ 대응 `old/dao/*DAO`의 `save()`/`findAll()` 을 열어 **타입·메서드명·컬럼명을 눈으로 확인**한다. 메서드/필드/컬럼이 있을 거라 가정하고 쓰지 않는다. 자주 어긋나는 지점: 게터명(`getAccountNo` vs `getAccountNumber`), 업무번호 게터(`getReportNo`인데 컬럼은 `accident_no`), 필드 존재 여부(스키마에 없는 컬럼 가정), 컬렉션 타입(`List<String>` vs enum), 생성자 시그니처.
+
+**B. 엔터티는 rich 도메인 모델 — 행위 메서드를 쓴다.** 엔터티는 세터 더미가 아니라 검증·상태전이 메서드를 가진다(`submit()`, `validateXxx()`, `approve()` 등). Service에서 이 메서드로 규칙을 태우고, **업무번호 세터(`setXxxNo`)·DB복원용 세터·셸 주입 세터가 없으면 추가**한다(다른 전환 도메인의 관습과 일치시킬 것). 같은 행 컬럼은 셸 주입으로 나르고(조인 아님), 다른 테이블 값만 조인한다.
+
+**C. Repository = surrogate-PK 패턴(배치 1·2 복제).** `domain/contract/repository/ContractRepository`가 템플릿. `@Repository` + 생성자 주입 `SqlExecutor`. `save()`는 업무번호 컬럼 제외 INSERT → `executeInsertReturningKey`로 id 회수 → `setId` + 업무번호 파생(`접두+String.format("%05d", id)`) → `UPDATE ... SET xxx_no=? WHERE id=?`. `mapRow`는 `RowMapper<T>`(행 1개→객체) 시그니처 — **`executeQuery` 안에서 `while(rs.next())`로 List를 만들지 말 것**(executeQuery가 행마다 mapRow를 호출). finder는 `SELECT id, ...`로 id 포함해 `setId` 매핑. 매핑·셸 복원 로직은 대응 DAO를 그대로 옮기되 `DBA`→`SqlExecutor` 치환.
+
+**D. Service/DTO/Controller.** Service `@Transactional`(조회 `readOnly=true`, 쓰기 메서드만 재선언), 검증 실패→`ApiException`(notFound/badRequest), 콘솔 절차가 아닌 **규칙만** 이관. DTO는 record, *정의 없는 타입을 참조하지 말 것*(필요하면 새로 정의하거나 요청 record에 평면 필드로). Controller `@RestController`, DTO 입출력만.
+
+**E. 완료 기준(매 UC/배치).** `./gradlew compileJava` 그린 → 스키마 변경 시 `docker compose down -v && up -d` → `bootRun` 기동 → 정상 흐름 + 예외 분기(E1 등)를 실제 API 호출로 검증 → 설계 문서·이 파일에 ✅ 기록. 검증 없이 "완료"로 보고하지 않는다.
 
 ## 레거시 콘솔 계층 (`old/`)
 

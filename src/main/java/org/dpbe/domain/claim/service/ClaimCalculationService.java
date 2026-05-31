@@ -5,6 +5,7 @@ import org.dpbe.domain.claim.entity.ClaimCalculation;
 import org.dpbe.domain.claim.entity.DamageInvestigation;
 import org.dpbe.domain.claim.repository.ClaimCalculationRepository;
 import org.dpbe.domain.claim.repository.DamageInvestigationRepository;
+import org.dpbe.domain.common.enums.CalculationStatus;
 import org.dpbe.domain.common.enums.InvestigationResult;
 import org.dpbe.global.exception.ApiException;
 import org.springframework.stereotype.Service;
@@ -26,6 +27,21 @@ public class ClaimCalculationService {
                                    DamageInvestigationRepository investigationRepository) {
         this.calculationRepository = calculationRepository;
         this.investigationRepository = investigationRepository;
+    }
+
+    /** 산출 승인 — CALCULATED → APPROVED 전이(지급 가능 상태). 지급건은 별도 생성. */
+    @Transactional
+    public CalculationResponse approve(String calculationNo) {
+        ClaimCalculation calc = calculationRepository.findByCalculationNo(calculationNo);
+        if (calc == null) {
+            throw ApiException.notFound("산출을 찾을 수 없습니다: " + calculationNo);
+        }
+        if (calc.getStatus() != CalculationStatus.CALCULATED) {
+            throw ApiException.badRequest("산출완료(CALCULATED) 상태만 승인할 수 있습니다: " + calculationNo);
+        }
+        calc.approve();   // 상태 APPROVED (반환 ClaimPayment는 지급 단계에서 별도 생성하므로 폐기)
+        calculationRepository.updateStatus(calc);
+        return CalculationResponse.from(calc);
     }
 
     public CalculationResponse findByInvestigationNo(String investigationNo) {

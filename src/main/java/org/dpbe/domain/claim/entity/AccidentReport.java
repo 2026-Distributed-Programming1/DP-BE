@@ -123,7 +123,10 @@ public class AccidentReport {
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
     public String getReportNo() { return reportNo; }
+    public void setReportNo(String reportNo) { this.reportNo = reportNo; }
     public Customer getCustomer() { return customer; }
+    /** DB 복원용 — 조회 시 customer_id·customer_name 셸 주입 */
+    public void setCustomer(Customer customer) { this.customer = customer; }
     public String getVehicleNo() { return vehicleNo; }
     public String getOwnerName() { return ownerName; }
     public String getPhoneNo() { return phoneNo; }

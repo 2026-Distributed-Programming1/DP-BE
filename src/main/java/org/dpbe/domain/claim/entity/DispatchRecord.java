@@ -84,12 +84,14 @@ public class DispatchRecord {
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
     public String getRecordId() { return recordId; }
+    public void setRecordId(String recordId) { this.recordId = recordId; }
     public Dispatch getDispatch() { return dispatch; }
     public List<Attachment> getPhotos() { return photos; }
     public boolean isPoliceRequired() { return policeRequired; }
     public boolean isTowingRequired() { return towingRequired; }
     public String getNotes() { return notes; }
     public LocalDateTime getTransmittedAt() { return transmittedAt; }
+    public void setTransmittedAt(LocalDateTime transmittedAt) { this.transmittedAt = transmittedAt; }
     public DispatchRecordStatus getStatus() { return status; }
     public void setStatus(DispatchRecordStatus status) { this.status = status; }
 }
