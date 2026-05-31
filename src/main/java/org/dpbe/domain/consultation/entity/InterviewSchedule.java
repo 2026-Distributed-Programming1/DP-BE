@@ -12,6 +12,8 @@ public class InterviewSchedule {
 
     private static int sequence = 0;
 
+    private Long id;
+    private String scheduleNo;
     private int interviewNumber;
     private String customerName;
     private String designerName;
@@ -96,6 +98,10 @@ public class InterviewSchedule {
         return customerName != null && !customerName.isEmpty() && scheduledAt != null;
     }
 
+    public Long getId() { return id; }
+    public void setId(Long id) { this.id = id; }
+    public String getScheduleNo() { return scheduleNo; }
+    public void setScheduleNo(String scheduleNo) { this.scheduleNo = scheduleNo; }
     public int getInterviewNumber() { return interviewNumber; }
     public String getCustomerName() { return customerName; }
     public String getDesignerName() { return designerName; }

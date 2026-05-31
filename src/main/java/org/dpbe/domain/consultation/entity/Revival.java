@@ -11,6 +11,8 @@ public class Revival {
 
     private static int sequence = 0;
 
+    private Long id;
+    private String revivalNo;
     private int revivalNumber;
     private Customer customer;
     private String contractNo;
@@ -56,6 +58,10 @@ public class Revival {
         this.appliedAt = LocalDateTime.now();
     }
 
+    public Long getId() { return id; }
+    public void setId(Long id) { this.id = id; }
+    public String getRevivalNo() { return revivalNo; }
+    public void setRevivalNo(String revivalNo) { this.revivalNo = revivalNo; }
     public int getRevivalNumber() { return revivalNumber; }
     public Customer getCustomer() { return customer; }
     public void setCustomer(Customer customer) { this.customer = customer; }

@@ -13,6 +13,8 @@ public class InsuranceApplication {
 
     private static int sequence = 0;
 
+    private Long id;
+    private String applicationNo;
     private int applicationNumber;
     private Customer customer;
     private InsuranceProduct product;
@@ -84,6 +86,10 @@ public class InsuranceApplication {
         this.appliedAt = LocalDateTime.now();
     }
 
+    public Long getId() { return id; }
+    public void setId(Long id) { this.id = id; }
+    public String getApplicationNo() { return applicationNo; }
+    public void setApplicationNo(String applicationNo) { this.applicationNo = applicationNo; }
     public int getApplicationNumber() { return applicationNumber; }
     public LocalDateTime getAppliedAt() { return appliedAt; }
     public String getPaymentMethod() { return paymentMethod; }
