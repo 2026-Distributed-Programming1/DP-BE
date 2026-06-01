@@ -15,8 +15,6 @@ import java.time.LocalDateTime;
  */
 public class PaymentRecord {
 
-    private static int sequence = 0;          // 결제번호 자동 부여용
-
     private Long id;                          // DB 대리키(PK)
     private String recordNo;                  // 결제번호
     private Contract contract;       // 대상 계약
@@ -32,10 +30,8 @@ public class PaymentRecord {
     private LocalDateTime confirmedAt;        // 수납 확정일시
     private LocalDateTime rejectedAt;         // 반려일시
 
-    /** 생성자 - 결제번호 자동 부여, paymentDate=now() */
+    /** 신규 결제 기록 생성자 */
     public PaymentRecord(Contract contract, long amount, String method) {
-        sequence += 1;
-        this.recordNo = "PRC" + String.format("%05d", sequence);
         this.contract = contract;
         this.amount = amount;
         this.method = method;
@@ -54,34 +50,16 @@ public class PaymentRecord {
         this.status = status;
     }
 
-    /**
-     * 상세 정보 로드
-     * 시나리오상 화면 진입 시 데이터 로드 단계가 있으므로 메서드를 정의하지만,
-     * 본 구현에서는 모든 필드가 이미 채워져 있으므로 실제 로드 작업은 수행하지 않는다.
-     */
-    public void load() {
-        System.out.println("[PaymentRecord] 상세 정보 로드: " + recordNo);
-    }
-
     /** 수납 확정 및 장부 반영 - confirmedAt=now(), status="완료" */
     public void confirm() {
         try {
             this.confirmedAt = LocalDateTime.now();
             this.status = PaymentRecordStatus.COMPLETED;
-            recordOnLedger();
             updateContractStatus();
             System.out.println("[PaymentRecord] 수납 확정: " + recordNo);
         } catch (Exception e) {
             handleProcessingError();
         }
-    }
-
-    /**
-     * 수납 원장 반영
-     * 외부 시스템 연동이 필요하므로 더미로 처리한다.
-     */
-    public void recordOnLedger() {
-        System.out.println("[PaymentRecord] 수납 원장 반영: " + recordNo);
     }
 
     /**

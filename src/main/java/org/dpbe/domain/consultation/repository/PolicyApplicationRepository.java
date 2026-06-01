@@ -11,7 +11,7 @@ import org.springframework.stereotype.Repository;
 public class PolicyApplicationRepository {
 
     private static final String COLS =
-            "id, application_no, customer_id, customer_name, product_name,"
+            "id, customer_id, customer_name, product_name,"
             + " period, payment_method, submitted_at, uploaded_at, status";
 
     private final SqlExecutor sql;
@@ -40,8 +40,6 @@ public class PolicyApplicationRepository {
                 p.getStatus() != null ? p.getStatus() : "신청");
         p.setId(id);
         p.setApplicationNo("POL" + String.format("%05d", id));
-        sql.executeUpdate("UPDATE policy_applications SET application_no=? WHERE id=?",
-                p.getApplicationNo(), id);
     }
 
     /** 심사 결과 반영 (status 갱신). */
@@ -60,7 +58,7 @@ public class PolicyApplicationRepository {
                 rs.getInt("period"),
                 rs.getString("payment_method"));
         p.setId(rs.getLong("id"));
-        p.setApplicationNo(rs.getString("application_no"));
+        p.setApplicationNo("POL" + String.format("%05d", rs.getLong("id")));
         p.setStatus(rs.getString("status"));
         java.sql.Timestamp subTs = rs.getTimestamp("submitted_at");
         java.sql.Timestamp upTs  = rs.getTimestamp("uploaded_at");

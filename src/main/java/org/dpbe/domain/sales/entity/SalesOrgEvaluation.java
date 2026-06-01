@@ -23,36 +23,14 @@ public class SalesOrgEvaluation {
     private String evaluationNo;           // 평가번호
     private LocalDateTime evaluatedAt;     // 등록 일시
 
-    public void loadPerformanceTable() {}
-
-    public void search() {}
-
-    public void showNoResultMessage() {}
-
-    public void sortByAchievementRate() {}
-
-    public void openDetailPanel() {}
-
-    public void closeDetailPanel() {}
-
-    public void openEvaluationForm() {}
-
     public Boolean validateRequired() {
         return evaluationGrade != null;
     }
-
-    public void highlightError() {}
 
     public void saveEvaluation() {
         this.evaluatedAt = LocalDateTime.now();
         this.evaluationNo = "EV-" + evaluatedAt.toString().replaceAll("[^0-9]", "").substring(0, 14);
     }
-
-    public void showEvaluationResult() {}
-
-    public void cancelEvaluation() {}
-
-    public void navigateToBonus() {}
 
     // Runner에서 실제 사용하는 getter/setter만 유지
     public Long getSalesResult() { return salesResult; }

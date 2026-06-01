@@ -8,8 +8,6 @@ import java.time.LocalDateTime;
  */
 public class ConsultationRequest {
 
-    private static int sequence = 0;
-
     private Long id;
     private String consultNo;
     private int consultationNumber;
@@ -33,11 +31,7 @@ public class ConsultationRequest {
         this.status = status;
     }
 
-    public ConsultationRequest() {
-        sequence += 1;
-        this.consultationNumber = sequence;
-        this.status = "접수";
-    }
+    public ConsultationRequest() {}
 
     public void selectType(String type) {
         this.type = type;

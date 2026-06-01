@@ -59,12 +59,20 @@ public class DispatchRecordService {
         return DispatchRecordResponse.from(rec, recordRepository.findPhotoNames(rec.getRecordId()));
     }
 
+    private Long parseId(String no) {
+        try {
+            return Long.parseLong(no.replaceAll("\\D", ""));
+        } catch (NumberFormatException e) {
+            throw ApiException.notFound("유효하지 않은 번호: " + no);
+        }
+    }
+
     /** 출동 기록 등록 — 사진 저장 + 기록·사진 메타 영속화(@Transactional). */
     @Transactional
     public DispatchRecordResponse create(String dispatchNo, String agentName,
                                          boolean policeRequired, boolean towingRequired,
                                          String notes, MultipartFile[] photos) {
-        Dispatch dispatch = dispatchRepository.findByDispatchNo(dispatchNo);
+        Dispatch dispatch = dispatchRepository.findById(parseId(dispatchNo));
         if (dispatch == null) {
             throw ApiException.notFound("출동 건을 찾을 수 없습니다: " + dispatchNo);
         }

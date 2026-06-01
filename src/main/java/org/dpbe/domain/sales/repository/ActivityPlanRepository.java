@@ -15,7 +15,7 @@ import org.springframework.stereotype.Repository;
 public class ActivityPlanRepository {
 
     private static final String PLAN_COLS =
-            "id, plan_no, plan_name, author_name, start_date, end_date,"
+            "id, plan_name, author_name, start_date, end_date,"
             + " target_contract_count, target_contract_amount, target_new_customer,"
             + " proposed_customer_id, proposed_insurance_type, proposal_reason, memo, status";
 
@@ -31,10 +31,10 @@ public class ActivityPlanRepository {
                 this::mapPlan);
     }
 
-    public ActivityPlan findByPlanNo(String planNo) {
+    public ActivityPlan findById(Long id) {
         ActivityPlan plan = sql.queryOne(
-                "SELECT " + PLAN_COLS + " FROM activity_plans WHERE plan_no=?",
-                this::mapPlan, planNo);
+                "SELECT " + PLAN_COLS + " FROM activity_plans WHERE id=?",
+                this::mapPlan, id);
         if (plan != null) {
             loadSchedules(plan);
         }
@@ -62,15 +62,13 @@ public class ActivityPlanRepository {
                 p.getStatus() != null ? p.getStatus().name() : null);
         p.setId(id);
         p.setPlanNo("APL" + String.format("%05d", id));
-        sql.executeUpdate("UPDATE activity_plans SET plan_no=? WHERE id=?",
-                p.getPlanNo(), id);
 
         for (ScheduleItem item : p.getSchedules()) {
             sql.executeUpdate(
                     "INSERT INTO activity_schedule_items"
-                    + " (plan_no, customer_id, activity_type, activity_datetime, location, memo)"
+                    + " (plan_id, customer_id, activity_type, activity_datetime, location, memo)"
                     + " VALUES (?,?,?,?,?,?)",
-                    p.getPlanNo(),
+                    p.getId(),
                     item.getCustomerId(),
                     item.getActivityType() != null ? item.getActivityType().name() : null,
                     item.getActivityDateTime(),
@@ -82,15 +80,15 @@ public class ActivityPlanRepository {
     private void loadSchedules(ActivityPlan plan) {
         List<ScheduleItem> items = sql.executeQuery(
                 "SELECT customer_id, activity_type, activity_datetime, location, memo"
-                + " FROM activity_schedule_items WHERE plan_no=? ORDER BY id",
-                rs -> mapScheduleItem(rs), plan.getPlanNo());
+                + " FROM activity_schedule_items WHERE plan_id=? ORDER BY id",
+                rs -> mapScheduleItem(rs), plan.getId());
         items.forEach(plan::addSchedule);
     }
 
     private ActivityPlan mapPlan(ResultSet rs) throws SQLException {
         ActivityPlan p = new ActivityPlan();
         p.setId(rs.getLong("id"));
-        p.setPlanNo(rs.getString("plan_no"));
+        p.setPlanNo("APL" + String.format("%05d", rs.getLong("id")));
         p.setPlanName(rs.getString("plan_name"));
         p.setAuthor(rs.getString("author_name"));
         java.sql.Date sd = rs.getDate("start_date");

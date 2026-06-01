@@ -9,8 +9,6 @@ import java.time.LocalDateTime;
  */
 public class EducationPlan {
 
-    private static int sequence = 0;
-
     private Long id;
     private int planNumber;
     private String planNo;
@@ -41,8 +39,6 @@ public class EducationPlan {
     }
 
     public EducationPlan() {
-        sequence += 1;
-        this.planNumber = sequence;
         this.status = "작성중";
     }
 

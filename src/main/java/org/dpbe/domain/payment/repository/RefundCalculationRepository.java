@@ -20,20 +20,19 @@ public class RefundCalculationRepository {
     }
 
     public void save(RefundCalculation r) {
-        String cancNo  = r.getCancellation() != null ? r.getCancellation().getCancellationNo() : null;
+        Long cancId    = r.getCancellation() != null ? r.getCancellation().getId() : null;
         String status  = r.getStatus() != null ? r.getStatus().name() : null;
 
         long id = sql.executeInsertReturningKey(
                 "INSERT INTO refund_calculations"
-                + " (cancellation_no, total_paid_premium, payment_period, reserve_amount,"
+                + " (cancellation_id, total_paid_premium, payment_period, reserve_amount,"
                 + "  applied_rate, base_refund, unpaid_premium, final_refund, status)"
                 + " VALUES (?,?,?,?,?,?,?,?,?)",
-                cancNo, r.getTotalPaidPremium(), r.getPaymentPeriod(),
+                cancId, r.getTotalPaidPremium(), r.getPaymentPeriod(),
                 r.getReserveAmount(), r.getAppliedRate(), r.getBaseRefund(),
                 r.getUnpaidPremium(), r.getFinalRefund(), status);
         r.setId(id);
         r.setRefundNo("RFC" + String.format("%05d", id));
-        sql.executeUpdate("UPDATE refund_calculations SET refund_no=? WHERE id=?", r.getRefundNo(), id);
     }
 
     public void updateStatus(RefundCalculation r) {
@@ -41,39 +40,39 @@ public class RefundCalculationRepository {
                 r.getStatus().name(), r.getId());
     }
 
-    public Optional<RefundCalculation> findByRefundNo(String refundNo) {
+    private static final String COLS =
+            "id, cancellation_id, total_paid_premium, payment_period,"
+            + " reserve_amount, applied_rate, base_refund, unpaid_premium, final_refund, status";
+
+    public Optional<RefundCalculation> findById(Long id) {
         List<RefundCalculation> list = sql.executeQuery(
-                "SELECT id, refund_no, cancellation_no, total_paid_premium, payment_period,"
-                + " reserve_amount, applied_rate, base_refund, unpaid_premium, final_refund, status"
-                + " FROM refund_calculations WHERE refund_no=?",
-                rowMapper(), refundNo);
+                "SELECT " + COLS + " FROM refund_calculations WHERE id=?",
+                rowMapper(), id);
         return list.isEmpty() ? Optional.empty() : Optional.of(list.get(0));
     }
 
     public Optional<RefundCalculation> findByCancellationNo(String cancellationNo) {
         List<RefundCalculation> list = sql.executeQuery(
-                "SELECT id, refund_no, cancellation_no, total_paid_premium, payment_period,"
-                + " reserve_amount, applied_rate, base_refund, unpaid_premium, final_refund, status"
-                + " FROM refund_calculations WHERE cancellation_no=?",
-                rowMapper(), cancellationNo);
+                "SELECT " + COLS + " FROM refund_calculations WHERE cancellation_id=?",
+                rowMapper(), parseId(cancellationNo));
         return list.isEmpty() ? Optional.empty() : Optional.of(list.get(0));
     }
 
     public List<RefundCalculation> findAll() {
         return sql.executeQuery(
-                "SELECT id, refund_no, cancellation_no, total_paid_premium, payment_period,"
-                + " reserve_amount, applied_rate, base_refund, unpaid_premium, final_refund, status"
-                + " FROM refund_calculations ORDER BY id DESC",
+                "SELECT " + COLS + " FROM refund_calculations ORDER BY id DESC",
                 rowMapper());
     }
 
     private SqlExecutor.RowMapper<RefundCalculation> rowMapper() {
         return rs -> {
-            String cancNo = rs.getString("cancellation_no");
+            long cancellationId = rs.getLong("cancellation_id");
+            String cancNo = !rs.wasNull() ? "CAN" + String.format("%05d", cancellationId) : "?";
             Customer custShell = new Customer("?", "", null, null, null);
             Contract contractShell = Contract.shellOf(null, custShell, 0L);
             Cancellation cancShell = new Cancellation(
                     cancNo != null ? cancNo : "?", contractShell, null, 0L, "완료");
+            if (cancellationId > 0) cancShell.setId(cancellationId);
 
             String st = rs.getString("status");
             RefundStatus status = RefundStatus.CALCULATED;
@@ -81,7 +80,7 @@ public class RefundCalculationRepository {
                 try { status = RefundStatus.valueOf(st); } catch (IllegalArgumentException ignored) {}
             }
             RefundCalculation r = new RefundCalculation(
-                    rs.getString("refund_no"), cancShell,
+                    "RFC" + String.format("%05d", rs.getLong("id")), cancShell,
                     rs.getLong("total_paid_premium"),
                     rs.getString("payment_period"),
                     rs.getLong("reserve_amount"),
@@ -93,5 +92,9 @@ public class RefundCalculationRepository {
             r.setId(rs.getLong("id"));
             return r;
         };
+    }
+
+    private Long parseId(String businessNo) {
+        return Long.parseLong(businessNo.replaceAll("\\D", ""));
     }
 }

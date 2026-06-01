@@ -10,8 +10,6 @@ import java.util.List;
  */
 public class EducationPreparation {
 
-    private static int sequence = 0;
-
     private Long id;
     private int setupNumber;
     private String prepNo;
@@ -40,8 +38,6 @@ public class EducationPreparation {
 
 
     public EducationPreparation() {
-        sequence += 1;
-        this.setupNumber = sequence;
         this.attendanceList = new ArrayList<>();
     }
 

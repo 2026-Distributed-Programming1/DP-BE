@@ -14,7 +14,7 @@ import org.springframework.stereotype.Repository;
 public class EducationPreparationRepository {
 
     private static final String COLS =
-            "id, prep_no, plan_no, instructor_name, venue, material_ready,"
+            "id, plan_id, instructor_name, venue, material_ready,"
             + " textbook_status, attendance_list, additional_notice, status, registered_at";
 
     private final SqlExecutor sql;
@@ -30,32 +30,31 @@ public class EducationPreparationRepository {
 
     public List<EducationPreparation> findByPlanNo(String planNo) {
         return sql.executeQuery(
-                "SELECT " + COLS + " FROM education_preparations WHERE plan_no=? ORDER BY id DESC",
-                this::mapRow, planNo);
+                "SELECT " + COLS + " FROM education_preparations WHERE plan_id=? ORDER BY id DESC",
+                this::mapRow, parseId(planNo));
     }
 
-    public EducationPreparation findByPrepNo(String prepNo) {
+    public EducationPreparation findById(Long id) {
         return sql.queryOne(
-                "SELECT " + COLS + " FROM education_preparations WHERE prep_no=?", this::mapRow, prepNo);
+                "SELECT " + COLS + " FROM education_preparations WHERE id=?", this::mapRow, id);
     }
 
-    /** INSERT → id 회수 → prep_no 파생 UPDATE */
+    /** INSERT → id 회수 → prep_no 파생 */
     public void save(EducationPreparation prep) {
         String attendanceStr = prep.getAttendanceList().stream()
                 .map(Attendance::getAttendeeName)
                 .collect(Collectors.joining(","));
         long id = sql.executeInsertReturningKey(
                 "INSERT INTO education_preparations"
-                + " (plan_no, instructor_name, venue, material_ready, textbook_status,"
+                + " (plan_id, instructor_name, venue, material_ready, textbook_status,"
                 + "  attendance_list, additional_notice, status, registered_at)"
                 + " VALUES (?,?,?,?,?,?,?,?,?)",
-                prep.getPlanNo(), prep.getInstructorName(), prep.getVenue(),
+                parseId(prep.getPlanNo()), prep.getInstructorName(), prep.getVenue(),
                 prep.isMaterialReady(), prep.getTextbookStatus(),
                 attendanceStr, prep.getAdditionalNotice(),
                 prep.getStatus(), prep.getRegisteredAt());
         prep.setId(id);
         prep.setPrepNo("PRP" + String.format("%05d", id));
-        sql.executeUpdate("UPDATE education_preparations SET prep_no=? WHERE id=?", prep.getPrepNo(), id);
     }
 
     private EducationPreparation mapRow(ResultSet rs) throws SQLException {
@@ -74,12 +73,17 @@ public class EducationPreparationRepository {
                 rs.getString("additional_notice"),
                 attendees);
         prep.setId(rs.getLong("id"));
-        prep.setPrepNo(rs.getString("prep_no"));
-        prep.setPlanNo(rs.getString("plan_no"));
+        prep.setPrepNo("PRP" + String.format("%05d", rs.getLong("id")));
+        long planId = rs.getLong("plan_id");
+        if (!rs.wasNull()) prep.setPlanNo("PLN" + String.format("%05d", planId));
         prep.setMaterialReady(rs.getBoolean("material_ready"));
         prep.setStatus(rs.getString("status"));
         java.sql.Timestamp rat = rs.getTimestamp("registered_at");
         if (rat != null) prep.setRegisteredAt(rat.toLocalDateTime());
         return prep;
+    }
+
+    private Long parseId(String businessNo) {
+        return Long.parseLong(businessNo.replaceAll("\\D", ""));
     }
 }

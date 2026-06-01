@@ -9,8 +9,6 @@ import java.util.List;
  */
 public class EducationExecution {
 
-    private static int sequence = 0;
-
     private Long id;
     private int completionNumber;
     private String executionNo;
@@ -33,8 +31,6 @@ public class EducationExecution {
     }
 
     public EducationExecution(EducationPreparation preparation) {
-        sequence += 1;
-        this.completionNumber = sequence;
         this.preparation = preparation;
     }
 

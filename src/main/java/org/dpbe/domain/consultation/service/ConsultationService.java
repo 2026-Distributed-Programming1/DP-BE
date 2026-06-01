@@ -26,8 +26,16 @@ public class ConsultationService {
                 .collect(Collectors.toList());
     }
 
+    private Long parseId(String no) {
+        try {
+            return Long.parseLong(no.replaceAll("\\D", ""));
+        } catch (NumberFormatException e) {
+            throw ApiException.notFound("유효하지 않은 번호: " + no);
+        }
+    }
+
     public ConsultationResponse findByConsultNo(String consultNo) {
-        ConsultationRequest r = consultationRepo.findByConsultNo(consultNo);
+        ConsultationRequest r = consultationRepo.findById(parseId(consultNo));
         if (r == null) throw ApiException.notFound("상담 요청을 찾을 수 없습니다: " + consultNo);
         return ConsultationResponse.from(r);
     }
@@ -53,7 +61,7 @@ public class ConsultationService {
     /** 상담 수락. */
     @Transactional
     public ConsultationResponse accept(String consultNo) {
-        ConsultationRequest r = consultationRepo.findByConsultNo(consultNo);
+        ConsultationRequest r = consultationRepo.findById(parseId(consultNo));
         if (r == null) throw ApiException.notFound("상담 요청을 찾을 수 없습니다: " + consultNo);
         if (!"접수".equals(r.getStatus()))
             throw ApiException.badRequest("이미 처리된 상담 요청입니다. (현재 상태: " + r.getStatus() + ")");

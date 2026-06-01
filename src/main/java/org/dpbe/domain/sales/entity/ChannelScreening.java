@@ -33,38 +33,16 @@ public class ChannelScreening {
 //        this.applicationDate = LocalDate.now();
 //    }
 
-    public void loadApplicantList() {}
-
-    public void search() {}
-
-    public void showNoResultMessage() {}
-
-    public void openDetailPanel() {}
-
-    public void showApprovalConfirm() {}
-
     public void approve() {
         this.reviewedAt = LocalDateTime.now();
         this.approvalNo = "AP-" + reviewedAt.toString().replaceAll("[^0-9]", "").substring(0, 14);
         this.screeningStatus = ScreeningStatus.APPROVED;
     }
 
-    public void notifyHr() {}
-
-    public void showApprovalResult() {}
-
-    public void showNotifyError() {}
-
-    public void showRegistrationError() {}
-
-    public void openRejectionPopup() {}
-
     public void reject() {
         this.reviewedAt = LocalDateTime.now();
         this.screeningStatus = ScreeningStatus.REJECTED;
     }
-
-    public void closeDetailPanel() {}
 
     // Getters / Setters
     public String getApplicantName() { return applicantName; }

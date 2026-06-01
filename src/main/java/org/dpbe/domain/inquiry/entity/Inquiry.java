@@ -45,36 +45,16 @@ public class Inquiry {
                 && content != null && !content.isEmpty() && content.length() <= 1000;
     }
 
-    public void highlightError() {}
-
     public Boolean validateFileSize() {
         if (attachmentFileSize == null) return true;
         return attachmentFileSize <= 10 * 1024 * 1024; // 10MB 이하
     }
-
-    public void attachFile() {}
-
-    public void removeFile() {}
 
     public void submit() {
         this.receivedAt = LocalDateTime.now();
         this.inquiryNo = "INQ-" + receivedAt.toString().replaceAll("[^0-9]", "").substring(0, 14);
         this.status = InquiryStatus.PENDING;
     }
-
-    public void showSuccessPopup() {}
-
-    public void sendConfirmSms() {}
-
-    public void getDetail() {}
-
-    public void filterFaqByCategory() {}
-
-    public void toggleFaqItem() {}
-
-    public void getHistoryList() {}
-
-    public void showFileSizeError() {}
 
     // Runner에서 실제 사용하는 getter/setter만 유지
     public Long getId() { return id; }

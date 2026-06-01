@@ -38,6 +38,22 @@ public class ClaimRequestService {
         this.contractRepository = contractRepository;
     }
 
+    private Long parseId(String claimNo) {
+        try {
+            return Long.parseLong(claimNo.replaceAll("\\D", ""));
+        } catch (NumberFormatException e) {
+            throw ApiException.notFound("유효하지 않은 청구번호: " + claimNo);
+        }
+    }
+
+    private Long parseContractId(String contractNo) {
+        try {
+            return Long.parseLong(contractNo.replaceAll("\\D", ""));
+        } catch (NumberFormatException e) {
+            throw ApiException.notFound("유효하지 않은 계약번호: " + contractNo);
+        }
+    }
+
     public List<ClaimResponse> findAll() {
         return claimRequestRepository.findAll().stream()
                 .map(ClaimResponse::from)
@@ -45,7 +61,7 @@ public class ClaimRequestService {
     }
 
     public ClaimResponse findByClaimNo(String claimNo) {
-        ClaimRequest r = claimRequestRepository.findByClaimNo(claimNo);
+        ClaimRequest r = claimRequestRepository.findById(parseId(claimNo));
         if (r == null) {
             throw ApiException.notFound("청구를 찾을 수 없습니다: " + claimNo);
         }
@@ -59,7 +75,7 @@ public class ClaimRequestService {
         if (customer == null) {
             throw ApiException.notFound("고객을 찾을 수 없습니다: " + request.customerId());
         }
-        Contract contract = contractRepository.findByContractNo(request.contractNo());
+        Contract contract = contractRepository.findById(parseContractId(request.contractNo()));
         if (contract == null) {
             throw ApiException.notFound("계약을 찾을 수 없습니다: " + request.contractNo());
         }

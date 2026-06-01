@@ -11,7 +11,6 @@ import org.dpbe.domain.common.enums.RefundPaymentStatus;
  */
 public class RefundPayment {
 
-  private static int sequence = 0;            // 지급번호 자동 부여용
   private static final int MAX_OTP_FAIL = 5;
 
   private Long id;
@@ -40,11 +39,9 @@ public class RefundPayment {
   }
 
   /**
-   * 생성자 - 지급번호 자동 부여, 계좌·금액 자동 로드
+   * 신규 지급 생성자 - 계좌·금액 자동 로드
    */
   public RefundPayment(RefundCalculation refund) {
-    sequence += 1;
-    this.paymentNo = "RPY" + String.format("%05d", sequence);
     this.refund = refund;
     this.otpFailCount = 0;
     this.locked = false;

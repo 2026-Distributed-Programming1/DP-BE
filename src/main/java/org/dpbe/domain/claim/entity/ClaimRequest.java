@@ -21,8 +21,6 @@ import org.dpbe.domain.common.enums.NoticeMethod;
  */
 public class ClaimRequest {
 
-    private static int sequence = 0;             // 청구번호 자동 부여용
-
     private Long id;                             // DB 대리키(PK)
     private String claimNo;                      // 청구번호
     private Customer customer;                   // 청구 고객
@@ -44,10 +42,8 @@ public class ClaimRequest {
     private LocalDateTime requestedAt;           // 청구일시
     private ClaimRequestStatus status;           // 상태
 
-    /** 생성자 - 청구번호 자동 부여 */
+    /** 신규 청구 생성자 */
     public ClaimRequest(Customer customer, Contract contract) {
-        sequence += 1;
-        this.claimNo = "CLM" + String.format("%05d", sequence);
         this.customer = customer;
         this.contract = contract;
         this.claimReasons = new ArrayList<>();
@@ -126,14 +122,6 @@ public class ClaimRequest {
         this.accidentDetail = detail;
     }
 
-    /**
-     * 실손 의료비 청구 확인 (A3)
-     * 외부 시스템 연동이 필요한 부분이므로 더미로 처리한다.
-     */
-    public void confirmInsuranceBenefits() {
-        System.out.println("[ClaimRequest] 실손 의료비 청구 확인 완료");
-    }
-
     /** 등록된 계좌 선택 (A4) */
     public void selectExistingAccount(BankAccount account) {
         this.bankAccount = account;
@@ -194,12 +182,6 @@ public class ClaimRequest {
             this.status = ClaimRequestStatus.RECEIVED;
             System.out.println("[ClaimRequest] 보험금 청구 접수 완료: " + claimNo);
         }
-    }
-
-    /** 작성 취소 */
-    public void cancel() {
-        // 다이어그램에 별도 취소 상태가 없으므로 단순히 작성 취소 행위만 표현
-        System.out.println("[ClaimRequest] 청구 작성 취소: " + claimNo);
     }
 
     // Getter

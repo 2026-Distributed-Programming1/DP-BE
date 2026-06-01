@@ -17,8 +17,6 @@ import org.dpbe.domain.common.enums.RefundStatus;
  */
 public class RefundCalculation {
 
-    private static int sequence = 0;                // 환급 접수번호 자동 부여용
-
     private static final double DEFAULT_RATE = 0.025;
 
     private Long id;
@@ -56,10 +54,8 @@ public class RefundCalculation {
         this.adjustments = new ArrayList<>();
     }
 
-    /** 생성자 - 환급 접수번호 자동 부여, 데이터 자동 로드 후 calculate() 호출 */
+    /** 신규 산출 생성자 - 데이터 자동 로드 후 calculate() 호출 */
     public RefundCalculation(Cancellation cancellation) {
-        sequence += 1;
-        this.refundNo = "RFC" + String.format("%05d", sequence);
         this.cancellation = cancellation;
         this.adjustments = new ArrayList<>();
         this.calculatedAt = LocalDateTime.now();
@@ -160,14 +156,8 @@ public class RefundCalculation {
             System.out.println("[RefundCalculation] 환급금 확정 및 지급 이관: " + refundNo);
             return new RefundPayment(this);
         } catch (Exception e) {
-            handleConfirmError();
             return null;
         }
-    }
-
-    /** 확정 저장 오류 (E2) */
-    public void handleConfirmError() {
-        System.out.println("[RefundCalculation] 확정 저장 오류 발생: " + refundNo);
     }
 
     // Getter / Setter

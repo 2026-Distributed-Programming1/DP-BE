@@ -30,16 +30,24 @@ public class EducationPreparationService {
         return list.stream().map(EducationPreparationResponse::from).toList();
     }
 
+    private Long parseId(String no) {
+        try {
+            return Long.parseLong(no.replaceAll("\\D", ""));
+        } catch (NumberFormatException e) {
+            throw ApiException.badRequest("유효하지 않은 번호: " + no);
+        }
+    }
+
     @Transactional(readOnly = true)
     public EducationPreparationResponse getPreparation(String prepNo) {
-        EducationPreparation prep = repository.findByPrepNo(prepNo);
+        EducationPreparation prep = repository.findById(parseId(prepNo));
         if (prep == null) throw ApiException.notFound("교육 제반을 찾을 수 없습니다: " + prepNo);
         return EducationPreparationResponse.from(prep);
     }
 
     @Transactional
     public EducationPreparationResponse createPreparation(EducationPreparationRequest req) {
-        if (planRepository.findByPlanNo(req.planNo()) == null) {
+        if (planRepository.findById(parseId(req.planNo())) == null) {
             throw ApiException.notFound("승인된 교육 계획안을 찾을 수 없습니다: " + req.planNo());
         }
         EducationPreparation prep = new EducationPreparation();

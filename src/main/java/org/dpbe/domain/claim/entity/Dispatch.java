@@ -13,8 +13,6 @@ import org.dpbe.domain.common.enums.DispatchStatus;
  */
 public class Dispatch {
 
-    private static int sequence = 0;          // 출동번호 자동 부여용
-
     private Long id;                          // DB 대리키(PK)
     private String dispatchNo;                // 출동번호
     private AccidentReport accident;          // 사고 접수
@@ -31,10 +29,8 @@ public class Dispatch {
         this.status = status;
     }
 
-    /** 생성자 - 출동번호 자동 부여, status="신청" */
+    /** 신규 출동 생성자 */
     public Dispatch(AccidentReport accident) {
-        sequence += 1;
-        this.dispatchNo = "DSP" + String.format("%05d", sequence);
         this.accident = accident;
         this.status = DispatchStatus.REQUESTED;
     }

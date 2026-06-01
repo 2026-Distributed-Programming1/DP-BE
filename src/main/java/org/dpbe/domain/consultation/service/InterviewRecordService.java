@@ -27,8 +27,16 @@ public class InterviewRecordService {
                 .collect(Collectors.toList());
     }
 
+    private Long parseId(String no) {
+        try {
+            return Long.parseLong(no.replaceAll("\\D", ""));
+        } catch (NumberFormatException e) {
+            throw ApiException.notFound("유효하지 않은 번호: " + no);
+        }
+    }
+
     public InterviewRecordResponse findByRecordNo(String recordNo) {
-        InterviewRecord r = recordRepo.findByRecordNo(recordNo);
+        InterviewRecord r = recordRepo.findById(parseId(recordNo));
         if (r == null) throw ApiException.notFound("면담기록을 찾을 수 없습니다: " + recordNo);
         return InterviewRecordResponse.from(r);
     }
@@ -56,7 +64,7 @@ public class InterviewRecordService {
     /** 면담기록 수정 — E2: 면담 내용 필수. */
     @Transactional
     public InterviewRecordResponse update(String recordNo, InterviewRecordUpdateRequest req) {
-        InterviewRecord r = recordRepo.findByRecordNo(recordNo);
+        InterviewRecord r = recordRepo.findById(parseId(recordNo));
         if (r == null) throw ApiException.notFound("면담기록을 찾을 수 없습니다: " + recordNo);
         if (req.content() == null || req.content().isBlank())
             throw ApiException.badRequest("면담 내용은 필수입니다.");

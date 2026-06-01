@@ -12,7 +12,7 @@ import org.springframework.stereotype.Repository;
 public class EducationPlanRepository {
 
     private static final String COLS =
-            "id, plan_no, trainer_name, education_name, channel_type, start_date, end_date,"
+            "id, trainer_name, education_name, channel_type, start_date, end_date,"
             + " target_count, budget, education_goal, education_content, textbook_list,"
             + " reject_reason, approved_at, status";
 
@@ -33,9 +33,9 @@ public class EducationPlanRepository {
                 this::mapRow, status);
     }
 
-    public EducationPlan findByPlanNo(String planNo) {
+    public EducationPlan findById(Long id) {
         return sql.queryOne(
-                "SELECT " + COLS + " FROM education_plans WHERE plan_no=?", this::mapRow, planNo);
+                "SELECT " + COLS + " FROM education_plans WHERE id=?", this::mapRow, id);
     }
 
     /** INSERT → id 회수 → plan_no 파생 UPDATE */
@@ -53,7 +53,6 @@ public class EducationPlanRepository {
                 plan.getRejectReason(), plan.getApprovedAt(), plan.getStatus());
         plan.setId(id);
         plan.setPlanNo("PLN" + String.format("%05d", id));
-        sql.executeUpdate("UPDATE education_plans SET plan_no=? WHERE id=?", plan.getPlanNo(), id);
     }
 
     /** 승인/반려 시 status·approved_at·reject_reason 갱신 */
@@ -80,7 +79,7 @@ public class EducationPlanRepository {
                 rs.getString("reject_reason"),
                 rs.getString("status"));
         plan.setId(rs.getLong("id"));
-        plan.setPlanNo(rs.getString("plan_no"));
+        plan.setPlanNo("PLN" + String.format("%05d", rs.getLong("id")));
         java.sql.Timestamp aat = rs.getTimestamp("approved_at");
         if (aat != null) plan.setApprovedAt(aat.toLocalDateTime());
         return plan;

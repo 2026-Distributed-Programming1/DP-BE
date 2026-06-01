@@ -22,7 +22,7 @@ import org.springframework.stereotype.Repository;
 public class ClaimRequestRepository {
 
     private static final String COLS =
-            "id, claim_no, customer_id, customer_name, contract_no, claim_type, diagnosis,"
+            "id, customer_id, customer_name, contract_id, claim_type, diagnosis,"
             + " claim_reasons, bank_name, account_no, account_holder, personal_info_agreed,"
             + " requested_at, status";
 
@@ -36,7 +36,7 @@ public class ClaimRequestRepository {
     public void save(ClaimRequest r) {
         String customerId   = r.getCustomer() != null ? r.getCustomer().getCustomerId() : null;
         String customerName = r.getCustomer() != null ? r.getCustomer().getName() : null;
-        String contractNo   = r.getContract() != null ? r.getContract().getContractNo() : null;
+        Long contractId     = r.getContract() != null ? r.getContract().getId() : null;
         String claimType    = r.getClaimType() != null ? r.getClaimType().name() : null;
         String reasons      = r.getClaimReasons() != null ? String.join(",", r.getClaimReasons()) : null;
         String bankName     = r.getBankAccount() != null ? r.getBankAccount().getBankName() : null;
@@ -45,25 +45,24 @@ public class ClaimRequestRepository {
         String status       = r.getStatus() != null ? r.getStatus().name() : null;
 
         long id = sql.executeInsertReturningKey(
-                "INSERT INTO claim_requests (customer_id, customer_name, contract_no, claim_type,"
+                "INSERT INTO claim_requests (customer_id, customer_name, contract_id, claim_type,"
                 + " diagnosis, claim_reasons, bank_name, account_no, account_holder,"
                 + " personal_info_agreed, requested_at, status)"
                 + " VALUES (?,?,?,?,?,?,?,?,?,?,?,?)",
-                customerId, customerName, contractNo, claimType,
+                customerId, customerName, contractId, claimType,
                 r.getDiagnosis(), reasons, bankName, accountNo, holder,
                 r.isPersonalInfoAgreed(), r.getRequestedAt(), status);
         r.setId(id);
         r.setClaimNo("CLM" + String.format("%05d", id));
-        sql.executeUpdate("UPDATE claim_requests SET claim_no=? WHERE id=?", r.getClaimNo(), id);
     }
 
     public List<ClaimRequest> findAll() {
         return sql.executeQuery("SELECT " + COLS + " FROM claim_requests", this::mapRow);
     }
 
-    public ClaimRequest findByClaimNo(String claimNo) {
+    public ClaimRequest findById(Long id) {
         return sql.queryOne(
-                "SELECT " + COLS + " FROM claim_requests WHERE claim_no=?", this::mapRow, claimNo);
+                "SELECT " + COLS + " FROM claim_requests WHERE id=?", this::mapRow, id);
     }
 
     private ClaimRequest mapRow(ResultSet rs) throws SQLException {
@@ -71,8 +70,11 @@ public class ClaimRequestRepository {
         String cname = rs.getString("customer_name");
         Customer customerShell = new Customer(
                 cid != null ? cid : "?", cname != null ? cname : "", null, null, null);
-        String cno = rs.getString("contract_no");
-        Contract contractShell = cno != null ? Contract.shellOf(cno, customerShell, 0L) : null;
+        long contractId = rs.getLong("contract_id");
+        Contract contractShell = !rs.wasNull()
+                ? Contract.shellOf("CON" + String.format("%05d", contractId), customerShell, 0L)
+                : null;
+        if (contractShell != null) contractShell.setId(contractId);
 
         String st = rs.getString("status");
         ClaimRequestStatus status = ClaimRequestStatus.DRAFT;
@@ -81,7 +83,7 @@ public class ClaimRequestRepository {
             catch (IllegalArgumentException ignored) {}
         }
         ClaimRequest r = new ClaimRequest(
-                rs.getString("claim_no"), customerShell, contractShell, status);
+                "CLM" + String.format("%05d", rs.getLong("id")), customerShell, contractShell, status);
         r.setId(rs.getLong("id"));
 
         String ct = rs.getString("claim_type");

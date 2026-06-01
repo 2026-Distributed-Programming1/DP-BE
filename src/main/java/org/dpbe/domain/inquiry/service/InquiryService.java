@@ -38,9 +38,17 @@ public class InquiryService {
 
     @Transactional(readOnly = true)
     public InquiryResponse getInquiry(String inquiryNo) {
-        Inquiry inquiry = repository.findByInquiryNo(inquiryNo);
+        Inquiry inquiry = repository.findById(parseId(inquiryNo));
         if (inquiry == null) throw ApiException.notFound("문의를 찾을 수 없습니다: " + inquiryNo);
         return InquiryResponse.from(inquiry);
+    }
+
+    private Long parseId(String inquiryNo) {
+        try {
+            return Long.parseLong(inquiryNo.replaceAll("\\D", ""));
+        } catch (NumberFormatException e) {
+            throw ApiException.badRequest("유효하지 않은 문의번호: " + inquiryNo);
+        }
     }
 
     @Transactional
@@ -68,7 +76,7 @@ public class InquiryService {
 
     @Transactional
     public InquiryResponse answer(String inquiryNo, InquiryAnswerRequest req) {
-        Inquiry inquiry = repository.findByInquiryNo(inquiryNo);
+        Inquiry inquiry = repository.findById(parseId(inquiryNo));
         if (inquiry == null) throw ApiException.notFound("문의를 찾을 수 없습니다: " + inquiryNo);
         if (InquiryStatus.ANSWERED.equals(inquiry.getStatus())) {
             throw ApiException.badRequest("이미 답변이 완료된 문의입니다.");

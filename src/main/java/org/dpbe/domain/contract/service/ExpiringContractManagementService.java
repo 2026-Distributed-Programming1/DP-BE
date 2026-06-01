@@ -39,10 +39,18 @@ public class ExpiringContractManagementService {
                 .collect(Collectors.toList());
     }
 
+    private Long parseId(String no) {
+        try {
+            return Long.parseLong(no.replaceAll("\\D", ""));
+        } catch (NumberFormatException e) {
+            throw ApiException.badRequest("유효하지 않은 번호: " + no);
+        }
+    }
+
     /** 안내 기록 저장 */
     @Transactional
     public NoticeResponse createNotice(String contractNo, NoticeCreateRequest req) {
-        Contract contract = contractRepository.findByContractNo(contractNo);
+        Contract contract = contractRepository.findById(parseId(contractNo));
         if (contract == null) {
             throw ApiException.notFound("계약을 찾을 수 없습니다: " + contractNo);
         }
@@ -65,7 +73,7 @@ public class ExpiringContractManagementService {
     /** 고객 응답 기록 — RENEWAL 시 contract.monthly_premium 업데이트도 같은 트랜잭션 */
     @Transactional
     public NoticeResponse recordResponse(String noticeNo, NoticeResponseRequest req) {
-        ExpiringContractManagement m = noticeRepository.findByNoticeNo(noticeNo)
+        ExpiringContractManagement m = noticeRepository.findById(parseId(noticeNo))
                 .orElseThrow(() -> ApiException.notFound("안내 기록을 찾을 수 없습니다: " + noticeNo));
 
         CustomerResponse response;
@@ -82,16 +90,16 @@ public class ExpiringContractManagementService {
             if (req.renewalPremium() == null || req.renewalPremium() <= 0) {
                 throw ApiException.badRequest("갱신 시 갱신 보험료를 입력해야 합니다.");
             }
-            Contract contract = contractRepository.findByContractNo(m.getContractNo());
+            Contract contract = contractRepository.findById(parseId(m.getContractNo()));
             if (contract == null) {
                 throw ApiException.notFound("연결된 계약을 찾을 수 없습니다: " + m.getContractNo());
             }
             renewalPremium = req.renewalPremium();
             premiumDiff    = renewalPremium - contract.getMonthlyPremium();
-            contractRepository.updatePremium(m.getContractNo(), renewalPremium);
+            contractRepository.updatePremium(contract.getId(), renewalPremium);
         }
 
-        noticeRepository.updateResponse(noticeNo, response.name(), renewalPremium, premiumDiff);
+        noticeRepository.updateResponse(m.getId(), response.name(), renewalPremium, premiumDiff);
 
         m.setCustomerResponse(response);
         m.setRenewalPremium(renewalPremium);

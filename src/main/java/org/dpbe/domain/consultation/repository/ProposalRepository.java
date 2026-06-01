@@ -12,7 +12,7 @@ import org.springframework.stereotype.Repository;
 public class ProposalRepository {
 
     private static final String COLS =
-            "id, proposal_no, customer_name, product_name, monthly_premium, sent_at";
+            "id, customer_name, product_name, monthly_premium, sent_at";
 
     private final SqlExecutor sql;
 
@@ -35,8 +35,6 @@ public class ProposalRepository {
                 p.getCustomerName(), productName, premium, p.getSentAt());
         p.setId(id);
         p.setProposalNo("PRO" + String.format("%05d", id));
-        sql.executeUpdate("UPDATE proposals SET proposal_no=? WHERE id=?",
-                p.getProposalNo(), id);
     }
 
     private Proposal mapRow(ResultSet rs) throws SQLException {
@@ -48,7 +46,7 @@ public class ProposalRepository {
         Proposal p = new Proposal(0, ts != null ? ts.toLocalDateTime() : null,
                 rs.getString("customer_name"), product);
         p.setId(rs.getLong("id"));
-        p.setProposalNo(rs.getString("proposal_no"));
+        p.setProposalNo("PRO" + String.format("%05d", rs.getLong("id")));
         return p;
     }
 }

@@ -77,8 +77,16 @@ public class ChannelScreeningService {
         return ChannelScreeningResponse.from(s);
     }
 
+    private Long parseId(String screeningNo) {
+        try {
+            return Long.parseLong(screeningNo.replaceAll("\\D", ""));
+        } catch (NumberFormatException e) {
+            throw ApiException.badRequest("유효하지 않은 심사번호: " + screeningNo);
+        }
+    }
+
     private ChannelScreening findOrThrow(String screeningNo) {
-        ChannelScreening s = repository.findByScreeningNo(screeningNo);
+        ChannelScreening s = repository.findById(parseId(screeningNo));
         if (s == null) {
             throw ApiException.notFound("심사 내역을 찾을 수 없습니다: " + screeningNo);
         }

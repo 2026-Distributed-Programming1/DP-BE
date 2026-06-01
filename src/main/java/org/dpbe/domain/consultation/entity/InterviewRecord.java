@@ -8,8 +8,6 @@ import java.time.LocalDateTime;
  */
 public class InterviewRecord {
 
-    private static int sequence = 0;
-
     private Long id;
     private String recordNo;
     private int recordNumber;
@@ -31,10 +29,7 @@ public class InterviewRecord {
         this.followUpAction = followUpAction;
     }
 
-    public InterviewRecord() {
-        sequence += 1;
-        this.recordNumber = sequence;
-    }
+    public InterviewRecord() {}
 
     private InterviewRecord(boolean fromDb) {}
 

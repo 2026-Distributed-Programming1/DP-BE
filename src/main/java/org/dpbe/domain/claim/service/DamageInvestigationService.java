@@ -39,10 +39,18 @@ public class DamageInvestigationService {
         return InvestigationResponse.from(inv);
     }
 
+    private Long parseId(String no) {
+        try {
+            return Long.parseLong(no.replaceAll("\\D", ""));
+        } catch (NumberFormatException e) {
+            throw ApiException.notFound("유효하지 않은 번호: " + no);
+        }
+    }
+
     /** 조사 등록 — 청구 건에 대해 조사 결과를 제출하고 저장(@Transactional). */
     @Transactional
     public InvestigationResponse create(String claimNo, InvestigationCreateRequest request) {
-        ClaimRequest claim = claimRequestRepository.findByClaimNo(claimNo);
+        ClaimRequest claim = claimRequestRepository.findById(parseId(claimNo));
         if (claim == null) {
             throw ApiException.notFound("청구를 찾을 수 없습니다: " + claimNo);
         }

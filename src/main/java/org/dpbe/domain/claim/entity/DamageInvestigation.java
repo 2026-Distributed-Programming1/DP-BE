@@ -15,8 +15,6 @@ import java.util.List;
  */
 public class DamageInvestigation {
 
-    private static int sequence = 0;                            // 조사번호 자동 부여용
-
     private Long id;                                            // DB 대리키(PK)
     private String investigationNo;                             // 조사번호
     private ClaimRequest claim;                                 // 대상 청구
@@ -32,10 +30,8 @@ public class DamageInvestigation {
     private LocalDateTime investigatedAt;                       // 조사일시
     private InvestigationStatus status;                         // 상태
 
-    /** 생성자 - 조사번호 자동 부여, status="신규배정" */
+    /** 신규 조사 생성자 */
     public DamageInvestigation(ClaimRequest claim) {
-        sequence += 1;
-        this.investigationNo = "INV" + String.format("%05d", sequence);
         this.claim = claim;
         this.status = InvestigationStatus.NEW_ASSIGNED;
     }

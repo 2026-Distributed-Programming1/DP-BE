@@ -30,9 +30,17 @@ public class ActivityPlanService {
                 .collect(Collectors.toList());
     }
 
+    private Long parseId(String planNo) {
+        try {
+            return Long.parseLong(planNo.replaceAll("\\D", ""));
+        } catch (NumberFormatException e) {
+            throw ApiException.badRequest("유효하지 않은 계획번호: " + planNo);
+        }
+    }
+
     @Transactional(readOnly = true)
     public ActivityPlanResponse findByPlanNo(String planNo) {
-        ActivityPlan plan = repository.findByPlanNo(planNo);
+        ActivityPlan plan = repository.findById(parseId(planNo));
         if (plan == null) {
             throw ApiException.notFound("활동 계획을 찾을 수 없습니다: " + planNo);
         }

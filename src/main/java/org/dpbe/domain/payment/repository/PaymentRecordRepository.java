@@ -19,7 +19,7 @@ import org.springframework.stereotype.Repository;
 public class PaymentRecordRepository {
 
     private static final String COLS =
-            "id, record_no, contract_no, customer_name, amount, method, payment_date, status,"
+            "id, contract_id, customer_name, amount, method, payment_date, status,"
             + " confirmed_at, rejected_at, reject_category, reject_reason";
 
     private final SqlExecutor sql;
@@ -29,21 +29,20 @@ public class PaymentRecordRepository {
     }
 
     public void save(PaymentRecord r) {
-        String contractNo     = r.getContract() != null ? r.getContract().getContractNo() : null;
+        Long contractId       = r.getContract() != null ? r.getContract().getId() : null;
         String customerName   = r.getContract() != null && r.getContract().getCustomer() != null
                 ? r.getContract().getCustomer().getName() : null;
         String status         = r.getStatus() != null ? r.getStatus().name() : null;
         String rejectCategory = r.getRejectCategory() != null ? r.getRejectCategory().name() : null;
 
         long id = sql.executeInsertReturningKey(
-                "INSERT INTO payment_records (contract_no, customer_name, amount, method, payment_date,"
+                "INSERT INTO payment_records (contract_id, customer_name, amount, method, payment_date,"
                 + " status, confirmed_at, rejected_at, reject_category, reject_reason)"
                 + " VALUES (?,?,?,?,?,?,?,?,?,?)",
-                contractNo, customerName, r.getAmount(), r.getMethod(), r.getPaymentDate(),
+                contractId, customerName, r.getAmount(), r.getMethod(), r.getPaymentDate(),
                 status, r.getConfirmedAt(), r.getRejectedAt(), rejectCategory, r.getRejectReason());
         r.setId(id);
         r.setRecordNo("PRC" + String.format("%05d", id));
-        sql.executeUpdate("UPDATE payment_records SET record_no=? WHERE id=?", r.getRecordNo(), id);
     }
 
     /** 확정/반려 후 상태 업데이트 */
@@ -53,15 +52,15 @@ public class PaymentRecordRepository {
         sql.executeUpdate(
                 "UPDATE payment_records"
                 + " SET status=?, confirmed_at=?, rejected_at=?, reject_category=?, reject_reason=?"
-                + " WHERE record_no=?",
+                + " WHERE id=?",
                 status, r.getConfirmedAt(), r.getRejectedAt(), rejectCategory, r.getRejectReason(),
-                r.getRecordNo());
+                r.getId());
     }
 
-    public Optional<PaymentRecord> findByRecordNo(String recordNo) {
+    public Optional<PaymentRecord> findById(Long id) {
         List<PaymentRecord> list = sql.executeQuery(
-                "SELECT " + COLS + " FROM payment_records WHERE record_no=?",
-                rowMapper(), recordNo);
+                "SELECT " + COLS + " FROM payment_records WHERE id=?",
+                rowMapper(), id);
         return list.isEmpty() ? Optional.empty() : Optional.of(list.get(0));
     }
 
@@ -73,8 +72,8 @@ public class PaymentRecordRepository {
 
     public List<PaymentRecord> findByContractNo(String contractNo) {
         return sql.executeQuery(
-                "SELECT " + COLS + " FROM payment_records WHERE contract_no=? ORDER BY id DESC",
-                rowMapper(), contractNo);
+                "SELECT " + COLS + " FROM payment_records WHERE contract_id=? ORDER BY id DESC",
+                rowMapper(), parseId(contractNo));
     }
 
     public List<PaymentRecord> findByStatus(PaymentRecordStatus status) {
@@ -85,10 +84,12 @@ public class PaymentRecordRepository {
 
     private SqlExecutor.RowMapper<PaymentRecord> rowMapper() {
         return rs -> {
-            String cno  = rs.getString("contract_no");
+            long contractId = rs.getLong("contract_id");
+            String cno = !rs.wasNull() ? "CON" + String.format("%05d", contractId) : null;
             String cname = rs.getString("customer_name");
             Customer custShell = cname != null ? new Customer("?", cname, null, null, null) : null;
             Contract contractShell = Contract.shellOf(cno, custShell, 0L);
+            if (contractId > 0) contractShell.setId(contractId);
 
             String st = rs.getString("status");
             PaymentRecordStatus status = PaymentRecordStatus.WAITING;
@@ -100,7 +101,7 @@ public class PaymentRecordRepository {
             LocalDate paymentDate = pd != null ? pd.toLocalDate() : LocalDate.now();
 
             PaymentRecord r = new PaymentRecord(
-                    rs.getString("record_no"), contractShell,
+                    "PRC" + String.format("%05d", rs.getLong("id")), contractShell,
                     rs.getLong("amount"), rs.getString("method"), paymentDate, status);
             r.setId(rs.getLong("id"));
             java.sql.Timestamp cat = rs.getTimestamp("confirmed_at");
@@ -115,5 +116,9 @@ public class PaymentRecordRepository {
             r.setRejectReason(rs.getString("reject_reason"));
             return r;
         };
+    }
+
+    private Long parseId(String businessNo) {
+        return Long.parseLong(businessNo.replaceAll("\\D", ""));
     }
 }

@@ -31,14 +31,13 @@ public class PaymentRepository {
                 customerId, customerName, p.getDiscountedAmount(), method, p.getRequestedAt(), status);
         p.setId(id);
         p.setPaymentNo("PAY" + String.format("%05d", id));
-        sql.executeUpdate("UPDATE payments SET payment_no=? WHERE id=?", p.getPaymentNo(), id);
 
         for (PaymentItem item : p.getItems()) {
-            String contractNo = item.getContract() != null ? item.getContract().getContractNo() : null;
+            Long contractId = item.getContract() != null ? item.getContract().getId() : null;
             sql.executeUpdate(
-                    "INSERT INTO payment_items (payment_no, contract_no, count, subtotal)"
+                    "INSERT INTO payment_items (payment_id, contract_id, count, subtotal)"
                     + " VALUES (?,?,?,?)",
-                    p.getPaymentNo(), contractNo, item.getCount(), item.getSubtotal());
+                    p.getId(), contractId, item.getCount(), item.getSubtotal());
         }
     }
 }

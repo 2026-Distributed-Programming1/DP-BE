@@ -8,8 +8,6 @@ import java.time.LocalDateTime;
  */
 public class Underwriting {
 
-    private static int sequence = 0;
-
     private Long id;
     private String underwritingNo;
     private int reviewNumber;
@@ -31,10 +29,7 @@ public class Underwriting {
         this.reviewResult = reviewResult;
     }
 
-    public Underwriting() {
-        sequence += 1;
-        this.reviewNumber = sequence;
-    }
+    public Underwriting() {}
 
     public void startReview() {
         this.reviewedAt = LocalDateTime.now();
@@ -54,10 +49,6 @@ public class Underwriting {
         this.reviewResult = new ReviewResult("승인", null, null);
         System.out.println("  [시스템] 수동 심사가 완료되었습니다.");
         return reviewResult;
-    }
-
-    public void attachDocument(String file) {
-        System.out.println("  [시스템] 서류가 첨부되었습니다: " + file);
     }
 
     public void complete(String result, String condition, String rejectionReason) {

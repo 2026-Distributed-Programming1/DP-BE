@@ -43,8 +43,16 @@ public class AccidentReportService {
                 .collect(Collectors.toList());
     }
 
+    private Long parseId(String no) {
+        try {
+            return Long.parseLong(no.replaceAll("\\D", ""));
+        } catch (NumberFormatException e) {
+            throw ApiException.notFound("유효하지 않은 번호: " + no);
+        }
+    }
+
     public AccidentResponse findByReportNo(String reportNo) {
-        AccidentReport r = accidentRepository.findByReportNo(reportNo);
+        AccidentReport r = accidentRepository.findById(parseId(reportNo));
         if (r == null) {
             throw ApiException.notFound("사고 접수를 찾을 수 없습니다: " + reportNo);
         }

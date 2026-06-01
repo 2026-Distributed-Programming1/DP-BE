@@ -15,8 +15,6 @@ public class ContractFilter {
     private String insuranceType;   // 보험 종류
     private LocalDate contractDate; // 계약 일자
 
-    public void apply() {}
-
     public void reset() {
         // 모든 필터 조건을 초기 상태(null)로 초기화한다
         this.customerId = null;

@@ -25,6 +25,14 @@ public class CancellationService {
         this.cancellationRepository = cancellationRepository;
     }
 
+    private Long parseId(String no) {
+        try {
+            return Long.parseLong(no.replaceAll("\\D", ""));
+        } catch (NumberFormatException e) {
+            throw ApiException.badRequest("유효하지 않은 번호: " + no);
+        }
+    }
+
     /** 해지 신청 — contract.status CANCELLED 업데이트 포함, 같은 트랜잭션 */
     @Transactional
     public CancellationResponse cancel(String contractNo, CancellationRequest req) {
@@ -35,7 +43,7 @@ public class CancellationService {
             throw ApiException.badRequest("해지 사유를 입력해야 합니다.");
         }
 
-        Contract contract = contractRepository.findByContractNo(contractNo);
+        Contract contract = contractRepository.findById(parseId(contractNo));
         if (contract == null) {
             throw ApiException.notFound("계약을 찾을 수 없습니다: " + contractNo);
         }
@@ -54,7 +62,7 @@ public class CancellationService {
         c.submit();
 
         cancellationRepository.save(c);
-        contractRepository.updateStatus(contractNo, ContractStatus.CANCELLED);
+        contractRepository.updateStatus(contract.getId(), ContractStatus.CANCELLED);
 
         return toResponse(c);
     }
@@ -68,7 +76,7 @@ public class CancellationService {
 
     @Transactional(readOnly = true)
     public CancellationResponse getOne(String cancellationNo) {
-        return cancellationRepository.findByCancellationNo(cancellationNo)
+        return cancellationRepository.findById(parseId(cancellationNo))
                 .map(this::toResponse)
                 .orElseThrow(() -> ApiException.notFound("해지 건을 찾을 수 없습니다: " + cancellationNo));
     }

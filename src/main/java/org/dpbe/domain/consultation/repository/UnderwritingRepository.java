@@ -11,7 +11,7 @@ import org.springframework.stereotype.Repository;
 public class UnderwritingRepository {
 
     private static final String COLS =
-            "id, underwriting_no, review_type, app_no, customer_name,"
+            "id, review_type, app_no, customer_name,"
             + " risk_grade, review_opinion, result, result_condition, rejection_reason, reviewed_at";
 
     private final SqlExecutor sql;
@@ -35,8 +35,6 @@ public class UnderwritingRepository {
                 result, condition, rejection, u.getReviewedAt());
         u.setId(id);
         u.setUnderwritingNo("UDW" + String.format("%05d", id));
-        sql.executeUpdate("UPDATE underwritings SET underwriting_no=? WHERE id=?",
-                u.getUnderwritingNo(), id);
     }
 
     private Underwriting mapRow(ResultSet rs) throws SQLException {
@@ -52,7 +50,7 @@ public class UnderwritingRepository {
                         rs.getString("result_condition"),
                         rs.getString("rejection_reason")));
         u.setId(rs.getLong("id"));
-        u.setUnderwritingNo(rs.getString("underwriting_no"));
+        u.setUnderwritingNo("UDW" + String.format("%05d", rs.getLong("id")));
         u.setAppNo(rs.getString("app_no"));
         u.setCustomerName(rs.getString("customer_name"));
         return u;

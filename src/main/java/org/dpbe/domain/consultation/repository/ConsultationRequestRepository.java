@@ -11,7 +11,7 @@ import org.springframework.stereotype.Repository;
 public class ConsultationRequestRepository {
 
     private static final String COLS =
-            "id, consult_no, consultation_type, location, contact, content,"
+            "id, consultation_type, location, contact, content,"
             + " status, scheduled_at, received_at, accepted_at";
 
     private final SqlExecutor sql;
@@ -25,10 +25,10 @@ public class ConsultationRequestRepository {
                 "SELECT " + COLS + " FROM consultation_requests ORDER BY id DESC", this::mapRow);
     }
 
-    public ConsultationRequest findByConsultNo(String consultNo) {
+    public ConsultationRequest findById(Long id) {
         return sql.queryOne(
-                "SELECT " + COLS + " FROM consultation_requests WHERE consult_no=?",
-                this::mapRow, consultNo);
+                "SELECT " + COLS + " FROM consultation_requests WHERE id=?",
+                this::mapRow, id);
     }
 
     /** 상담 신청 저장 — INSERT 후 id에서 consult_no 파생. */
@@ -41,8 +41,6 @@ public class ConsultationRequestRepository {
                 r.getStatus(), r.getScheduledAt(), r.getReceivedAt());
         r.setId(id);
         r.setConsultNo("CSL" + String.format("%05d", id));
-        sql.executeUpdate("UPDATE consultation_requests SET consult_no=? WHERE id=?",
-                r.getConsultNo(), id);
     }
 
     /** 상담 수락 갱신 (status, accepted_at). */
@@ -65,7 +63,7 @@ public class ConsultationRequestRepository {
                 rs.getString("content"),
                 rs.getString("status"));
         cr.setId(rs.getLong("id"));
-        cr.setConsultNo(rs.getString("consult_no"));
+        cr.setConsultNo("CSL" + String.format("%05d", rs.getLong("id")));
         cr.setReceivedAt(recTs != null ? recTs.toLocalDateTime() : null);
         cr.setAcceptedAt(accTs != null ? accTs.toLocalDateTime() : null);
         return cr;

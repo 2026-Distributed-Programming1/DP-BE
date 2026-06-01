@@ -9,8 +9,6 @@ import org.dpbe.domain.actor.Customer;
  */
 public class PolicyApplication {
 
-    private static int sequence = 0;
-
     private Long id;
     private String applicationNo;
     private int applicationNumber;
@@ -34,10 +32,7 @@ public class PolicyApplication {
         this.paymentMethod = paymentMethod;
     }
 
-    public PolicyApplication() {
-        sequence += 1;
-        this.applicationNumber = sequence;
-    }
+    public PolicyApplication() {}
 
     private PolicyApplication(boolean fromDb) {}
 
@@ -77,10 +72,6 @@ public class PolicyApplication {
     public void attachSignature(String file) {
         this.uploadedAt = LocalDateTime.now();
         System.out.println("  [시스템] 서명 파일이 첨부되었습니다: " + file);
-    }
-
-    public void requestElectronicSignature() {
-        System.out.println("  [시스템] 고객에게 전자서명 요청이 발송되었습니다.");
     }
 
     public void submit() {

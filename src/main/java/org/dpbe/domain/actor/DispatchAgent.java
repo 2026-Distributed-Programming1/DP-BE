@@ -10,13 +10,6 @@ public class DispatchAgent extends Employee {
     private String region;       // 담당 지역
     private String vehicleNo;    // 출동 차량 번호
 
-    /** 생성자 */
-    public DispatchAgent(String name, String dept, String position, String region, String vehicleNo) {
-        super(name, dept, position);
-        this.region = region;
-        this.vehicleNo = vehicleNo;
-    }
-
     /** DB 로딩용 생성자 */
     public DispatchAgent(String employeeId, String name, String dept, String position,
                          String region, String vehicleNo) {

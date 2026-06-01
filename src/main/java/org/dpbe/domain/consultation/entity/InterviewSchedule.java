@@ -10,8 +10,6 @@ import java.util.List;
  */
 public class InterviewSchedule {
 
-    private static int sequence = 0;
-
     private Long id;
     private String scheduleNo;
     private int interviewNumber;
@@ -63,8 +61,6 @@ public class InterviewSchedule {
     }
 
     public InterviewSchedule() {
-        sequence += 1;
-        this.interviewNumber = sequence;
         this.interviewRecordList = new ArrayList<>();
         this.status = "예정";
     }
@@ -88,10 +84,6 @@ public class InterviewSchedule {
     public void cancel() {
         this.status = "취소";
         this.cancelledAt = LocalDateTime.now();
-    }
-
-    public void sendNotice() {
-        System.out.println("  [시스템] 고객에게 면담 일정 알림이 발송되었습니다.");
     }
 
     public boolean validateRequiredFields() {

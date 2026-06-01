@@ -24,7 +24,6 @@ public class ScheduleItem {
         this.memo = memo;
     }
 
-    public void delete() {}
     public String getCustomerId() { return customerId; }
     public void setCustomerId(String customerId) { this.customerId = customerId; }
     public ActivityType getActivityType() { return activityType; }

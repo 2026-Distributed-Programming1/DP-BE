@@ -12,7 +12,7 @@ import org.springframework.stereotype.Repository;
 public class ChannelRecruitmentRepository {
 
     private static final String COLS =
-            "id, recruitment_no, manager_name, channel_type, recruit_count,"
+            "id, manager_name, channel_type, recruit_count,"
             + " start_date, end_date, condition_text, status, created_at";
 
     private final SqlExecutor sql;
@@ -43,14 +43,12 @@ public class ChannelRecruitmentRepository {
                 r.getRegisteredAt());
         r.setId(id);
         r.setRecruitmentNo("RCT" + String.format("%05d", id));
-        sql.executeUpdate("UPDATE channel_recruitments SET recruitment_no=? WHERE id=?",
-                r.getRecruitmentNo(), id);
     }
 
     private ChannelRecruitment mapRow(ResultSet rs) throws SQLException {
         ChannelRecruitment r = new ChannelRecruitment();
         r.setId(rs.getLong("id"));
-        r.setRecruitmentNo(rs.getString("recruitment_no"));
+        r.setRecruitmentNo("RCT" + String.format("%05d", rs.getLong("id")));
         r.setManagerName(rs.getString("manager_name"));
         String ct = rs.getString("channel_type");
         if (ct != null) {
