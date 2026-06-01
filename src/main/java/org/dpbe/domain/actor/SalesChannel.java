@@ -22,7 +22,7 @@ public class SalesChannel {
     // ===== 다이어그램 메서드 =====
     public void getActivityDetail() {}
 
-    // ===== Runner 호출 중이므로 유지 =====
+    // ===== API 응답과 DB 복원에서 사용 =====
     public void acceptConsultation(ConsultationRequest request) {
         request.accept();
         System.out.println("  [" + channelName + "] 상담 요청을 수락했습니다.");

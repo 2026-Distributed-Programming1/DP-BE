@@ -21,7 +21,7 @@ public class ChannelScreening {
     private ScreeningStatus screeningStatus = ScreeningStatus.PENDING; // 심사 상태 - 대기/승인/거절 (enum)
     private Long id;
     private String screeningNo;             // 심사번호 (surrogate-PK 파생)
-    private String approvalNo;              // 승인번호 (레거시)
+    private String approvalNo;              // 승인번호
     private LocalDateTime reviewedAt;       // 심사 일시 (승인·거절 공통)
     private String rejectionReason;         // 거절 사유
     private LocalDate filterStartDate;      // 조회 시작일

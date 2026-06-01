@@ -1,5 +1,8 @@
 # 구조 개선 설계서 — 트랜잭션 & FK 제약
 
+> **문서 성격**: 2026-05 시점의 콘솔/DAO 구조 개선 이력 문서다.
+> **현재 기준 (2026-06-01)**: `old/`, `OldMain`, `DBA`, DAO/Runner 계층은 삭제됐고, 런타임 경로는 Spring REST API 단일 경로다. 트랜잭션은 `@Transactional` + `SqlExecutor(DataSourceUtils)`가 담당하며, FK는 `id(BIGINT)` 기반으로 정리됐다.
+
 ---
 
 ## 1. 트랜잭션 지원 (DBA.java)

@@ -19,7 +19,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 /**
  * UC '보험금을 요청한다' API 서비스.
- * 콘솔 ClaimRequestRunner의 절차가 아니라 규칙·검증만 이관한다(클라이언트 주도·무상태).
+ * 보험금 청구 규칙·검증을 처리한다(클라이언트 주도·무상태).
  * 본인인증·개인정보 동의는 요청 DTO 플래그로 받아 검증하며, authMethod는 저장하지 않는다(휘발).
  */
 @Service

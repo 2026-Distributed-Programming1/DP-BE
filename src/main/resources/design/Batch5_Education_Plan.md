@@ -4,7 +4,9 @@
 > **방식**: 이전 배치와 동일 — 스키마 컬럼명 통일 → PK 파운데이션(스키마+엔터티) → 서브배치 5a(교육계획안) → 5b(교육제반+진행) → 5c(문의) 순 진행.
 > **현재 상태 (2026-05-31)**: 컬럼명 통일 ✅ · PK 파운데이션 ✅ · 서브배치 5a ✅ · 서브배치 5b ✅ · 서브배치 5c ✅ — **배치 5 전체 완료**.
 >
-> **▶ 다음 작업**: 최종 수렴 — `old/`(DBA·DAO·Runner) 삭제 + format-on-read 전환, 또는 CORS/인증·인가 추가 (ApiMigrationPlan.md §9 참조)
+> **현재 기준 (2026-06-01)**: 최종 수렴 완료. `old/` 제거, 업무번호 저장 컬럼 제거, FK `id(BIGINT)` 전환, format-on-read 적용 완료.
+>
+> **문서 성격**: 배치 5 전환 당시의 상세 기록이다. 레거시/저장형 표현은 당시 이력이며 현재 구현 기준은 `ApiMigrationPlan.md`와 `Convergence_Progress.md`를 따른다.
 
 ---
 
@@ -60,7 +62,7 @@
 | `EducationPreparation` | `location` | `venue` | `getLocation()` → `getVenue()` |
 | `EducationExecution` | `completedAt` | `executedAt` | `getCompletedAt()` → `getExecutedAt()` |
 
-> **레거시 DAO·Runner도 함께 수정 완료**: `EducationPlanDAO`, `EducationPreparationDAO`, `EducationExecutionDAO`, `EducationExecutionRunner`, `EducationPreparationRunner`
+> 전환 당시에는 콘솔 계층과 병행하기 위해 관련 DAO/Runner도 함께 수정했다. 해당 계층은 2026-06-01 최종 수렴에서 삭제됐다.
 
 ---
 
@@ -70,8 +72,8 @@
 
 | 테이블 | 추가 컬럼 | 이유 |
 |---|---|---|
-| `education_preparations` | `additional_notice TEXT` | UC 시나리오의 "기타 준비사항(선택)" 필드. 엔터티에 있었지만 레거시가 저장 안 함 |
-| `education_executions` | `total_count INT DEFAULT 0` | 출석/전체 인원을 분리 저장. 레거시는 `attendee_count`만 있어 전체인원 소실 |
+| `education_preparations` | `additional_notice TEXT` | UC 시나리오의 "기타 준비사항(선택)" 필드 저장 |
+| `education_executions` | `total_count INT DEFAULT 0` | 출석/전체 인원을 분리 저장 |
 
 ---
 
@@ -79,7 +81,7 @@
 
 C2 테이블 엔터티에 추가:
 - `Long id` + `getId()` / `setId(Long)`
-- 업무번호 String 필드 + getter/setter (레거시 int sequence 필드는 무수정 유지)
+- 업무번호 String 필드 + getter/setter. 최종 수렴 후 업무번호는 DB 저장 없이 id에서 파생한다.
 
 | 엔터티 | 추가 필드 | 업무번호 setter |
 |---|---|---|
@@ -141,7 +143,7 @@ GET  /api/education-plans/PLN99999      → 404 ✅
 ### 5b 설계 결정
 
 **D3. attendance_list 저장 방식**
-`education_preparations.attendance_list` 컬럼은 레거시와 동일하게 쉼표 구분 TEXT로 저장. API 요청/응답은 `List<String>`으로 변환.
+`education_preparations.attendance_list` 컬럼은 쉼표 구분 TEXT로 저장. API 요청/응답은 `List<String>`으로 변환.
 
 **D4. education_attendances 테이블 활용**
 `education_executions` 저장 시 각 출석자를 `education_attendances` 테이블에 행 단위로 INSERT. 상세 조회 시 JOIN 없이 별도 쿼리로 로드.
@@ -150,10 +152,10 @@ GET  /api/education-plans/PLN99999      → 404 ✅
 서비스에서 `EducationPreparation` 셸 객체에 출석 목록(`Attendance(name, attended)`)을 채운 뒤 `EducationExecution.complete()` 호출. `calculateAttendanceCount()`가 자동으로 출석/전체 인원 계산.
 
 **D6. total_count 저장**
-레거시에는 없던 `total_count` 컬럼을 추가해 전체 인원수를 분리 저장. `attendee_count`는 출석 인원, `total_count`는 전체 인원.
+`total_count` 컬럼을 추가해 전체 인원수를 분리 저장. `attendee_count`는 출석 인원, `total_count`는 전체 인원.
 
 **D7. additional_notice 컬럼 추가**
-UC 시나리오의 "기타 준비사항(선택)" 필드. 엔터티에는 있었으나 레거시가 저장하지 않아 `additional_notice TEXT` 컬럼 신규 추가.
+UC 시나리오의 "기타 준비사항(선택)" 필드 저장을 위해 `additional_notice TEXT` 컬럼 신규 추가.
 
 ### 5b 검증 결과
 
@@ -183,7 +185,7 @@ POST /api/education-preparations (없는 planNo)      → 404 ✅
 ### 5c 설계 결정
 
 **D8. inquiry_no 파생 방식 변경**
-레거시 `submit()` 메서드는 `"INQ-" + 타임스탬프` 방식으로 생성. 신규 경로는 surrogate-PK 패턴으로 `"INQ" + String.format("%05d", id)` 파생. `submit()` 메서드는 레거시용으로 유지(무수정).
+신규 경로는 surrogate-PK 패턴으로 `"INQ" + String.format("%05d", id)` 파생. 최종 수렴 후에는 DB 저장 없이 응답 시 id에서 파생한다.
 
 **D9. status/inquiryType 저장 형식**
 enum `.name()` 문자열로 저장 (`PENDING`, `ANSWERED`, `INSURANCE`, `CLAIM` 등). 응답 DTO에서도 enum 이름 그대로 노출.

@@ -56,7 +56,7 @@ public class Inquiry {
         this.status = InquiryStatus.PENDING;
     }
 
-    // Runner에서 실제 사용하는 getter/setter만 유지
+    // API 응답과 DB 복원에서 사용하는 getter/setter
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
     public String getInquiryNo() { return inquiryNo; }

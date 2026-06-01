@@ -4,7 +4,9 @@
 > **방식**: 파일럿 2개로 패턴을 확립한 뒤 배치 단위로 전체 UC를 Spring REST API로 전환했고, 최종 수렴에서 레거시(`old/`)를 제거했다.
 > **현재 상태 (2026-06-01)**: 전 UC 전환 완료 ✅ · `old/`/`OldMain` 제거 ✅ · format-on-read ✅ · `xxx_no` 저장 컬럼 제거 ✅ · FK `id(BIGINT)` 전환 ✅ · Docker DB 재생성 및 주요 API smoke test 완료 ✅
 >
-> **▶ 다음 작업 (RESUME HERE)**: 문서/주석의 레거시 표현 정리. 선택 작업: slf4j 로깅 확대, CORS, 인증·인가, 응답 envelope 검토.
+> **▶ 다음 작업 (RESUME HERE)**: 선택 작업 — slf4j 로깅 확대, CORS, 인증·인가, 응답 envelope 검토.
+>
+> **문서 읽기 기준**: 이 문서는 전환 이력을 함께 보존한다. 현재 구현 기준은 상단 상태와 §9, `Convergence_Progress.md`이며, 배치별 문서의 "저장형", "old/ 공존", "Runner 은퇴" 표현은 당시 진행 기록이다.
 
 ---
 
@@ -34,7 +36,7 @@ OldMain (역할 메뉴 루프)
 | 항목 | 결정 | 이유 |
 |---|---|---|
 | **다단계 입력 흐름** | 클라이언트 주도 | 조회 GET + 최종 제출은 완성 DTO 한 번의 POST. 서버 무상태. |
-| **패키지 구조** | package-by-feature (도메인형) | 코드 위치만으로 도메인 식별. `domain/`·`global/`·`old/` 3분할 (§3). |
+| **패키지 구조** | package-by-feature (도메인형) | 코드 위치만으로 도메인 식별. 현재는 `domain/`·`global/` 중심의 Spring 단일 경로. |
 | **DB 접근/트랜잭션** | Spring `DataSource` + `@Transactional` (강의 V3-3 최종형) | 선언적 트랜잭션·추상화 획득. 리포지토리는 raw JDBC + `DataSourceUtils` (§4). |
 | **전환 방식** | 스트랭글러 완료 | 전 UC를 Spring 경로로 옮긴 뒤 `old/`와 DBA 제거 완료. |
 | **진행 단위** | 파일럿 2개 먼저 | 읽기(계약 조회)·쓰기(보험료 납입) 두 유형으로 패턴 확립 후 확장. |
@@ -53,15 +55,15 @@ org.dpbe
 │   ├─ contract/                    controller/ service/ repository/ dto/ entity/
 │   ├─ payment/                     controller/ service/ repository/ dto/ entity/
 │   ├─ customer/                    repository/
-│   └─ claim·consultation·sales·education·inquiry/   entity/ (모델만, 미전환)
+│   └─ claim·consultation·sales·education·inquiry/   controller/ service/ repository/ dto/ entity/
 ├─ global/
 │   ├─ exception/                   ApiException, ErrorResponse, ApiExceptionHandler
 │   ├─ jdbc/                        SqlExecutor (DataSourceUtils 기반 공통 JDBC 헬퍼)
 │   └─ seed/                        DataSeeder (기동 시 초기 데이터)
 ```
 
-- DTO·도메인 모델은 `domain.<feature>` 아래. 엔터티는 raw JDBC라 JPA `@Entity`는 없고 영속 모델 역할만 한다(레거시와 공유).
-- 컴포넌트 스캔: `@SpringBootApplication`(`org.dpbe`)이 `domain.*`·`global.*`를 스캔. `old.*`는 Spring 애너테이션이 없어 무영향.
+- DTO·도메인 모델은 `domain.<feature>` 아래. 엔터티는 raw JDBC라 JPA `@Entity`는 없고 영속 모델 역할만 한다.
+- 컴포넌트 스캔: `@SpringBootApplication`(`org.dpbe`)이 `domain.*`·`global.*`를 스캔한다.
 
 ---
 
@@ -181,7 +183,7 @@ Spring `HikariPool` 단일 경로를 사용한다. 레거시 `DBA` 풀은 최종
 ## 7. 검증 결과 (2026-05-30, 완료)
 
 `docker compose up -d` + `./gradlew bootRun`(8080) 실호출:
-- 기동 시 Spring `HikariPool-1` 생성 확인 (DBA 풀과 공존).
+- 기동 시 Spring `HikariPool-1` 생성 확인.
 - 시더: `[seed] 완료 — 고객 3명, 계약 4건` → DB 적재 + `GET /api/contracts` 4건 서빙 확인.
 - 읽기: `GET /api/contracts`, `/{no}`(D-day 포함) → 200.
 - 쓰기/커밋: `POST /api/payments` → PAY00001(id 파생) 생성, 3개 테이블 저장 확인.
@@ -189,7 +191,7 @@ Spring `HikariPool` 단일 경로를 사용한다. 레거시 `DBA` 풀은 최종
 - 에러 경로: 없는 계약 404 / 빈 items 400 / 계좌 인증 실패 400 (표준 에러 DTO).
 - 배치 1 surrogate-PK: 시더가 `CON00001`(=id 1)~ 적재, 제출 → `PAY00001`·`PRC00001`(id 파생) + id PK 저장 확인.
 
-**수정한 기존 버그 — BUG-API-01**: `old/dao/CustomerDAO.findById` SELECT에 `registered_at` 누락(매퍼는 읽음) → SQLException을 DBA가 삼켜 null → submit "고객 없음" 404. SELECT에 컬럼 추가로 수정. (다른 DAO `findBy~`에도 동일 패턴 가능 — 점검 대상)
+**수정한 기존 버그 — BUG-API-01**: 과거 콘솔 DAO의 `CustomerDAO.findById` SELECT에 `registered_at` 누락(매퍼는 읽음) → 조회 실패가 null로 처리되어 submit "고객 없음" 404. SELECT에 컬럼 추가로 수정했다. 해당 DAO 계층은 최종 수렴에서 삭제됐다.
 
 ---
 
@@ -199,7 +201,7 @@ Spring `HikariPool` 단일 경로를 사용한다. 레거시 `DBA` 풀은 최종
 - **쓰기 UC(다단계)** → 조회 `GET` + (선택)계산 `preview POST` + 제출 `POST`. 제출 메서드에 `@Transactional`.
 - **UC 간 이동**(예: 계약조회→만기관리) → Runner 직접 호출 대신 프론트 라우팅 + 독립 엔드포인트.
 - **E1/검증 실패** → `ApiException` throw → `@RestControllerAdvice`가 4xx + `ErrorResponse`로 변환.
-- **리포지토리** → `SqlExecutor` 주입, raw JDBC. 레거시 DAO와 SQL이 일시 중복되더라도 새 경로로 작성(스트랭글러). 시퀀스형 PK는 부록 A.1(INSERT→회수→파생 UPDATE).
+- **리포지토리** → `SqlExecutor` 주입, raw JDBC. 업무번호는 DB에 저장하지 않고 `id`에서 format-on-read로 파생한다.
 
 ---
 
@@ -221,7 +223,7 @@ Spring `HikariPool` 단일 경로를 사용한다. 레거시 `DBA` 풀은 최종
 
 ## 부록 A. surrogate-PK 전환 (배치 진행)
 
-> **확정 결정**: 모든 테이블에 대리키 `id BIGINT AUTO_INCREMENT PRIMARY KEY` 도입. 한 번에가 아니라 **도메인 배치로** 진행. 레거시 `old/`는 **무수정**.
+> **확정 결정**: 모든 주요 업무 테이블에 대리키 `id BIGINT AUTO_INCREMENT PRIMARY KEY` 도입. 최종 수렴 후에는 Spring 단일 경로만 남았다.
 
 ### A.1 업무번호 생성 — 최종형 "format-on-read"
 
@@ -232,20 +234,20 @@ Spring `HikariPool` 단일 경로를 사용한다. 레거시 `DBA` 풀은 최종
 - FK는 업무번호 문자열이 아니라 부모 `id(BIGINT)`를 저장한다.
 - 자연키 테이블(customers, 임직원, product_name 등)은 **id 파생 안 함** — 앱이 주는 업무키 그대로, surrogate `id`만 추가.
 
-### A.2 레거시 공존 규칙 (중요)
+### A.2 최종 수렴 규칙
 
-엔터티 클래스는 신규 리포지토리와 레거시 `old/dao`·`old/runner`가 **공유**한다.
-- 도메인의 `static int sequence`/기존 생성자는 **그대로 둔다**(레거시 전용). 신규 경로는 안 쓰므로 죽은 코드가 되고, 레거시 제거 시 함께 사라진다.
-- 엔터티에 `Long id` + getId/setId 추가. 신규 리포지토리 `save()`가 INSERT 후 id·업무번호를 채운다(생성자의 sequence 값은 덮어쓰여 미사용).
-- **한 테이블의 쓰기 경로는 하나만**: 어떤 UC를 신규로 옮기면 그 UC의 레거시 Runner는 *은퇴*로 간주(콘솔 실행 금지). 두 경로가 같은 테이블에 INSERT하면 업무번호(sequence vs id파생) 형식이 겹쳐 UNIQUE 충돌 가능.
+- `old/dao`·`old/runner`·`DBA`·`OldMain`은 삭제됐다.
+- 엔터티에는 DB PK인 `Long id`와 응답용 업무번호 필드를 둔다.
+- 리포지토리 `save()`는 INSERT 후 생성 id를 회수하고, 엔터티 필드에만 업무번호를 파생 주입한다.
+- FK는 부모 업무번호 문자열이 아니라 부모 `id(BIGINT)`를 저장한다.
 
 ### A.3 변경 항목 (배치마다)
 
 1. `schema.sql`: 대상 테이블에 `id BIGINT AUTO_INCREMENT PRIMARY KEY` 추가, 기존 업무키 `UNIQUE` 강등. → `docker compose down -v && up -d` 재생성(시더가 재적재).
 2. 엔터티: `Long id` 필드 + getId/setId (+ 업무번호 세터 없으면 추가).
-3. 리포지토리 `save()`: A.1 절차(INSERT→회수→UPDATE). finder는 `id` 매핑 추가.
+3. 리포지토리 `save()`: A.1 절차(INSERT→회수→엔터티 업무번호 주입). finder는 `id` 매핑 추가.
 4. `SqlExecutor.executeInsertReturningKey(sql, params)` (공통 선행, ✅ 완료).
-5. FK는 업무키(UNIQUE)를 계속 참조 → 재배선 불필요.
+5. FK는 부모 `id(BIGINT)`를 참조한다.
 
 ### A.4 PK 감사 (44 테이블)
 
@@ -255,15 +257,14 @@ Spring `HikariPool` 단일 경로를 사용한다. 레거시 `DBA` 풀은 최종
 | B. 정수, 앱 부여 (2) | insurance_applications, policy_applications | AUTO_INCREMENT화 |
 | B'. 싱글톤 (1) | overdue_notice_settings | 그대로 |
 | C1. 자연키 (10) | customers, *_trainers/managers/reviewers/handlers/agents, designers, agencies, insurance_products | surrogate id 추가, 업무키 UNIQUE (id 파생 안 함) |
-| C2. 시퀀스형 (27+) | contracts(contract_no·policy_no), payments, payment_records, accident_reports, claim_requests, ... | surrogate id + 업무번호 id 파생(저장형) |
+| C2. 업무번호 파생형 (27+) | contracts, payments, payment_records, accident_reports, claim_requests, ... | surrogate id + 업무번호 format-on-read |
 
 ### A.5 배치 1 — contract + payment ✅ (2026-05-30 완료)
 
 대상 테이블: `contracts`, `payments`, `payment_records`, `customers`(C1, id만), `payment_items`(이미 id 보유).
 - 엔터티: `Contract`(contract_no·policy_no 파생), `Payment`(payment_no), `PaymentRecord`(record_no), `Customer`(id만) — 모두 `Long id` + getId/setId. (`Contract.setPolicyNo`, `PaymentRecord.setRecordNo` 세터 추가)
 - 공통: `SqlExecutor.executeInsertReturningKey` 추가.
-- 리포지토리: `ContractRepository`·`PaymentRepository`·`PaymentRecordRepository.save()`를 INSERT→id 회수→번호 파생 UPDATE로. `CustomerRepository`는 자연키 upsert 유지 + 조회 id 매핑.
-- 레거시 `old/`·도메인 `static sequence` 무수정(신규 경로가 덮어씀).
+- 리포지토리: 최종 수렴 후 `ContractRepository`·`PaymentRepository`·`PaymentRecordRepository.save()`는 INSERT→id 회수→엔터티 업무번호 주입으로 동작한다. `CustomerRepository`는 자연키 upsert 유지 + 조회 id 매핑.
 - 검증: `down -v && up -d` 재생성 → 시더가 `CON00001`(=id 1)~ 적재, `POST /api/payments` → `PAY00001`·`PRC00001`(id 파생) 저장 확인.
 
 ### A.6 배치 분할 계획
@@ -278,4 +279,4 @@ Spring `HikariPool` 단일 경로를 사용한다. 레거시 `DBA` 풀은 최종
 | 4 ✅ | sales | channel_recruitments, channel_screenings, activity_plans, sales_activity_managements, sales_org_evaluations, bonus_requests (activity_schedule_items·customer_registrations=이미 id) |
 | 5 ✅ | education + inquiry + 마스터 | education_plans/preparations/executions(attendances=이미 id), inquiries, actor 마스터(designers·agencies·임직원 8종, id만). 스키마 컬럼명 통일(education_plans 3개·education_preparations 1개) + additional_notice·total_count 신규 컬럼 추가 포함. |
 
-배치마다: 스키마 → 엔터티 `Long id` → 신규 리포지토리 save() id-파생 → 컴파일 → `down -v && up -d` → 검증.
+배치마다: 스키마 → 엔터티 `Long id` → 신규 리포지토리 save() id-파생 → 컴파일 → `down -v && up -d` → 검증. 최종 수렴에서 업무번호 저장 컬럼과 문자열 FK는 제거됐다.

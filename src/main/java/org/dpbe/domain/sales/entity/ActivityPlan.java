@@ -74,7 +74,7 @@ public class ActivityPlan {
         this.planNo = "AP-" + LocalDateTime.now().toString().replaceAll("[^0-9]", "").substring(0, 14);
     }
 
-    // Runner에서 실제 사용하는 getter/setter만 유지
+    // API 응답과 DB 복원에서 사용하는 getter/setter
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
     public String getPlanNo() { return planNo; }

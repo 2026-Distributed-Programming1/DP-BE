@@ -16,9 +16,8 @@ import org.springframework.transaction.annotation.Transactional;
 /**
  * 웹(Spring) 기동 시 초기 데이터 시더.
  *
- * 콘솔 진입점 OldMain의 {@code SampleData}를 대체한다. SampleData가 콘솔에서만
- * 실행되어 Spring 기동 시 DB가 비는 문제를 해결하며, 신규 Spring 경로
- * (Repository + @Transactional + DataSource)로 **실제 MySQL에 적재**한다.
+ * 개발·검증 환경에서 Spring 기동 시 필요한 기본 데이터를 적재한다.
+ * Repository + @Transactional + DataSource 경로로 실제 MySQL에 적재한다.
  *
  * - 멱등: 고객 데이터가 이미 있으면 건너뛴다(재기동 시 중복 방지).
  * - 토글: {@code app.seed.enabled=false} 로 비활성화(실 DB 보호).

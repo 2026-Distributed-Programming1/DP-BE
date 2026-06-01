@@ -18,7 +18,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 /**
  * UC '사고를 접수한다' API 서비스.
- * 콘솔 AccidentReportRunner의 규칙·검증(필수입력 E1, 가입 대조)만 이관한다.
+ * 사고 접수 규칙·검증(필수입력 E1, 가입 대조)을 처리한다.
  * needs_dispatch면 접수 직후 현장출동(Dispatch)을 같은 트랜잭션에서 생성한다.
  */
 @Service

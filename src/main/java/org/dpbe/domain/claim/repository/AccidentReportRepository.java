@@ -11,9 +11,7 @@ import org.springframework.stereotype.Repository;
 
 /**
  * 사고 접수 리포지토리 (Spring 트랜잭션 통합 경로).
- * PK는 surrogate id. accident_no는 INSERT 후 id에서 파생(ACC+%05d).
- * 매핑은 기존 {@code AccidentReportDAO}를 정답지로 따르되 id를 포함한다.
- * (업무번호 게터는 엔터티 getReportNo() ↔ 컬럼 accident_no)
+ * PK는 surrogate id. accident_no는 저장하지 않고 id에서 파생한다.
  */
 @Repository
 public class AccidentReportRepository {

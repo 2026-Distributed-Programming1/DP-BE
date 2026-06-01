@@ -4,7 +4,9 @@
 > **방식**: claim·consultation 배치와 동일 — PK 파운데이션(스키마+엔터티) 선행 → 서브배치 4a(채용) → 4b(활동) → 4c(관리·평가·성과급) 순 진행.
 > **현재 상태 (2026-05-31)**: PK 파운데이션 ✅ · 서브배치 4a ✅ · 서브배치 4b ✅ · 서브배치 4c ✅ — **배치 4 전체 완료**.
 >
-> **▶ 다음 작업**: 배치 5 — education + inquiry + 마스터 도메인 (ApiMigrationPlan.md §9 참조)
+> **현재 기준 (2026-06-01)**: 최종 수렴 완료. 업무번호 저장 컬럼은 제거됐고, 업무번호는 `id`에서 format-on-read로 파생한다. FK는 `id(BIGINT)` 기반이다.
+>
+> **문서 성격**: 배치 4 전환 당시의 상세 기록이다. 레거시/저장형 표현은 당시 이력이며 현재 구현 기준은 `ApiMigrationPlan.md`와 `Convergence_Progress.md`를 따른다.
 
 ---
 
@@ -34,7 +36,7 @@
 | ChannelRecruitment | `startDate` / **`getLocalStartDate()`** | `start_date` | getter 이름 주의 |
 | ChannelRecruitment | `endDate` / **`getLocalEndDate()`** | `end_date` | getter 이름 주의 |
 | ChannelRecruitment | (없음) | `status` | DB에 컬럼 있음, 엔터티 미보유 → INSERT 시 NULL |
-| ChannelScreening | `approvalNo` / `getApprovalNo()` | `screening_no` (PK) | DAO가 approvalNo를 PK로 사용 중. 엔터티에 screeningNo 필드 없음 → **추가 필요** |
+| ChannelScreening | `approvalNo` / `getApprovalNo()` | `screening_no` (전환 당시 업무키) | 전환 당시 엔터티에 screeningNo 필드 추가 필요 |
 | ChannelScreening | `applicantName` / `getApplicantName()` | `candidate_name` | 컬럼명 다름 |
 | ChannelScreening | `career` / `getCareer()` | `qualification` | 컬럼명 다름 |
 | ChannelScreening | `certifications` (List&lt;String&gt;) | `certifications TEXT` | DB는 콤마 구분 문자열 |
@@ -45,20 +47,20 @@
 | SalesActivityManagement | `channelType` / **`getActivityType()`** | `activity_type` | getActivityType()이 channelType.name() 반환 |
 | SalesActivityManagement | `registeredAt` / `getRegisteredAt()` | `created_at` | 컬럼명 다름 |
 | SalesOrgEvaluation | `channelName` / `getChannelName()` | `org_name` | 컬럼명 다름 |
-| SalesOrgEvaluation | `achievementRate` / `getAchievementRate()` | `score` | 컬럼명 다름 (DAO 매핑도 score→achievementRate) |
+| SalesOrgEvaluation | `achievementRate` / `getAchievementRate()` | `score` | 컬럼명 다름 |
 | BonusRequest | `channelName` / `getChannelName()` | `requester` | 컬럼명 다름 |
-| BonusRequest | `bonusAmount` (Double) | `amount BIGINT` | DAO에서 `.longValue()` 변환 |
+| BonusRequest | `bonusAmount` (Double) | `amount BIGINT` | 저장 시 정수 금액으로 변환 |
 
 ---
 
 ## 3. 설계 결정 사항
 
 ### D1. ChannelScreening — screeningNo 필드 추가
-엔터티에 `screeningNo` 필드가 없음. 레거시 DAO는 `approvalNo`를 PK로 사용했으나, 신규 경로는 surrogate-PK 패턴에 따라 `screeningNo = "SCN" + id`로 파생.
-→ **확정**: 엔터티에 `String screeningNo` + getter/setter 추가. 기존 `approvalNo`는 레거시용으로 유지.
+전환 당시 엔터티에 `screeningNo` 필드가 없어 surrogate-PK 패턴에 따라 `screeningNo = "SCN" + id`로 파생하도록 추가했다.
+→ **확정**: 엔터티에 `String screeningNo` + getter/setter 추가.
 
 ### D2. ActivityPlan — 임시저장 vs 제출 흐름
-레거시 Runner는 임시저장·제출을 별도 분기로 처리. REST 설계에서는 단일 `POST /api/activity-plans`에 `status` 필드(`TEMP_SAVE` / `UNDER_REVIEW`)를 포함해 한 번에 처리.
+REST 설계에서는 단일 `POST /api/activity-plans`에 `status` 필드(`TEMP_SAVE` / `UNDER_REVIEW`)를 포함해 한 번에 처리.
 → **확정**: 클라이언트가 status를 명시해서 전송. 서버는 저장 + 경우에 따라 manager 알림만 담당.
 
 ### D3. ActivityPlan — ScheduleItem 자식 저장
@@ -66,7 +68,7 @@
 → **확정**: 요청 DTO에 `List<ScheduleItemRequest>` 포함, Service에서 plan 저장 후 items 순차 INSERT.
 
 ### D4. BonusRequest — baseSalary 출처
-레거시 Runner에서 기본급을 콘솔로 직접 입력. REST 환경에서는 클라이언트가 입력값으로 전달.
+REST 환경에서는 기본급을 클라이언트가 입력값으로 전달.
 → **확정**: 요청 바디에 `baseSalary` 포함. 서버는 `bonusAmount = baseSalary * bonusRatio` 계산 후 저장.
 
 ### D5. CustomerRegistration — 배치 4 포함 여부
@@ -74,7 +76,7 @@
 → **확정**: 서브배치 4a에 포함 (채용 흐름과 같은 판매채널 액터).
 
 ### D6. SalesOrgEvaluation — score vs achievementRate 컬럼명
-DAO에서 `score` 컬럼을 읽어 `setAchievementRate()`에 매핑. 컬럼명 통일이 필요하나 레거시 Runner 은퇴 후에는 무관.
+`score` 컬럼을 `achievementRate`에 매핑한다.
 → **확정**: 신규 Repository는 `score` 컬럼 그대로 사용, 매핑 시 achievementRate에 바인딩.
 
 ---
@@ -168,7 +170,7 @@ ALTER TABLE bonus_requests
 | 엔터티 | 추가 필드 | setter명 | 비고 |
 |---|---|---|---|
 | ChannelRecruitment | `String recruitmentNo` (필드는 있음) | `setRecruitmentNo(String)` 추가 | getter `getRecruitmentNo()` 이미 있음 |
-| ChannelScreening | `String screeningNo` 신규 | `setScreeningNo(String)` 추가 | 기존 `approvalNo`는 레거시용 유지 |
+| ChannelScreening | `String screeningNo` 신규 | `setScreeningNo(String)` 추가 | — |
 | ActivityPlan | `planId` 필드 있음 | `setPlanId(String)` 이미 있음 | DB 컬럼명은 `plan_no` |
 | SalesActivityManagement | `managementNo` 필드 있음 | `setManagementNo(String)` 이미 있음 | DB 컬럼명은 `activity_no` |
 | SalesOrgEvaluation | `evaluationNo` 필드 있음 | `setEvaluationNo(String)` 이미 있음 | — |
@@ -184,7 +186,7 @@ claim·consultation 방식과 동일:
 ① INSERT (업무번호 컬럼 제외)
 ② executeInsertReturningKey → id 회수
 ③ setId(id) + setXxxNo("PREFIX" + String.format("%05d", id))
-④ UPDATE SET xxx_no=? WHERE id=?
+④ 최종 수렴 후 DB UPDATE 없음 — 업무번호는 엔터티/응답에서만 파생
 ```
 
 - `activity_schedule_items`: plan 저장 후 plan_no 확정 시점에 일반 INSERT (id 파생 없음, plan_no FK만 바인딩)

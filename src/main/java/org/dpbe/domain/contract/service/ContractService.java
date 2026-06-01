@@ -16,7 +16,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 /**
  * UC '계약 정보를 조회한다' API 서비스.
- * 콘솔 ContractInfoRunner의 조회·필터·상세 로직을 옮긴다(UI 출력 제외).
+ * 계약 조회·필터·상세 로직을 처리한다.
  * 조회 전용이므로 readOnly 트랜잭션.
  */
 @Service
