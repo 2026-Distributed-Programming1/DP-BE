@@ -84,13 +84,11 @@
 # name: String           [이름]
 # contact: String        [연락처]
 # email: String          [이메일]
-# password: String       [비밀번호]
-# loggedIn: boolean      [로그인 상태]
 
-+ login(id: String, pw: String): boolean
-+ logout(): void
 + updateProfile(contact: String, email: String): void
 ```
+
+> 로그인 계정, 비밀번호 해시, role, 세션 상태는 `global.auth`의 `AuthUser`와 Spring Session JDBC에서 관리한다.
 
 ## `Customer` [고객] - User 상속
 
