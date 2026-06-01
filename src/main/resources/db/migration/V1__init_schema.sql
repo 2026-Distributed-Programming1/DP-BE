@@ -2,13 +2,9 @@
 -- DP Insurance System  —  DDL  (MySQL 8.0)
 -- 최종 수렴 버전: 업무번호(xxx_no) 컬럼 제거, FK를 surrogate id(BIGINT)로 전환
 --
--- 실행 방법: docker-compose down -v && docker-compose up -d
+-- Flyway V1 baseline schema.
+-- Docker compose creates the database; Flyway runs this file inside that database.
 -- ============================================================
-
-CREATE DATABASE IF NOT EXISTS insurance_db
-    CHARACTER SET utf8mb4
-    COLLATE utf8mb4_unicode_ci;
-    USE insurance_db;
 
 -- ============================================================
 -- Tier 1-A : 고객
@@ -706,3 +702,46 @@ ALTER TABLE claim_payments  ADD CONSTRAINT fk_claim_payments_calculation  FOREIG
 ALTER TABLE refund_payments ADD CONSTRAINT fk_refund_payments_refund      FOREIGN KEY (refund_id)      REFERENCES refund_calculations(id);
 ALTER TABLE payment_items   ADD CONSTRAINT fk_payment_items_payment       FOREIGN KEY (payment_id)     REFERENCES payments(id);
 ALTER TABLE bonus_requests  ADD CONSTRAINT fk_bonus_requests_evaluation   FOREIGN KEY (evaluation_id)  REFERENCES sales_org_evaluations(id);
+
+-- ============================================================
+-- Auth / Spring Session
+-- ============================================================
+
+CREATE TABLE IF NOT EXISTS auth_users (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    username VARCHAR(100) NOT NULL UNIQUE,
+    password_hash VARCHAR(100) NOT NULL,
+    role VARCHAR(50) NOT NULL,
+    linked_customer_id BIGINT NULL,
+    display_name VARCHAR(100) NOT NULL,
+    enabled BOOLEAN NOT NULL DEFAULT TRUE,
+    password_change_required BOOLEAN NOT NULL DEFAULT FALSE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    CONSTRAINT fk_auth_users_customer
+        FOREIGN KEY (linked_customer_id) REFERENCES customers(id)
+);
+
+CREATE TABLE IF NOT EXISTS SPRING_SESSION (
+    PRIMARY_ID CHAR(36) NOT NULL,
+    SESSION_ID CHAR(36) NOT NULL,
+    CREATION_TIME BIGINT NOT NULL,
+    LAST_ACCESS_TIME BIGINT NOT NULL,
+    MAX_INACTIVE_INTERVAL INT NOT NULL,
+    EXPIRY_TIME BIGINT NOT NULL,
+    PRINCIPAL_NAME VARCHAR(100),
+    CONSTRAINT SPRING_SESSION_PK PRIMARY KEY (PRIMARY_ID)
+) ENGINE=InnoDB ROW_FORMAT=DYNAMIC;
+
+CREATE UNIQUE INDEX SPRING_SESSION_IX1 ON SPRING_SESSION (SESSION_ID);
+CREATE INDEX SPRING_SESSION_IX2 ON SPRING_SESSION (EXPIRY_TIME);
+CREATE INDEX SPRING_SESSION_IX3 ON SPRING_SESSION (PRINCIPAL_NAME);
+
+CREATE TABLE IF NOT EXISTS SPRING_SESSION_ATTRIBUTES (
+    SESSION_PRIMARY_ID CHAR(36) NOT NULL,
+    ATTRIBUTE_NAME VARCHAR(200) NOT NULL,
+    ATTRIBUTE_BYTES BLOB NOT NULL,
+    CONSTRAINT SPRING_SESSION_ATTRIBUTES_PK PRIMARY KEY (SESSION_PRIMARY_ID, ATTRIBUTE_NAME),
+    CONSTRAINT SPRING_SESSION_ATTRIBUTES_FK FOREIGN KEY (SESSION_PRIMARY_ID)
+        REFERENCES SPRING_SESSION(PRIMARY_ID) ON DELETE CASCADE
+) ENGINE=InnoDB ROW_FORMAT=DYNAMIC;
