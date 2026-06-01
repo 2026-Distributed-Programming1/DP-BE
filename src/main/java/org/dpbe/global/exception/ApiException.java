@@ -4,7 +4,7 @@ import org.springframework.http.HttpStatus;
 
 /**
  * API 계층 비즈니스 예외.
- * 콘솔 Runner의 E1/검증 실패/조회 없음 분기를 HTTP 상태 + 메시지로 표현한다.
+ * 유스케이스의 검증 실패와 조회 실패를 HTTP 상태 + 메시지로 표현한다.
  */
 public class ApiException extends RuntimeException {
 

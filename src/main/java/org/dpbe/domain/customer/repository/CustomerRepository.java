@@ -9,7 +9,6 @@ import org.springframework.stereotype.Repository;
 
 /**
  * 고객 조회 리포지토리 (Spring 트랜잭션 통합 경로).
- * 기존 {@code CustomerDAO.findById}와 동일하나 SqlExecutor 경유.
  */
 @Repository
 public class CustomerRepository {

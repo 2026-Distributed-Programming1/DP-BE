@@ -11,9 +11,7 @@ import org.springframework.stereotype.Repository;
 
 /**
  * 현장 출동 리포지토리 (Spring 트랜잭션 통합 경로).
- * PK는 surrogate id. dispatch_no는 INSERT 후 id에서 파생(DSP+%05d).
- * 매핑은 기존 {@code DispatchDAO}를 정답지로 따르되 id를 포함한다.
- * (dispatches 테이블 컬럼: id, accident_id, status)
+ * PK는 surrogate id. dispatch_no는 저장하지 않고 id에서 파생한다.
  */
 @Repository
 public class DispatchRepository {

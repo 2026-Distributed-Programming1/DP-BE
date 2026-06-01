@@ -12,8 +12,7 @@ import org.springframework.stereotype.Repository;
 
 /**
  * 보험금 지급 리포지토리 (Spring 트랜잭션 통합 경로).
- * PK는 surrogate id. payment_no는 INSERT 후 id에서 파생(CPY+%05d).
- * 단일 테이블 매핑은 기존 {@code ClaimPaymentDAO}를 정답지로 따르고,
+ * PK는 surrogate id. payment_no는 저장하지 않고 id에서 파생한다.
  * 지급 생성 시 필요한 산출액·청구 계좌는 별도 조인 1쿼리로 로드한다(PayoutSource).
  */
 @Repository

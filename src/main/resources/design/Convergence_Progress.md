@@ -1,6 +1,6 @@
 # 최종 수렴 작업 계획 및 진행 현황
 
-> **브랜치**: `feat/contract-closure-batch`  
+> **브랜치**: `feat/final-convergence`  
 > **최종 갱신**: 2026-06-01  
 > **목표**: 레거시(`old/`) 제거 + format-on-read + FK를 id로 전환하여 코드베이스를 Spring 단일 경로로 수렴
 
@@ -124,73 +124,16 @@ private Long parseId(String businessNo) {
 
 ---
 
-## 5. 남은 도메인 예상 변경 목록
+## 5. 최종 상태 요약
 
-### education (3개) — 다음 작업
-
-| Repository | 업무번호 PREFIX | 특이사항 |
-|---|---|---|
-| EducationPlanRepository | `PLN` | `updateStatus()` 이미 `WHERE id=?` ✅ |
-| EducationPreparationRepository | `PRP` | `findByPlanNo`(FK 필터)는 유지 |
-| EducationExecutionRepository | `EXC` | `education_attendances` INSERT는 `exec.getExecutionNo()` 사용 — in-memory 값이므로 정상 동작 |
-
-Service 변경:
-- `EducationPlanService`: `parseId()` + `findById(parseId(...))` 3곳 (getPlan/approvePlan/rejectPlan)
-- `EducationPreparationService`: `parseId()` + `findById(parseId(...))` 2곳 + 내부에서 `planRepository.findByPlanNo(req.planNo())` → `planRepository.findById(parseId(req.planNo()))`
-- `EducationExecutionService`: `parseId()` + `findById(parseId(...))` 2곳 + `prepRepository.findByPrepNo(req.prepNo())` → `prepRepository.findById(parseId(req.prepNo()))`
-
-### sales (6개)
-
-| Repository | 업무번호 PREFIX | 특이사항 |
-|---|---|---|
-| ChannelRecruitmentRepository | `REC` | |
-| ChannelScreeningRepository | `SCR` | |
-| ActivityPlanRepository | `APL` | `activity_schedule_items`는 이미 id ✅ |
-| SalesActivityManagementRepository | `ACT` | |
-| SalesOrgEvaluationRepository | `EVL` | |
-| BonusRequestRepository | `BON` | |
-
-### contract (4개)
-
-| Repository | 업무번호 PREFIX | 특이사항 |
-|---|---|---|
-| ContractRepository | `CON`/`POL` | `updateStatus/updatePremium`이 `WHERE contract_no=?` → `WHERE id=?` 필요. 타 도메인(PaymentService, CancellationService 등)에서 `findByContractNo` 호출 확인 필요 |
-| CancellationRepository | `CAN` | |
-| ContractStatisticsRepository | `STS` | |
-| ExpiringContractManagementRepository | `NOT` | |
-
-> ⚠️ contract는 가장 많은 타 도메인에서 참조됨. `ContractRepository.findByContractNo`가 PaymentService, CancellationService에서 호출되므로 마지막에 처리하거나 한 번에 연관 서비스까지 함께 변경.
-
-### claim (7개)
-
-| Repository | 업무번호 PREFIX | 특이사항 |
-|---|---|---|
-| AccidentReportRepository | `ACC` | |
-| DispatchRepository | — | dispatch_no 없음, 업무번호 없는 테이블 ✅ |
-| DispatchRecordRepository | `DSP` | |
-| ClaimRequestRepository | `CLM` | |
-| DamageInvestigationRepository | `INV` | |
-| ClaimCalculationRepository | `CAL` | |
-| ClaimPaymentRepository | `CPY` | |
-
-### consultation (8개)
-
-| Repository | 업무번호 PREFIX |
-|---|---|
-| ConsultationRequestRepository | `CON`(접두 확인 필요) |
-| InterviewScheduleRepository | `SCH` |
-| InterviewRecordRepository | `REC` |
-| ProposalRepository | `PRP` |
-| UnderwritingRepository | `UND` |
-| InsuranceApplicationRepository | `APP` |
-| PolicyApplicationRepository | `PLY` |
-| RevivalRepository | `REV` |
+- 모든 업무번호 저장 컬럼(`xxx_no`)은 제거됐다.
+- 단건 API 경로는 기존 업무번호 문자열(`CON00001` 등)을 유지하지만, Service에서 id를 파싱해 Repository `findById`로 조회한다.
+- 테이블 간 참조는 `*_id BIGINT` FK로 전환됐다.
+- Repository `save()`는 `INSERT → executeInsertReturningKey → 엔터티 업무번호 필드 주입` 순서로 동작하며 DB UPDATE를 수행하지 않는다.
 
 ---
 
-## 6. 4단계 이후 (Optional)
-
-3단계·4단계 완료 후 필요 시 진행:
+## 6. 이후 선택 작업
 
 | 항목 | 내용 |
 |---|---|
@@ -201,14 +144,10 @@ Service 변경:
 
 ---
 
-## 7. 검증 체크리스트 (3단계 완료 기준)
+## 7. 검증 체크리스트
 
-각 도메인 완료 시:
-- [ ] `./gradlew compileJava` 그린
-- [ ] `bootRun` 기동 정상
-- [ ] 신규 저장 후 목록·단건 조회로 업무번호 파생 확인 (DB에 xxx_no 컬럼은 null이지만 응답은 "XXX00001")
-- [ ] 단건 조회 `/{xxxNo}` 경로 정상 작동
-
-4단계 진행 전:
-- [ ] `docker compose down -v && docker compose up -d` (컬럼 DROP 후 재생성)
-- [ ] DataSeeder 재적재 + 전 엔드포인트 재검증
+- [x] `./gradlew compileJava` 그린
+- [x] `bootRun` 기동 정상
+- [x] 신규 저장 후 목록·단건 조회로 업무번호 파생 확인
+- [x] 단건 조회 `/{xxxNo}` 경로 정상 작동
+- [x] `docker compose down -v && docker compose up -d` 후 DataSeeder 재적재 확인

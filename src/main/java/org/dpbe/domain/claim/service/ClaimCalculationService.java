@@ -13,7 +13,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 /**
  * UC '보험금을 산출한다' API 서비스.
- * 콘솔 ClaimCalculationRunner의 규칙만 이관한다. 산출은 조사 결과로 자동 계산되며
+ * 보험금 산출 규칙을 처리한다. 산출은 조사 결과로 자동 계산되며
  * (엔터티 생성자 calculate()), E1(자기부담금 초과)이면 종결 처리한다.
  */
 @Service

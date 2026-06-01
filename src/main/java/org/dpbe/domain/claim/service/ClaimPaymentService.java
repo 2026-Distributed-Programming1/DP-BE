@@ -17,7 +17,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 /**
  * UC '보험금을 지급한다' API 서비스.
- * 콘솔 ClaimPaymentRunner의 규칙만 이관하되, OTP·예약 대응을 위해 생성/실행을 분리한다:
+ * 보험금 지급 규칙을 처리하되, OTP·예약 대응을 위해 생성/실행을 분리한다:
  *  - create: 지급건 생성(WAITING, 예약이면 SCHEDULED). (실 시스템에선 여기서 OTP 발송)
  *  - execute: OTP 검증 후 이체(COMPLETED) 또는 실패(FAILED, E2).
  * 수령인·계좌는 산출→조사→청구 조인으로 청구 단계 값을 승계한다.

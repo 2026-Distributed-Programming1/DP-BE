@@ -32,7 +32,7 @@ public class BonusRequest {
         this.requestNo = "BR-" + requestedAt.toString().replaceAll("[^0-9]", "").substring(0, 14);
     }
 
-    // Runner에서 실제 사용하는 getter/setter만 유지
+    // API 응답과 DB 복원에서 사용하는 getter/setter
     public String getEvaluationNo() { return evaluationNo; }
     public void setEvaluationNo(String evaluationNo) { this.evaluationNo = evaluationNo; }
     public String getChannelName() { return channelName; }

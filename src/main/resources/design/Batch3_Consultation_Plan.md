@@ -4,7 +4,9 @@
 > **방식**: claim 배치와 동일 — PK 파운데이션(스키마+엔터티) 선행 → 서브배치 3a(상담·면담·제안) → 3b(심사·신청·청약·부활) 순으로 진행.
 > **현재 상태 (2026-05-31)**: PK 파운데이션 ✅ · 서브배치 3a ✅ · 서브배치 3b ✅ — **배치 3 전체 완료**.
 >
-> **▶ 다음 작업**: 배치 4 — sales 도메인 (ApiMigrationPlan.md §9 참조)
+> **현재 기준 (2026-06-01)**: 최종 수렴 완료. 업무번호 저장 컬럼은 제거됐고, 업무번호는 `id`에서 format-on-read로 파생한다. FK는 `id(BIGINT)` 기반이다.
+>
+> **문서 성격**: 배치 3 전환 당시의 상세 기록이다. 레거시/저장형 표현은 당시 이력이며 현재 구현 기준은 `ApiMigrationPlan.md`와 `Convergence_Progress.md`를 따른다.
 
 ---
 
@@ -61,7 +63,7 @@
 `result_condition TEXT NULL`, `rejection_reason TEXT NULL` 컬럼 추가 확정 및 schema.sql 반영 완료.
 
 ### D2. insurance_applications/policy_applications — application_no 타입 변경 ✅ 완료
-`INT PRIMARY KEY` → `id BIGINT AUTO_INCREMENT PK` + `application_no VARCHAR(20) UNIQUE` 변경 완료. 레거시 Runner 은퇴 처리.
+`INT PRIMARY KEY` → `id BIGINT AUTO_INCREMENT PK` + `application_no VARCHAR(20) UNIQUE` 변경 완료. 최종 수렴 후 `application_no` 저장 컬럼은 제거되고 응답 시 id에서 파생한다.
 
 ### D3. 부활(Revival) 미납금 산출 ✅ 결정
 클라이언트가 요청 바디에 `unpaid_amount`를 직접 전달. 서버는 저장만 담당.
@@ -70,7 +72,7 @@
 심사 대기 목록 응답의 `applicationType`("청약"/"보험신청")을 클라이언트가 보관하여 POST 시 함께 전송. prefix 기반 암묵적 분기 대신 명시적 라우팅 채택 (클라이언트 주도 무상태 패턴 일관성).
 
 ### D5. 컬럼명 통일 ✅ 완료
-엔터티 필드명 기준으로 DB 컬럼명 통일 및 누락 컬럼 추가 (§2 표 참조). 레거시 DAO는 런타임에만 영향 (컴파일 유지, Runner 은퇴로 허용).
+엔터티 필드명 기준으로 DB 컬럼명 통일 및 누락 컬럼 추가 (§2 표 참조). 최종 수렴 후 런타임 경로는 Spring REST API 단일 경로다.
 
 ---
 
@@ -185,7 +187,7 @@ ALTER TABLE insurance_products
 - `private Long id;`
 - `public Long getId() { return id; }`
 - `public void setId(Long id) { this.id = id; }`
-- 업무번호 String 필드 + getter + setter (기존 int 필드는 레거시용으로 유지)
+- 업무번호 String 필드 + getter + setter. 최종 수렴 후 업무번호는 DB 저장 없이 id에서 파생한다.
 
 | 엔터티 | 추가 필드 | setter명 |
 |---|---|---|
@@ -207,7 +209,7 @@ ALTER TABLE insurance_products
 ① INSERT (업무번호 컬럼 제외)
 ② executeInsertReturningKey → id 회수
 ③ setId(id) + setXxxNo("PREFIX" + String.format("%05d", id))
-④ UPDATE SET xxx_no=? WHERE id=?
+④ 최종 수렴 후 DB UPDATE 없음 — 업무번호는 엔터티/응답에서만 파생
 ```
 
 insurance_products는 자연키이므로 upsert (INSERT ON DUPLICATE KEY UPDATE) 유지, id 파생 없음.

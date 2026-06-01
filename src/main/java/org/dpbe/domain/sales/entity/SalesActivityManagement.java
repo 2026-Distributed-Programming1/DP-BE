@@ -29,7 +29,7 @@ public class SalesActivityManagement {
         this.activityNo = "SA-" + registeredAt.toString().replaceAll("[^0-9]", "").substring(0, 14);
     }
 
-    // Runner에서 실제 사용하는 getter/setter만 유지
+    // API 응답과 DB 복원에서 사용하는 getter/setter
     public ChannelType getChannelType() { return channelType; }
     public Integer getVisitCount() { return visitCount; }
     public Integer getContractCount() { return contractCount; }

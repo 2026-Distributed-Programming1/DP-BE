@@ -59,7 +59,7 @@ public class Cancellation {
         this.noticeAgreed = true;
     }
 
-    /** 본인인증 - E1 (시뮬레이션에서 Runner가 제어) */
+    /** 본인인증 - E1 */
     public boolean authenticate() {
         this.authResult = true;
         return authResult;

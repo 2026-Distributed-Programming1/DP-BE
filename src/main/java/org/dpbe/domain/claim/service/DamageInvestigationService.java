@@ -14,7 +14,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 /**
  * UC '손해 조사를 한다' API 서비스.
- * 콘솔 DamageInvestigationRunner의 규칙·검증(E1 과실비율 합 100%, E2 필수입력)만 이관한다.
+ * 손해 조사 규칙·검증(E1 과실비율 합 100%, E2 필수입력)을 처리한다.
  * 한 청구 건당 조사 1건. 결과 APPROVED면 complete(), REJECTED면 closeAsRejected().
  * (산출 단계는 별도 POST이므로 complete()가 반환하는 calc 객체는 여기서 저장하지 않는다.)
  */
@@ -32,6 +32,7 @@ public class DamageInvestigationService {
     }
 
     public InvestigationResponse findByClaimNo(String claimNo) {
+        parseId(claimNo);
         DamageInvestigation inv = investigationRepository.findByClaimNo(claimNo);
         if (inv == null) {
             throw ApiException.notFound("해당 청구의 조사 건이 없습니다: " + claimNo);
@@ -40,10 +41,13 @@ public class DamageInvestigationService {
     }
 
     private Long parseId(String no) {
+        if (no == null || no.isBlank()) {
+            throw ApiException.badRequest("유효하지 않은 번호: " + no);
+        }
         try {
             return Long.parseLong(no.replaceAll("\\D", ""));
         } catch (NumberFormatException e) {
-            throw ApiException.notFound("유효하지 않은 번호: " + no);
+            throw ApiException.badRequest("유효하지 않은 번호: " + no);
         }
     }
 

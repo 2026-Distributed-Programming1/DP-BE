@@ -1,0 +1,13 @@
+.gradle
+build
+out
+target
+.git
+.gitignore
+.idea
+.vscode
+*.iml
+*.log
+uploads
+docker-compose.override.yml
+.env

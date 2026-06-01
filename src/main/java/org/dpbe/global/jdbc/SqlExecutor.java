@@ -17,8 +17,7 @@ import org.springframework.stereotype.Component;
 /**
  * Spring 트랜잭션과 통합되는 JDBC 실행 헬퍼.
  *
- * 기존 {@code DBA}와 API는 유사하나, 커넥션을 자체 풀이 아니라
- * {@link DataSourceUtils}를 통해 Spring DataSource에서 획득한다.
+ * 커넥션은 {@link DataSourceUtils}를 통해 Spring DataSource에서 획득한다.
  * → {@code @Transactional}이 연 트랜잭션 커넥션을 그대로 이어받아 사용하므로
  *   선언적 트랜잭션이 정상 동작한다.
  *

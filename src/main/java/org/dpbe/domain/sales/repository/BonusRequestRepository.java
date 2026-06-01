@@ -1,6 +1,7 @@
 package org.dpbe.domain.sales.repository;
 
 import org.dpbe.domain.sales.entity.BonusRequest;
+import org.dpbe.global.exception.ApiException;
 import org.dpbe.global.jdbc.SqlExecutor;
 import org.springframework.stereotype.Repository;
 
@@ -35,6 +36,14 @@ public class BonusRequestRepository {
         if (businessNo == null || businessNo.isBlank()) {
             return null;
         }
-        return Long.parseLong(businessNo.replaceAll("\\D", ""));
+        String digits = businessNo.replaceAll("\\D", "");
+        if (digits.isBlank()) {
+            throw ApiException.badRequest("유효하지 않은 평가번호: " + businessNo);
+        }
+        try {
+            return Long.parseLong(digits);
+        } catch (NumberFormatException e) {
+            throw ApiException.badRequest("유효하지 않은 평가번호: " + businessNo);
+        }
     }
 }

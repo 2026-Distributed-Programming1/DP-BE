@@ -13,8 +13,7 @@ import org.springframework.stereotype.Repository;
 
 /**
  * 현장 출동 기록 리포지토리 (Spring 트랜잭션 통합 경로).
- * PK는 surrogate id. record_no는 INSERT 후 id에서 파생(DRC+%05d).
- * 단일 테이블 매핑은 기존 {@code DispatchRecordDAO}를 정답지로 따르되 id를 포함하고,
+ * PK는 surrogate id. record_no는 저장하지 않고 id에서 파생한다.
  * 사진은 1:N 별도 테이블(dispatch_photos)에 메타를 저장한다(실파일은 파일시스템).
  */
 @Repository

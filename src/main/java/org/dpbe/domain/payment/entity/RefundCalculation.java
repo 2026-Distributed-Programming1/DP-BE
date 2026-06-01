@@ -150,14 +150,10 @@ public class RefundCalculation {
 
     /** 환급금 확정 및 지급 이관 - RefundPayment 생성 */
     public RefundPayment confirm() {
-        try {
-            this.confirmedAt = LocalDateTime.now();
-            this.status = RefundStatus.CALCULATED;
-            System.out.println("[RefundCalculation] 환급금 확정 및 지급 이관: " + refundNo);
-            return new RefundPayment(this);
-        } catch (Exception e) {
-            return null;
-        }
+        this.confirmedAt = LocalDateTime.now();
+        this.status = RefundStatus.CALCULATED;
+        System.out.println("[RefundCalculation] 환급금 확정 및 지급 이관: " + refundNo);
+        return new RefundPayment(this);
     }
 
     // Getter / Setter

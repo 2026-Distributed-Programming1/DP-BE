@@ -11,9 +11,8 @@ import org.springframework.stereotype.Repository;
 
 /**
  * 보험금 산출 리포지토리 (Spring 트랜잭션 통합 경로).
- * PK는 surrogate id. calculation_no는 INSERT 후 id에서 파생(CAL+%05d).
- * 매핑은 기존 {@code ClaimCalculationDAO}를 정답지로 따르되 id와 산출 파라미터
- * (deductible·coverage_limit)를 포함한다 — 행이 자기 산출 결과를 설명하도록 영속화한다.
+ * PK는 surrogate id. calculation_no는 저장하지 않고 id에서 파생한다.
+ * 산출 파라미터(deductible·coverage_limit)를 함께 저장해 행이 자기 산출 결과를 설명하도록 한다.
  */
 @Repository
 public class ClaimCalculationRepository {

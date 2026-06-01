@@ -37,6 +37,10 @@ out/
 .vscode/
 
 .DS_Store
+.env
 
 # 업로드 파일(출동 기록 현장 사진 등)
 uploads/
+
+# Docker build context artifact created by CI/local deploy builds
+app.jar

@@ -15,8 +15,7 @@ import org.springframework.stereotype.Repository;
 
 /**
  * 보험금 청구 리포지토리 (Spring 트랜잭션 통합 경로).
- * PK는 surrogate id(AUTO_INCREMENT). claim_no는 INSERT 후 id에서 파생(저장형: CLM+%05d).
- * 매핑은 기존 {@code ClaimRequestDAO}를 정답지로 따르되 DBA→SqlExecutor로 치환하고 id를 포함한다.
+ * PK는 surrogate id(AUTO_INCREMENT). claim_no는 저장하지 않고 id에서 format-on-read로 파생한다.
  */
 @Repository
 public class ClaimRequestRepository {

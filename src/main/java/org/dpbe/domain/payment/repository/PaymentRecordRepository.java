@@ -13,7 +13,7 @@ import org.springframework.stereotype.Repository;
 
 /**
  * 납부 내역 저장 리포지토리 (Spring 트랜잭션 통합 경로).
- * PK는 surrogate id. record_no는 INSERT 후 id에서 파생(저장형).
+ * PK는 surrogate id. record_no는 저장하지 않고 id에서 파생한다.
  */
 @Repository
 public class PaymentRecordRepository {

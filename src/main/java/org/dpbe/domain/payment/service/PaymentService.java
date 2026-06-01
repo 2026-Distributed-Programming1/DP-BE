@@ -27,10 +27,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 /**
  * UC '보험료를 납입한다' API 서비스.
- * 콘솔 PaymentRunner의 절차 로직을 옮긴다(콘솔 입출력 제외).
  * 다단계 흐름은 클라이언트 주도: 조회(GET) → 미리보기(POST) → 제출(POST).
- * 제출의 다중 테이블 저장은 {@code @Transactional}이 원자성을 보장한다
- * (DBA 수동 트랜잭션 제거 — Spring DataSourceTransactionManager가 경계 관리).
+ * 제출의 다중 테이블 저장은 {@code @Transactional}이 원자성을 보장한다.
  */
 @Service
 @Transactional(readOnly = true)
