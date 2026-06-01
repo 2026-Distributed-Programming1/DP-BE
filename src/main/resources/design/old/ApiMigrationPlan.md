@@ -2,11 +2,11 @@
 
 > **목적**: 순수 자바 콘솔 구조(Runner 중심)를, 프론트엔드와 REST로 통신하는 Spring 구조(Controller / Service / Repository / DTO)로 전환한다.
 > **방식**: 파일럿 2개로 패턴을 확립한 뒤 배치 단위로 전체 UC를 Spring REST API로 전환했고, 최종 수렴에서 레거시(`old/`)를 제거했다.
-> **현재 상태 (2026-06-01)**: 전 UC 전환 완료 ✅ · `old/`/`OldMain` 제거 ✅ · format-on-read ✅ · `xxx_no` 저장 컬럼 제거 ✅ · FK `id(BIGINT)` 전환 ✅ · Docker DB 재생성 및 주요 API smoke test 완료 ✅
+> **현재 상태 (2026-06-01)**: 전 UC 전환 완료 ✅ · `old/`/`OldMain` 제거 ✅ · format-on-read ✅ · `xxx_no` 저장 컬럼 제거 ✅ · FK `id(BIGINT)` 전환 ✅ · Docker DB 재생성 및 주요 API smoke test 완료 ✅ · Flyway/HTTP 세션 로그인 1차 구현 ✅
 >
-> **▶ 다음 작업 (RESUME HERE)**: 선택 작업 — slf4j 로깅 확대, CORS, 인증·인가, 응답 envelope 검토.
+> **▶ 다음 작업 (RESUME HERE)**: 프론트 연동 기반 — 고객 검색/상세 API, enum/options API, 공통 에러 응답 보강, 문의 customer_id 연결, 파일/S3 정책.
 >
-> **문서 읽기 기준**: 이 문서는 전환 이력을 함께 보존한다. 현재 구현 기준은 상단 상태와 §9, `Convergence_Progress.md`이며, 배치별 문서의 "저장형", "old/ 공존", "Runner 은퇴" 표현은 당시 진행 기록이다.
+> **문서 읽기 기준**: 이 문서는 전환 이력을 함께 보존한다. 현재 구현 기준은 상단 상태와 §9, `Convergence_Progress.md`, `FrontendIntegrationReview.md`, `DeploymentPlan.md`이며, 배치별 문서의 "저장형", "old/ 공존", "Runner 은퇴" 표현은 당시 진행 기록이다.
 
 ---
 

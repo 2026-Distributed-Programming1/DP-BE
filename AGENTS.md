@@ -1,6 +1,6 @@
-# CLAUDE.md
+# AGENTS.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+This file provides guidance to Codex (Codex.ai/code) when working with code in this repository.
 
 > **현재 상태 (2026-06-01)**: 콘솔(Runner) 구조를 Spring REST API 구조로 전환 완료. 최종 수렴도 완료되어 `old/`/`OldMain` 삭제, 업무번호 format-on-read, FK `id` 전환이 반영됨.
 > - 완료: 전 UC Controller/Service/Repository/DTO 전환 · 웹 시더 · `old/` 제거 · `xxx_no` 저장 컬럼 제거 · FK `id(BIGINT)` 전환 · Docker DB 재생성 및 주요 API smoke test ✅

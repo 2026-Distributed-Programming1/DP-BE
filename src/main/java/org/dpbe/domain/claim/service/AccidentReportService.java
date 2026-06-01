@@ -3,6 +3,7 @@ package org.dpbe.domain.claim.service;
 import java.util.List;
 import java.util.stream.Collectors;
 import org.dpbe.domain.actor.Customer;
+import org.dpbe.global.auth.service.AuthAccessService;
 import org.dpbe.domain.claim.dto.AccidentCreateRequest;
 import org.dpbe.domain.claim.dto.AccidentResponse;
 import org.dpbe.domain.claim.entity.AccidentReport;
@@ -28,17 +29,21 @@ public class AccidentReportService {
     private final AccidentReportRepository accidentRepository;
     private final DispatchRepository dispatchRepository;
     private final CustomerRepository customerRepository;
+    private final AuthAccessService authAccessService;
 
     public AccidentReportService(AccidentReportRepository accidentRepository,
                                  DispatchRepository dispatchRepository,
-                                 CustomerRepository customerRepository) {
+                                 CustomerRepository customerRepository,
+                                 AuthAccessService authAccessService) {
         this.accidentRepository = accidentRepository;
         this.dispatchRepository = dispatchRepository;
         this.customerRepository = customerRepository;
+        this.authAccessService = authAccessService;
     }
 
     public List<AccidentResponse> findAll() {
         return accidentRepository.findAll().stream()
+                .filter(r -> r.getCustomer() == null || canAccessCustomer(r.getCustomer()))
                 .map(this::toResponse)
                 .collect(Collectors.toList());
     }
@@ -56,6 +61,7 @@ public class AccidentReportService {
         if (r == null) {
             throw ApiException.notFound("사고 접수를 찾을 수 없습니다: " + reportNo);
         }
+        authAccessService.requireCustomerAccess(r.getCustomer());
         return toResponse(r);
     }
 
@@ -66,6 +72,7 @@ public class AccidentReportService {
         if (customer == null) {
             throw ApiException.notFound("고객을 찾을 수 없습니다: " + request.customerId());
         }
+        authAccessService.requireCustomerAccess(customer);
 
         AccidentReport report = new AccidentReport(customer);
         report.enterVehicleInfo(request.vehicleNo(), request.ownerName(), request.phoneNo());
@@ -104,6 +111,15 @@ public class AccidentReportService {
     private AccidentResponse toResponse(AccidentReport r) {
         Dispatch d = dispatchRepository.findByAccidentNo(r.getReportNo());
         return AccidentResponse.from(r, d != null ? d.getDispatchNo() : null);
+    }
+
+    private boolean canAccessCustomer(Customer customer) {
+        try {
+            authAccessService.requireCustomerAccess(customer);
+            return true;
+        } catch (ApiException e) {
+            return false;
+        }
     }
 
     private AccidentType parseAccidentType(String type) {

@@ -63,18 +63,31 @@
 
 ## 전체 추가 기능 후보
 
-아직 구현하지 않고 할 일 목록으로만 둔다.
+인증/Flyway의 1차 구현은 완료됐고, 나머지는 할 일 목록으로 둔다.
 
 - **AUTH-01 / 로그인·권한**
-  - 사용자 로그인, 로그아웃, 세션 확인, 역할 기반 접근 제어가 필요하다.
-  - 현재 API는 인증 없이 호출 가능하므로 프론트 작업용으로는 편하지만, 운영 관점에서는 보호가 필요하다.
-  - 후보 역할: 계약 담당자, 보상 담당자, 영업 담당자, 교육 담당자, 관리자.
-  - 1차 방침:
-    - DB 스키마 변경 관리는 Flyway로 도입한다.
-    - HTTP 환경에서 세션 기반 로그인을 먼저 구현한다.
+  - 1차 구현 완료:
+    - DB 스키마 변경 관리는 Flyway로 도입했다.
+    - HTTP 환경에서 세션 기반 로그인을 구현했다.
     - 브라우저 쿠키에는 세션 ID만 저장하고, 실제 로그인 상태는 서버/DB 세션 저장소에서 관리한다.
-    - 세션 저장소는 Spring Session JDBC + MySQL을 우선 검토한다.
-    - Spring Session JDBC 테이블과 사용자/역할 테이블은 Flyway migration으로 추가한다.
+    - 세션 저장소는 Spring Session JDBC + MySQL을 사용한다.
+    - Spring Session JDBC 테이블과 사용자/역할 테이블은 Flyway migration으로 추가했다.
+    - 인증 API는 `POST /api/auth/signup/customer`, `POST /api/auth/login`, `POST /api/auth/logout`, `GET /api/auth/me`, `POST /api/auth/password`이다.
+    - 고객 직접 회원가입은 `POST /api/auth/signup/customer`로 처리한다.
+    - 고객 직접 회원가입 필수 입력값은 로그인 아이디, 비밀번호, 이름, 주민등록번호, 연락처, 주소, 생년월일이다.
+    - 이메일은 선택값이다.
+    - 회원가입 시 `customers`와 `auth_users`를 같은 트랜잭션에서 생성한다.
+    - 고객번호는 서버가 `CUS00001` 형식으로 생성한다.
+    - 직접 회원가입 계정은 `role=CUSTOMER`, `password_change_required=false`로 생성되며 자동 로그인은 하지 않는다.
+    - 회원가입 요청 검증은 Bean Validation(`@Valid`)으로 처리하고, 검증 실패는 400 응답을 반환한다.
+    - 관리자 계정 발급 API는 `POST /api/auth/customer-accounts`이다.
+    - 관리자는 기존 고객번호와 로그인 아이디만 입력하고, 서버가 임시 비밀번호를 생성한다.
+    - 관리자 발급 고객 계정은 `password_change_required=true`로 생성되며 최초 로그인 후 비밀번호 변경이 필요하다.
+    - 직원 계정 발급 API는 `POST /api/auth/staff-accounts`이다.
+    - 직원 계정은 관리자만 발급한다.
+    - 직원 계정 발급 시 서버가 임시 비밀번호를 생성한다.
+    - 직원 계정은 `password_change_required=true`, `linked_customer_id=null`로 생성한다.
+    - `/api/auth/**`를 제외한 `/api/**`는 로그인 세션이 필요하다.
     - 프론트와 백엔드는 다른 origin으로 동작하므로 CORS credentials 설정이 필요하다.
     - 프론트 요청은 `credentials: "include"` 또는 `withCredentials: true`를 사용해야 한다.
     - HTTP 환경이므로 쿠키 `Secure=true`는 사용할 수 없다.
@@ -88,14 +101,51 @@
   - fallback:
     - HTTP + 다른 origin 환경에서 세션 쿠키가 안정적으로 동작하지 않으면 JWT 기반 로그인으로 전환한다.
     - JWT 전환 시 `Authorization: Bearer <token>` 헤더 기반으로 인증하고, CORS 쿠키 의존도를 줄인다.
-  - 1차 구현 후보:
-    - `POST /api/auth/login`
-    - `POST /api/auth/logout`
-    - `GET /api/auth/me`
-    - Flyway 도입
-    - Spring Session JDBC 테이블 마이그레이션
-    - 사용자/역할 테이블 마이그레이션
-  - 프론트 연결 초기에는 인증 없이 진행할 수 있지만, 운영 배포 전에는 최소한 관리자/직원 API 보호가 필요하다.
+  - 역할/소유권 적용 방침:
+    - role은 도메인 엔터티가 아니라 `auth_users.role`에서 관리한다.
+    - `Customer`는 보험 업무의 고객 master이고, `AuthUser`는 로그인 계정이므로 합치지 않는다.
+    - 고객뿐 아니라 직원/관리자 계정도 필요하므로 인증 계정은 고객 테이블과 분리한다.
+    - 고객 계정은 `auth_users.linked_customer_id`로 `customers.id`에 연결한다.
+    - 현재 구현된 기본 역할은 `CUSTOMER`, `STAFF`, `ADMIN`이다.
+    - 직원 세부 역할로 `CONTRACT_STAFF`, `CLAIM_STAFF`, `UNDERWRITING_STAFF`, `SALES_STAFF`, `EDUCATION_STAFF`, `FINANCE_STAFF`, `DISPATCH_STAFF`를 추가했다.
+    - 공통 interceptor는 로그인 여부만 검사한다.
+    - 고객 데이터 소유권은 서비스 계층에서 현재 로그인 사용자와 요청 데이터의 고객을 비교해 검증한다.
+    - `CUSTOMER`는 `linked_customer_id`로 연결된 본인 고객 데이터만 접근한다.
+    - `STAFF`, `ADMIN`은 업무 처리 목적상 전체 데이터 접근을 허용한다.
+  - 직원 역할 세분화 결정:
+    - 직원 역할은 세분화했다.
+    - 1차 역할은 `CONTRACT_STAFF`, `CLAIM_STAFF`, `UNDERWRITING_STAFF`, `SALES_STAFF`, `EDUCATION_STAFF`, `FINANCE_STAFF`, `DISPATCH_STAFF`이다.
+    - 기존 `STAFF`는 과도기 호환용 또는 일반 직원 역할로 유지할 수 있다.
+    - 직원 계정은 고객처럼 직접 회원가입하지 않고, 관리자가 발급한다.
+    - 직원 계정 발급 시 서버가 임시 비밀번호를 생성하고 `password_change_required=true`로 둔다.
+    - 1차 직원 계정은 `auth_users.role`만으로 API 접근 권한을 판단한다.
+    - 직원 actor 테이블(`ClaimsHandler`, `FinanceManager`, `EducationTrainer`, `SalesManager`, `InsuranceReviewer`, `DispatchAgent` 등)과의 연결은 2차 확장으로 미룬다.
+    - actor 연결이 필요한 시점은 “누가 처리했는지”, “누구에게 배정됐는지”, “담당자별 실적/한도/지역/교육 이력”을 DB에 남겨야 할 때다.
+    - 후속 확장 시 `auth_users`에 `linked_actor_type`, `linked_actor_id` 같은 다형 참조를 추가하는 방식을 검토한다.
+  - 직원 역할별 접근 정책 초안:
+    - 계약/해지/만기: `CONTRACT_STAFF`, `ADMIN`
+    - 사고/청구/손해조사/보험금 산출: `CLAIM_STAFF`, `ADMIN`
+    - 출동/출동 기록: `DISPATCH_STAFF`, `CLAIM_STAFF`, `ADMIN`
+    - 납입/환급/지급: `FINANCE_STAFF`, `ADMIN`
+    - 상담/청약/인수심사: `UNDERWRITING_STAFF`, `SALES_STAFF`, `ADMIN`
+    - 영업/채널/성과급: `SALES_STAFF`, `ADMIN`
+    - 교육: `EDUCATION_STAFF`, `ADMIN`
+  - 남은 작업:
+    - 도메인별 API 접근 제한을 직원 역할 기준으로 적용한다.
+    - 직원 actor 연결 schema와 연결 API는 담당자 배정/처리자 기록 기능을 시작할 때 설계한다.
+    - 문의처럼 `customer_id`가 없는 테이블은 migration 후 고객 소유권 검증을 추가한다.
+    - 비밀번호 찾기/초기화 정책을 결정한다.
+  - 검증 완료:
+    - fresh MySQL volume 기준으로 Flyway `V1__init_schema.sql` 자동 실행을 확인했다.
+    - `POST /api/auth/signup/customer` 고객 직접 회원가입 200 응답을 확인했다.
+    - `POST /api/auth/login` 고객 로그인 및 `DPBE_SESSION` 발급을 확인했다.
+    - `GET /api/auth/me` 고객 세션 조회 200 응답을 확인했다.
+    - 관리자 로그인 후 `POST /api/auth/staff-accounts` 직원 계정 발급 200 응답을 확인했다.
+    - 직원 계정 발급 시 `CUSTOMER` role 요청은 400으로 거부되는 것을 확인했다.
+    - `./gradlew build -x test` 성공을 확인했다.
+  - 수정된 운영 이슈:
+    - Spring Boot 4에서는 Flyway auto-configuration을 위해 `spring-boot-starter-flyway`가 필요하다.
+    - 신규 고객 저장 시 임시 `customer_id`는 `VARCHAR(20)`을 넘지 않도록 제한한다.
 
 - **CUSTOMER-01 / 고객 CRUD**
   - 고객 목록, 상세, 생성, 수정, 검색 API가 필요하다.
@@ -894,19 +944,14 @@
      - `GET /api/revivals`
      - `GET /api/bonus-requests`
 
-9. **로그인/권한 도입**
+9. **로그인/권한 확장**
    - 영향 도메인: 전체
-   - 이유: 운영 전에는 필요하지만, 프론트 초기 연결보다 뒤로 미룰 수 있다.
-   - 1차 방침:
-     - Flyway로 DB schema migration을 관리한다.
-     - HTTP + 다른 origin 환경에서 세션 기반 로그인을 먼저 시도한다.
-     - CORS credentials와 Spring Session JDBC를 사용한다.
-     - 쿠키가 브라우저 정책 때문에 안정적으로 동작하지 않으면 JWT로 전환한다.
-   - 후보:
-     - `POST /api/auth/login`
-     - `POST /api/auth/logout`
-     - `GET /api/auth/me`
-     - 역할 기반 접근 제어
+   - 현재 상태:
+     - Flyway, HTTP 세션 로그인, Spring Session JDBC, 기본 role, 주요 고객 데이터 소유권 검증은 구현 완료.
+   - 남은 후보:
+     - 직원 세부 역할 분리
+     - 문의/customer_id 연결 후 고객 본인 문의 조회 제한
+     - 쿠키가 브라우저 정책 때문에 안정적으로 동작하지 않을 경우 JWT 전환
 
 10. **OpenAPI/Swagger 또는 API 명세 정리**
     - 영향 도메인: 전체
@@ -940,9 +985,8 @@
   - S3 저장 구조 설계
 
 - **Batch E / 운영 보강**
-  - Flyway 도입
-  - 로그인/권한
-  - HTTP 세션 로그인 검증
+  - 직원 세부 권한 확장
+  - 문의 customer_id 연결
   - 세션 쿠키 불안정 시 JWT 전환
   - API 문서화
   - audit/logging 필요 여부 검토

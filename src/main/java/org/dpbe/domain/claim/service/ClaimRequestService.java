@@ -3,6 +3,7 @@ package org.dpbe.domain.claim.service;
 import java.util.List;
 import java.util.stream.Collectors;
 import org.dpbe.domain.actor.Customer;
+import org.dpbe.global.auth.service.AuthAccessService;
 import org.dpbe.domain.claim.dto.ClaimCreateRequest;
 import org.dpbe.domain.claim.dto.ClaimResponse;
 import org.dpbe.domain.claim.entity.ClaimRequest;
@@ -29,13 +30,16 @@ public class ClaimRequestService {
     private final ClaimRequestRepository claimRequestRepository;
     private final CustomerRepository customerRepository;
     private final ContractRepository contractRepository;
+    private final AuthAccessService authAccessService;
 
     public ClaimRequestService(ClaimRequestRepository claimRequestRepository,
                                CustomerRepository customerRepository,
-                               ContractRepository contractRepository) {
+                               ContractRepository contractRepository,
+                               AuthAccessService authAccessService) {
         this.claimRequestRepository = claimRequestRepository;
         this.customerRepository = customerRepository;
         this.contractRepository = contractRepository;
+        this.authAccessService = authAccessService;
     }
 
     private Long parseId(String claimNo) {
@@ -56,6 +60,7 @@ public class ClaimRequestService {
 
     public List<ClaimResponse> findAll() {
         return claimRequestRepository.findAll().stream()
+                .filter(r -> r.getCustomer() == null || canAccessCustomer(r.getCustomer()))
                 .map(ClaimResponse::from)
                 .collect(Collectors.toList());
     }
@@ -65,6 +70,7 @@ public class ClaimRequestService {
         if (r == null) {
             throw ApiException.notFound("청구를 찾을 수 없습니다: " + claimNo);
         }
+        authAccessService.requireCustomerAccess(r.getCustomer());
         return ClaimResponse.from(r);
     }
 
@@ -75,10 +81,12 @@ public class ClaimRequestService {
         if (customer == null) {
             throw ApiException.notFound("고객을 찾을 수 없습니다: " + request.customerId());
         }
+        authAccessService.requireCustomerAccess(customer);
         Contract contract = contractRepository.findById(parseContractId(request.contractNo()));
         if (contract == null) {
             throw ApiException.notFound("계약을 찾을 수 없습니다: " + request.contractNo());
         }
+        authAccessService.requireContractAccess(contract);
         if (request.claimReasons() == null || request.claimReasons().isEmpty()) {
             throw ApiException.badRequest("청구 사유를 1건 이상 선택해야 합니다.");
         }
@@ -140,6 +148,15 @@ public class ClaimRequestService {
             return ClaimType.valueOf(type);
         } catch (IllegalArgumentException e) {
             throw ApiException.badRequest("알 수 없는 청구 유형입니다: " + type);
+        }
+    }
+
+    private boolean canAccessCustomer(Customer customer) {
+        try {
+            authAccessService.requireCustomerAccess(customer);
+            return true;
+        } catch (ApiException e) {
+            return false;
         }
     }
 }

@@ -2,6 +2,7 @@ package org.dpbe.domain.contract.service;
 
 import java.util.List;
 import java.util.stream.Collectors;
+import org.dpbe.global.auth.service.AuthAccessService;
 import org.dpbe.domain.common.enums.ContractStatus;
 import org.dpbe.domain.contract.dto.CancellationRequest;
 import org.dpbe.domain.contract.dto.CancellationResponse;
@@ -18,11 +19,14 @@ public class CancellationService {
 
     private final ContractRepository contractRepository;
     private final CancellationRepository cancellationRepository;
+    private final AuthAccessService authAccessService;
 
     public CancellationService(ContractRepository contractRepository,
-                               CancellationRepository cancellationRepository) {
+                               CancellationRepository cancellationRepository,
+                               AuthAccessService authAccessService) {
         this.contractRepository = contractRepository;
         this.cancellationRepository = cancellationRepository;
+        this.authAccessService = authAccessService;
     }
 
     private Long parseId(String no) {
@@ -47,6 +51,7 @@ public class CancellationService {
         if (contract == null) {
             throw ApiException.notFound("계약을 찾을 수 없습니다: " + contractNo);
         }
+        authAccessService.requireContractAccess(contract);
 
         Cancellation c = new Cancellation(contract);
         c.selectReason(req.reason());
@@ -70,6 +75,7 @@ public class CancellationService {
     @Transactional(readOnly = true)
     public List<CancellationResponse> getAll() {
         return cancellationRepository.findAll().stream()
+                .filter(c -> c.getContract() == null || authAccessService.canAccessContract(c.getContract()))
                 .map(this::toResponse)
                 .collect(Collectors.toList());
     }
@@ -77,7 +83,10 @@ public class CancellationService {
     @Transactional(readOnly = true)
     public CancellationResponse getOne(String cancellationNo) {
         return cancellationRepository.findById(parseId(cancellationNo))
-                .map(this::toResponse)
+                .map(c -> {
+                    authAccessService.requireContractAccess(c.getContract());
+                    return toResponse(c);
+                })
                 .orElseThrow(() -> ApiException.notFound("해지 건을 찾을 수 없습니다: " + cancellationNo));
     }
 

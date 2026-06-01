@@ -1,6 +1,7 @@
 package org.dpbe.domain.consultation.service;
 
 import org.dpbe.domain.actor.Customer;
+import org.dpbe.global.auth.service.AuthAccessService;
 import org.dpbe.domain.consultation.dto.RevivalRequest;
 import org.dpbe.domain.consultation.dto.RevivalResponse;
 import org.dpbe.domain.consultation.entity.Revival;
@@ -18,13 +19,16 @@ public class RevivalService {
     private final RevivalRepository revivalRepo;
     private final ContractRepository contractRepo;
     private final CustomerRepository customerRepo;
+    private final AuthAccessService authAccessService;
 
     public RevivalService(RevivalRepository revivalRepo,
                           ContractRepository contractRepo,
-                          CustomerRepository customerRepo) {
+                          CustomerRepository customerRepo,
+                          AuthAccessService authAccessService) {
         this.revivalRepo = revivalRepo;
         this.contractRepo = contractRepo;
         this.customerRepo = customerRepo;
+        this.authAccessService = authAccessService;
     }
 
     private Long parseContractId(String contractNo) {
@@ -50,9 +54,12 @@ public class RevivalService {
         Customer customer = customerRepo.findById(req.customerId());
         if (customer == null)
             throw ApiException.notFound("고객을 찾을 수 없습니다: " + req.customerId());
+        authAccessService.requireCustomerAccess(customer);
 
-        if (contractRepo.findById(parseContractId(req.contractNo())) == null)
+        var contract = contractRepo.findById(parseContractId(req.contractNo()));
+        if (contract == null)
             throw ApiException.notFound("계약을 찾을 수 없습니다: " + req.contractNo());
+        authAccessService.requireContractAccess(contract);
 
         Revival r = new Revival();
         r.setCustomer(customer);

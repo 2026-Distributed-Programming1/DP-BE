@@ -67,11 +67,6 @@ if [ ! -f "${COMPOSE_FILE}" ]; then
     exit 1
 fi
 
-if [ ! -f "${APP_DIR}/schema.sql" ]; then
-    echo "schema.sql file was not found at ${APP_DIR}/schema.sql"
-    exit 1
-fi
-
 chmod 600 "${ENV_FILE}"
 
 set -a

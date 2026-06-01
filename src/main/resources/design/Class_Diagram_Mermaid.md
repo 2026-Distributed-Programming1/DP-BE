@@ -62,10 +62,6 @@ classDiagram
         #String name
         #String contact
         #String email
-        #String password
-        #boolean loggedIn
-        +login(String id, String pw) boolean
-        +logout() void
         +updateProfile(String contact, String email) void
     }
     class Customer {

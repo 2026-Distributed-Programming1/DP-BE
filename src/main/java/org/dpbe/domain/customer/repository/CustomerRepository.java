@@ -3,6 +3,7 @@ package org.dpbe.domain.customer.repository;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.List;
+import java.util.UUID;
 import org.dpbe.domain.actor.Customer;
 import org.dpbe.global.jdbc.SqlExecutor;
 import org.springframework.stereotype.Repository;
@@ -41,6 +42,41 @@ public class CustomerRepository {
                 + " address=VALUES(address), birth_date=VALUES(birth_date)",
                 c.getCustomerId(), c.getName(), c.getResidentNo(),
                 c.getContact(), c.getEmail(), c.getAddress(), c.getBirthDate());
+    }
+
+    public Customer saveNew(Customer c) {
+        String temporaryCustomerId = "TMP" + UUID.randomUUID().toString().replace("-", "").substring(0, 17);
+        long id = sql.executeInsertReturningKey(
+                "INSERT INTO customers (customer_id, name, resident_no, phone, email, address, birth_date)"
+                + " VALUES (?,?,?,?,?,?,?)",
+                temporaryCustomerId, c.getName(), c.getResidentNo(), c.getContact(),
+                c.getEmail(), c.getAddress(), c.getBirthDate());
+
+        String customerId = formatCustomerId(id);
+        sql.executeUpdate("UPDATE customers SET customer_id=? WHERE id=?", customerId, id);
+        c.setId(id);
+        c.setCustomerId(customerId);
+        return c;
+    }
+
+    public boolean existsByResidentNo(String residentNo) {
+        Integer count = sql.queryOne(
+                "SELECT COUNT(*) AS cnt FROM customers WHERE resident_no=?",
+                rs -> rs.getInt("cnt"),
+                residentNo);
+        return count != null && count > 0;
+    }
+
+    public boolean existsByPhone(String phone) {
+        Integer count = sql.queryOne(
+                "SELECT COUNT(*) AS cnt FROM customers WHERE phone=?",
+                rs -> rs.getInt("cnt"),
+                phone);
+        return count != null && count > 0;
+    }
+
+    private String formatCustomerId(long id) {
+        return String.format("CUS%05d", id);
     }
 
     private Customer mapRow(ResultSet rs) throws SQLException {
