@@ -73,6 +73,7 @@ MYSQL_HOST_PORT=3306
 SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/insurance_db?useSSL=false&serverTimezone=Asia/Seoul&allowPublicKeyRetrieval=true&characterEncoding=UTF-8
 SPRING_DATASOURCE_USERNAME=admin
 SPRING_DATASOURCE_PASSWORD=change-user-password
+SPRING_DATASOURCE_DRIVER_CLASS_NAME=com.mysql.cj.jdbc.Driver
 ```
 
 주의:

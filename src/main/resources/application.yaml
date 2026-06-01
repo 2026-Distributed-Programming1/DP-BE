@@ -8,13 +8,13 @@ spring:
     driver-class-name: ${SPRING_DATASOURCE_DRIVER_CLASS_NAME}
 
 server:
-  port: ${SERVER_PORT}
+  port: ${SERVER_PORT:8080}
 
 # 기동 시 초기 데이터 시더 (DataSeeder). 실 DB 보호용으로 false 가능.
 app:
   seed:
-    enabled: ${APP_SEED_ENABLED}
+    enabled: ${APP_SEED_ENABLED:false}
   upload:
-    dispatch-dir: ${APP_UPLOAD_DISPATCH_DIR}
+    dispatch-dir: ${APP_UPLOAD_DISPATCH_DIR:uploads/dispatch}
   cors:
-    allowed-origins: ${APP_CORS_ALLOWED_ORIGINS}
+    allowed-origins: ${APP_CORS_ALLOWED_ORIGINS:http://localhost:3000,http://localhost:5173,http://127.0.0.1:3000,http://127.0.0.1:5173}
