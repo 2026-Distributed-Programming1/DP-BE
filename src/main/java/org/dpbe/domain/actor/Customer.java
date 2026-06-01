@@ -35,6 +35,10 @@ public class Customer extends User {
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
     public String getCustomerId() { return customerId; }
+    public void setCustomerId(String customerId) {
+        this.customerId = customerId;
+        this.userId = customerId;
+    }
     public String getCustomerNo() { return customerId; }
     public String getResidentNo() { return residentNo; }
     public String getAddress() { return address; }

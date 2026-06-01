@@ -4,6 +4,7 @@ import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.stream.Collectors;
+import org.dpbe.global.auth.service.AuthAccessService;
 import org.dpbe.global.exception.ApiException;
 import org.dpbe.domain.contract.dto.ContractDetailResponse;
 import org.dpbe.domain.contract.dto.ContractListResponse;
@@ -24,9 +25,12 @@ import org.springframework.transaction.annotation.Transactional;
 public class ContractService {
 
     private final ContractRepository contractRepository;
+    private final AuthAccessService authAccessService;
 
-    public ContractService(ContractRepository contractRepository) {
+    public ContractService(ContractRepository contractRepository,
+                           AuthAccessService authAccessService) {
         this.contractRepository = contractRepository;
+        this.authAccessService = authAccessService;
     }
 
     /** Basic 2 / A1(필터 없음) / A2(결과 없음) — 필터 + 페이징 목록 */
@@ -35,6 +39,7 @@ public class ContractService {
         if (size < 1) size = 20;
 
         List<Contract> filtered = contractRepository.findAll().stream()
+                .filter(authAccessService::canAccessContract)
                 .filter(c -> type == null || type.isBlank()
                         || (c.getInsuranceType() != null && c.getInsuranceType().contains(type)))
                 .collect(Collectors.toList());
@@ -64,6 +69,7 @@ public class ContractService {
         if (c == null) {
             throw ApiException.notFound("계약을 찾을 수 없습니다: " + contractNo);
         }
+        authAccessService.requireContractAccess(c);
 
         LocalDate endDate = c.getEndDate();
         long daysUntilExpiry = endDate != null

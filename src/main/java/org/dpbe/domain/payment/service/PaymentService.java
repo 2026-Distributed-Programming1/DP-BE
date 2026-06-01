@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 import org.dpbe.domain.actor.Customer;
+import org.dpbe.global.auth.service.AuthAccessService;
 import org.dpbe.global.exception.ApiException;
 import org.dpbe.domain.contract.repository.ContractRepository;
 import org.dpbe.domain.customer.repository.CustomerRepository;
@@ -38,19 +39,23 @@ public class PaymentService {
     private final CustomerRepository customerRepository;
     private final PaymentRepository paymentRepository;
     private final PaymentRecordRepository paymentRecordRepository;
+    private final AuthAccessService authAccessService;
 
     public PaymentService(ContractRepository contractRepository,
                           CustomerRepository customerRepository,
                           PaymentRepository paymentRepository,
-                          PaymentRecordRepository paymentRecordRepository) {
+                          PaymentRecordRepository paymentRecordRepository,
+                          AuthAccessService authAccessService) {
         this.contractRepository = contractRepository;
         this.customerRepository = customerRepository;
         this.paymentRepository = paymentRepository;
         this.paymentRecordRepository = paymentRecordRepository;
+        this.authAccessService = authAccessService;
     }
 
     /** 납입 가능한 고객 계약 목록 */
     public List<PaymentContractResponse> customerContracts(String customerId) {
+        authAccessService.requireCustomerNoAccess(customerId);
         return contractRepository.findByCustomerId(customerId).stream()
                 .map(c -> new PaymentContractResponse(
                         c.getContractNo(), c.getInsuranceType(), c.getMonthlyPremium()))
@@ -69,6 +74,7 @@ public class PaymentService {
         int maxCount = 0;
         for (PaymentItemRequest item : items) {
             Contract c = requireContract(item.contractNo());
+            authAccessService.requireContractAccess(c);
             if (item.count() <= 0) {
                 throw ApiException.badRequest("납입 횟수는 1 이상이어야 합니다: " + item.contractNo());
             }
@@ -91,6 +97,7 @@ public class PaymentService {
         if (customer == null) {
             throw ApiException.notFound("고객을 찾을 수 없습니다: " + request.customerId());
         }
+        authAccessService.requireCustomerAccess(customer);
         if (request.items() == null || request.items().isEmpty()) {
             throw ApiException.badRequest("납입할 계약을 1건 이상 선택해야 합니다.");
         }
@@ -100,7 +107,9 @@ public class PaymentService {
         // 요청 항목 순서대로 계약 해석 + Payment 구성
         List<Contract> contracts = new ArrayList<>();
         for (PaymentItemRequest item : request.items()) {
-            contracts.add(requireContract(item.contractNo()));
+            Contract contract = requireContract(item.contractNo());
+            authAccessService.requireContractAccess(contract);
+            contracts.add(contract);
         }
         Payment payment = new Payment(customer);
         payment.selectContracts(contracts);

@@ -1,6 +1,7 @@
 package org.dpbe.domain.consultation.service;
 
 import org.dpbe.domain.actor.Customer;
+import org.dpbe.global.auth.service.AuthAccessService;
 import org.dpbe.domain.consultation.dto.InsuranceApplicationRequest;
 import org.dpbe.domain.consultation.dto.InsuranceApplicationResponse;
 import org.dpbe.domain.consultation.entity.InsuranceApplication;
@@ -19,13 +20,16 @@ public class InsuranceApplicationService {
     private final InsuranceApplicationRepository appRepo;
     private final InsuranceProductRepository productRepo;
     private final CustomerRepository customerRepo;
+    private final AuthAccessService authAccessService;
 
     public InsuranceApplicationService(InsuranceApplicationRepository appRepo,
                                        InsuranceProductRepository productRepo,
-                                       CustomerRepository customerRepo) {
+                                       CustomerRepository customerRepo,
+                                       AuthAccessService authAccessService) {
         this.appRepo = appRepo;
         this.productRepo = productRepo;
         this.customerRepo = customerRepo;
+        this.authAccessService = authAccessService;
     }
 
     /** 보험 가입 신청. */
@@ -41,6 +45,7 @@ public class InsuranceApplicationService {
         Customer customer = customerRepo.findById(req.customerId());
         if (customer == null)
             throw ApiException.notFound("고객을 찾을 수 없습니다: " + req.customerId());
+        authAccessService.requireCustomerAccess(customer);
 
         InsuranceProduct product = productRepo.findByProductName(req.productName());
         if (product == null)
