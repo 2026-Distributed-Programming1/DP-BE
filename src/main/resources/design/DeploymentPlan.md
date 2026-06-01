@@ -14,7 +14,7 @@
 5. `build/libs/*.jar`를 `app.jar`로 복사
 6. Docker image 빌드
 7. Docker Hub에 `${DOCKERHUB_USERNAME}/dp-be:latest` push
-8. EC2 `/home/ubuntu`로 아래 파일 업로드
+8. EC2 `/home/ec2-user`로 아래 파일 업로드
    - `deploy.sh`
    - `.env`
    - `docker-compose.yml`
@@ -48,7 +48,7 @@
 | `DOCKERHUB_USERNAME` | Docker Hub 계정명 |
 | `DOCKERHUB_TOKEN` | Docker Hub access token |
 | `EC2_HOST` | EC2 public IP 또는 domain |
-| `EC2_USERNAME` | EC2 SSH 사용자. Ubuntu AMI 기본값은 `ubuntu` |
+| `EC2_USERNAME` | EC2 SSH 사용자. Amazon Linux 기본값은 `ec2-user` |
 | `EC2_SSH_KEY` | EC2 접속용 private key |
 | `ENV_FILE` | EC2에 업로드할 `.env` 전체 내용 |
 
@@ -111,7 +111,7 @@ sudo systemctl start docker
 
 ## 6. 운영 compose 동작
 
-`infra/deploy/docker-compose.yml`은 EC2에서 `/home/ubuntu/docker-compose.yml`로 배치된다.
+`infra/deploy/docker-compose.yml`은 EC2에서 `/home/ec2-user/docker-compose.yml`로 배치된다.
 
 서비스:
 - `app`
@@ -121,7 +121,7 @@ sudo systemctl start docker
 - `mysql`
   - `mysql:8.0`
   - `mysql_data` volume에 데이터 유지
-  - 최초 volume 생성 시 `/home/ubuntu/schema.sql`로 schema 초기화
+  - 최초 volume 생성 시 `/home/ec2-user/schema.sql`로 schema 초기화
 
 볼륨:
 - `mysql_data`: MySQL 데이터
@@ -141,14 +141,14 @@ S3 전환 전까지 `dispatch_uploads`는 임시 로컬 저장소다. 사용자 
 서버:
 - `infra/deploy/docker-compose.yml` 사용
 - 앱과 MySQL 모두 Docker 컨테이너로 실행
-- 설정값은 GitHub Secret `ENV_FILE`에서 전달된 `/home/ubuntu/.env`를 사용
+- 설정값은 GitHub Secret `ENV_FILE`에서 전달된 `/home/ec2-user/.env`를 사용
 
 ## 8. 확인 명령
 
 EC2에서 상태 확인:
 
 ```bash
-cd /home/ubuntu
+cd /home/ec2-user
 docker ps
 docker logs dp_be --tail=100
 docker logs insurance_db --tail=100
@@ -157,7 +157,7 @@ docker logs insurance_db --tail=100
 재배포 수동 실행:
 
 ```bash
-cd /home/ubuntu
+cd /home/ec2-user
 chmod +x deploy.sh
 ./deploy.sh
 ```
