@@ -55,7 +55,7 @@ jobs:
           host: ${{ secrets.EC2_HOST }}
           username: ${{ secrets.EC2_USERNAME }}
           key: ${{ secrets.EC2_SSH_KEY }}
-          source: "./infra/deploy/scripts/deploy.sh"
+          source: "infra/deploy/scripts/deploy.sh"
           target: "/home/ec2-user/"
           strip_components: 3
 
@@ -74,7 +74,7 @@ jobs:
           host: ${{ secrets.EC2_HOST }}
           username: ${{ secrets.EC2_USERNAME }}
           key: ${{ secrets.EC2_SSH_KEY }}
-          source: "./infra/deploy/docker-compose.yml"
+          source: "infra/deploy/docker-compose.yml"
           target: "/home/ec2-user/"
           strip_components: 2
 
@@ -84,7 +84,7 @@ jobs:
           host: ${{ secrets.EC2_HOST }}
           username: ${{ secrets.EC2_USERNAME }}
           key: ${{ secrets.EC2_SSH_KEY }}
-          source: "./src/main/resources/schema.sql"
+          source: "src/main/resources/schema.sql"
           target: "/home/ec2-user/"
           strip_components: 3
 
@@ -96,5 +96,5 @@ jobs:
           key: ${{ secrets.EC2_SSH_KEY }}
           script: |
             cd /home/ec2-user
-            chmod +x deploy.sh
-            ./deploy.sh
+            chmod +x /home/ec2-user/deploy.sh
+            /home/ec2-user/deploy.sh
