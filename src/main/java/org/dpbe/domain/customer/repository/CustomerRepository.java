@@ -34,6 +34,14 @@ public class CustomerRepository {
                 this::mapRow);
     }
 
+    public List<Customer> findByKeyword(String keyword) {
+        String like = "%" + keyword + "%";
+        return sql.executeQuery(
+                "SELECT id, customer_id, name, resident_no, phone, email, address, birth_date, registered_at"
+                + " FROM customers WHERE name LIKE ? OR customer_id LIKE ?",
+                this::mapRow, like, like);
+    }
+
     public void save(Customer c) {
         sql.executeUpdate(
                 "INSERT INTO customers (customer_id, name, resident_no, phone, email, address, birth_date)"
