@@ -28,16 +28,24 @@ elif command -v systemctl >/dev/null 2>&1; then
 fi
 
 DOCKER_CMD="docker"
+DOCKER_NEEDS_SUDO=false
 if ! docker info >/dev/null 2>&1; then
     DOCKER_CMD="sudo docker"
+    DOCKER_NEEDS_SUDO=true
 fi
 
 if ${DOCKER_CMD} compose version >/dev/null 2>&1; then
     COMPOSE_CMD="${DOCKER_CMD} compose"
 elif command -v docker-compose >/dev/null 2>&1; then
-    COMPOSE_CMD="docker-compose"
-    if ! docker-compose version >/dev/null 2>&1; then
+    if [ "${DOCKER_NEEDS_SUDO}" = "true" ]; then
         COMPOSE_CMD="sudo docker-compose"
+    else
+        COMPOSE_CMD="docker-compose"
+    fi
+
+    if ! ${COMPOSE_CMD} version >/dev/null 2>&1; then
+        echo "Docker Compose is installed but cannot be executed."
+        exit 1
     fi
 else
     echo "Docker Compose is not installed. Installing standalone docker-compose..."
