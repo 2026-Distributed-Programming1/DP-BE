@@ -3,6 +3,7 @@ package org.dpbe.domain.payment.service;
 import java.util.List;
 import org.dpbe.domain.common.entity.BankAccount;
 import org.dpbe.domain.contract.entity.Cancellation;
+import org.dpbe.domain.contract.entity.Contract;
 import org.dpbe.domain.contract.repository.CancellationRepository;
 import org.dpbe.domain.common.enums.RefundPaymentStatus;
 import org.dpbe.domain.common.enums.RefundStatus;
@@ -10,6 +11,7 @@ import org.dpbe.domain.payment.entity.RefundCalculation;
 import org.dpbe.domain.payment.entity.RefundPayment;
 import org.dpbe.domain.payment.repository.RefundCalculationRepository;
 import org.dpbe.domain.payment.repository.RefundPaymentRepository;
+import org.dpbe.global.auth.service.AuthAccessService;
 import org.dpbe.global.exception.ApiException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -20,18 +22,22 @@ public class RefundService {
     private final CancellationRepository cancellationRepository;
     private final RefundCalculationRepository refundCalculationRepository;
     private final RefundPaymentRepository refundPaymentRepository;
+    private final AuthAccessService authAccessService;
 
     public RefundService(CancellationRepository cancellationRepository,
                          RefundCalculationRepository refundCalculationRepository,
-                         RefundPaymentRepository refundPaymentRepository) {
+                         RefundPaymentRepository refundPaymentRepository,
+                         AuthAccessService authAccessService) {
         this.cancellationRepository = cancellationRepository;
         this.refundCalculationRepository = refundCalculationRepository;
         this.refundPaymentRepository = refundPaymentRepository;
+        this.authAccessService = authAccessService;
     }
 
     /** 환급금 산출 — POST /api/cancellations/{cancellationNo}/refund-calculation */
     @Transactional
     public RefundCalculation calculate(String cancellationNo) {
+        authAccessService.requireRefundOperationAccess();
         Cancellation cancellation = cancellationRepository.findById(parseId(cancellationNo))
                 .orElseThrow(() -> ApiException.notFound("해지 건을 찾을 수 없습니다: " + cancellationNo));
 
@@ -59,6 +65,7 @@ public class RefundService {
     /** 환급금 확정 + 지급 이관 — POST /api/refund-calculations/{refundNo}/confirm */
     @Transactional
     public RefundPayment confirm(String refundNo) {
+        authAccessService.requireRefundOperationAccess();
         RefundCalculation refund = refundCalculationRepository.findById(parseId(refundNo))
                 .orElseThrow(() -> ApiException.notFound("환급금 산출 건을 찾을 수 없습니다: " + refundNo));
 
@@ -77,6 +84,7 @@ public class RefundService {
     /** OTP 인증 후 이체 실행 — POST /api/refund-payments/{paymentNo}/execute */
     @Transactional
     public RefundPayment execute(String paymentNo, String otpInput) {
+        authAccessService.requireRefundOperationAccess();
         RefundPayment payment = refundPaymentRepository.findById(parseId(paymentNo))
                 .orElseThrow(() -> ApiException.notFound("환급금 지급 건을 찾을 수 없습니다: " + paymentNo));
 
@@ -113,26 +121,50 @@ public class RefundService {
     /** 환급금 산출 단건 조회 */
     @Transactional(readOnly = true)
     public RefundCalculation getCalculation(String refundNo) {
-        return refundCalculationRepository.findById(parseId(refundNo))
+        RefundCalculation refund = refundCalculationRepository.findById(parseId(refundNo))
                 .orElseThrow(() -> ApiException.notFound("환급금 산출 건을 찾을 수 없습니다: " + refundNo));
+        requireRefundAccess(refund);
+        return refund;
     }
 
     /** 환급금 산출 목록 */
     @Transactional(readOnly = true)
     public List<RefundCalculation> getAllCalculations() {
-        return refundCalculationRepository.findAll();
+        return refundCalculationRepository.findAll().stream()
+                .filter(this::canAccessRefund)
+                .toList();
     }
 
     /** 환급금 지급 단건 조회 */
     @Transactional(readOnly = true)
     public RefundPayment getPayment(String paymentNo) {
-        return refundPaymentRepository.findById(parseId(paymentNo))
+        RefundPayment payment = refundPaymentRepository.findById(parseId(paymentNo))
                 .orElseThrow(() -> ApiException.notFound("환급금 지급 건을 찾을 수 없습니다: " + paymentNo));
+        requireRefundAccess(payment.getRefund());
+        return payment;
     }
 
     /** 환급금 지급 목록 */
     @Transactional(readOnly = true)
     public List<RefundPayment> getAllPayments() {
-        return refundPaymentRepository.findAll();
+        return refundPaymentRepository.findAll().stream()
+                .filter(payment -> canAccessRefund(payment.getRefund()))
+                .toList();
+    }
+
+    private void requireRefundAccess(RefundCalculation refund) {
+        if (!canAccessRefund(refund)) {
+            throw ApiException.forbidden("본인 환급 데이터만 접근할 수 있습니다.");
+        }
+    }
+
+    private boolean canAccessRefund(RefundCalculation refund) {
+        if (refund == null || refund.getCancellation() == null) {
+            return !authAccessService.isCustomer();
+        }
+        Cancellation fullCancellation = cancellationRepository.findById(refund.getCancellation().getId())
+                .orElse(null);
+        Contract contract = fullCancellation != null ? fullCancellation.getContract() : null;
+        return authAccessService.canAccessContract(contract);
     }
 }

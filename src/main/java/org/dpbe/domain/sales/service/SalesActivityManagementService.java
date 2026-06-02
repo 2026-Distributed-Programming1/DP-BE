@@ -9,6 +9,7 @@ import org.dpbe.domain.sales.dto.SalesActivityManagementRequest;
 import org.dpbe.domain.sales.dto.SalesActivityManagementResponse;
 import org.dpbe.domain.sales.entity.SalesActivityManagement;
 import org.dpbe.domain.sales.repository.SalesActivityManagementRepository;
+import org.dpbe.global.auth.service.AuthAccessService;
 import org.dpbe.global.exception.ApiException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -17,14 +18,18 @@ import org.springframework.transaction.annotation.Transactional;
 public class SalesActivityManagementService {
 
     private final SalesActivityManagementRepository repository;
+    private final AuthAccessService authAccessService;
 
-    public SalesActivityManagementService(SalesActivityManagementRepository repository) {
+    public SalesActivityManagementService(SalesActivityManagementRepository repository,
+                                          AuthAccessService authAccessService) {
         this.repository = repository;
+        this.authAccessService = authAccessService;
     }
 
     @Transactional(readOnly = true)
     public SalesActivityManagementListResponse findAll(
             LocalDate startDate, LocalDate endDate, String channelType, int page, int size) {
+        authAccessService.requireSalesOperationAccess();
         if (page < 1) page = 1;
         if (size < 1) size = 20;
 
@@ -53,6 +58,7 @@ public class SalesActivityManagementService {
 
     @Transactional
     public SalesActivityManagementResponse create(SalesActivityManagementRequest request) {
+        authAccessService.requireSalesOperationAccess();
         if (request.channelName() == null || request.channelType() == null
                 || request.startDate() == null || request.endDate() == null) {
             throw ApiException.badRequest("필수 항목 누락: channelName, channelType, startDate, endDate");

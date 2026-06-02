@@ -10,6 +10,7 @@ import org.dpbe.domain.sales.dto.ActivityPlanResponse;
 import org.dpbe.domain.sales.entity.ActivityPlan;
 import org.dpbe.domain.sales.entity.ScheduleItem;
 import org.dpbe.domain.sales.repository.ActivityPlanRepository;
+import org.dpbe.global.auth.service.AuthAccessService;
 import org.dpbe.global.exception.ApiException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -18,13 +19,17 @@ import org.springframework.transaction.annotation.Transactional;
 public class ActivityPlanService {
 
     private final ActivityPlanRepository repository;
+    private final AuthAccessService authAccessService;
 
-    public ActivityPlanService(ActivityPlanRepository repository) {
+    public ActivityPlanService(ActivityPlanRepository repository,
+                               AuthAccessService authAccessService) {
         this.repository = repository;
+        this.authAccessService = authAccessService;
     }
 
     @Transactional(readOnly = true)
     public List<ActivityPlanResponse> findAll() {
+        authAccessService.requireSalesOperationAccess();
         return repository.findAll().stream()
                 .map(ActivityPlanResponse::from)
                 .collect(Collectors.toList());
@@ -40,6 +45,7 @@ public class ActivityPlanService {
 
     @Transactional(readOnly = true)
     public ActivityPlanResponse findByPlanNo(String planNo) {
+        authAccessService.requireSalesOperationAccess();
         ActivityPlan plan = repository.findById(parseId(planNo));
         if (plan == null) {
             throw ApiException.notFound("활동 계획을 찾을 수 없습니다: " + planNo);
@@ -49,6 +55,7 @@ public class ActivityPlanService {
 
     @Transactional
     public ActivityPlanResponse create(ActivityPlanRequest request) {
+        authAccessService.requireSalesOperationAccess();
         if (request.planName() == null || request.startDate() == null
                 || request.endDate() == null
                 || request.targetContractCount() == null || request.targetContractCount() <= 0

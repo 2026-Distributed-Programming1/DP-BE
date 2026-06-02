@@ -7,6 +7,7 @@ import org.dpbe.domain.claim.repository.ClaimCalculationRepository;
 import org.dpbe.domain.claim.repository.DamageInvestigationRepository;
 import org.dpbe.domain.common.enums.CalculationStatus;
 import org.dpbe.domain.common.enums.InvestigationResult;
+import org.dpbe.global.auth.service.AuthAccessService;
 import org.dpbe.global.exception.ApiException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -22,11 +23,14 @@ public class ClaimCalculationService {
 
     private final ClaimCalculationRepository calculationRepository;
     private final DamageInvestigationRepository investigationRepository;
+    private final AuthAccessService authAccessService;
 
     public ClaimCalculationService(ClaimCalculationRepository calculationRepository,
-                                   DamageInvestigationRepository investigationRepository) {
+                                   DamageInvestigationRepository investigationRepository,
+                                   AuthAccessService authAccessService) {
         this.calculationRepository = calculationRepository;
         this.investigationRepository = investigationRepository;
+        this.authAccessService = authAccessService;
     }
 
     private Long parseId(String no) {
@@ -40,6 +44,7 @@ public class ClaimCalculationService {
     /** 산출 승인 — CALCULATED → APPROVED 전이(지급 가능 상태). 지급건은 별도 생성. */
     @Transactional
     public CalculationResponse approve(String calculationNo) {
+        authAccessService.requireClaimCalculationAccess();
         ClaimCalculation calc = calculationRepository.findById(parseId(calculationNo));
         if (calc == null) {
             throw ApiException.notFound("산출을 찾을 수 없습니다: " + calculationNo);
@@ -53,6 +58,7 @@ public class ClaimCalculationService {
     }
 
     public CalculationResponse findByInvestigationNo(String investigationNo) {
+        authAccessService.requireClaimCalculationAccess();
         ClaimCalculation c = calculationRepository.findByInvestigationNo(investigationNo);
         if (c == null) {
             throw ApiException.notFound("해당 조사의 산출 건이 없습니다: " + investigationNo);
@@ -63,6 +69,7 @@ public class ClaimCalculationService {
     /** 산출 등록 — 조사 결과로 자동 산출 후 저장(@Transactional). */
     @Transactional
     public CalculationResponse create(String investigationNo) {
+        authAccessService.requireClaimCalculationAccess();
         DamageInvestigation inv = investigationRepository.findById(parseId(investigationNo));
         if (inv == null) {
             throw ApiException.notFound("조사를 찾을 수 없습니다: " + investigationNo);

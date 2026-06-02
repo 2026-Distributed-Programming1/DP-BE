@@ -48,12 +48,12 @@ public class CustomerService {
     }
 
     public CustomerDetailResponse detail(String customerId) {
-        authAccessService.requireStaffOrAdmin();
-
         Customer c = repository.findById(customerId);
         if (c == null) {
             throw ApiException.notFound("고객을 찾을 수 없습니다: " + customerId);
         }
+        authAccessService.requireCustomerAccess(c);
+
         return new CustomerDetailResponse(
                 c.getId(), c.getCustomerId(), c.getName(),
                 c.getContact(), c.getEmail(), c.getAddress(),

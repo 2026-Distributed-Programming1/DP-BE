@@ -7,6 +7,7 @@ import org.dpbe.domain.sales.dto.BonusRequestRequest;
 import org.dpbe.domain.sales.dto.BonusRequestResponse;
 import org.dpbe.domain.sales.entity.BonusRequest;
 import org.dpbe.domain.sales.repository.BonusRequestRepository;
+import org.dpbe.global.auth.service.AuthAccessService;
 import org.dpbe.global.exception.ApiException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -15,13 +16,17 @@ import org.springframework.transaction.annotation.Transactional;
 public class BonusRequestService {
 
     private final BonusRequestRepository repository;
+    private final AuthAccessService authAccessService;
 
-    public BonusRequestService(BonusRequestRepository repository) {
+    public BonusRequestService(BonusRequestRepository repository,
+                               AuthAccessService authAccessService) {
         this.repository = repository;
+        this.authAccessService = authAccessService;
     }
 
     @Transactional
     public BonusRequestResponse create(BonusRequestRequest request) {
+        authAccessService.requireBonusRequestManageAccess();
         if (request.channelName() == null || request.evaluationGrade() == null
                 || request.baseSalary() == null) {
             throw ApiException.badRequest("필수 항목 누락: channelName, evaluationGrade, baseSalary");
