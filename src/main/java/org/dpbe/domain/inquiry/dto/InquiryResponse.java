@@ -5,6 +5,7 @@ import org.dpbe.domain.inquiry.entity.Inquiry;
 
 public record InquiryResponse(
         Long id,
+        Long customerId,
         String inquiryNo,
         String customerName,
         String inquiryType,
@@ -19,7 +20,7 @@ public record InquiryResponse(
 ) {
     public static InquiryResponse from(Inquiry i) {
         return new InquiryResponse(
-                i.getId(), i.getInquiryNo(), i.getCustomerName(),
+                i.getId(), i.getCustomerId(), i.getInquiryNo(), i.getCustomerName(),
                 i.getInquiryType() != null ? i.getInquiryType().name() : null,
                 i.getTitle(), i.getContent(),
                 i.getAttachmentFileName(), i.getAttachmentFileSize(),

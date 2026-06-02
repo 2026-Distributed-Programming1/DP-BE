@@ -13,7 +13,7 @@ import org.springframework.stereotype.Repository;
 public class InquiryRepository {
 
     private static final String COLS =
-            "id, customer_name, inquiry_type, title, content,"
+            "id, customer_id, customer_name, inquiry_type, title, content,"
             + " attachment_file_name, attachment_file_size,"
             + " answer_content, answered_at, status, created_at";
 
@@ -40,6 +40,18 @@ public class InquiryRepository {
                 this::mapRow, status);
     }
 
+    public List<Inquiry> findByCustomerId(Long customerId) {
+        return sql.executeQuery(
+                "SELECT " + COLS + " FROM inquiries WHERE customer_id=? ORDER BY id DESC",
+                this::mapRow, customerId);
+    }
+
+    public List<Inquiry> findByCustomerIdAndStatus(Long customerId, String status) {
+        return sql.executeQuery(
+                "SELECT " + COLS + " FROM inquiries WHERE customer_id=? AND status=? ORDER BY id DESC",
+                this::mapRow, customerId, status);
+    }
+
     public List<Inquiry> findByCustomerNameAndStatus(String customerName, String status) {
         return sql.executeQuery(
                 "SELECT " + COLS + " FROM inquiries WHERE customer_name=? AND status=? ORDER BY id DESC",
@@ -57,10 +69,10 @@ public class InquiryRepository {
         String status = inquiry.getStatus() != null ? inquiry.getStatus().name() : null;
         long id = sql.executeInsertReturningKey(
                 "INSERT INTO inquiries"
-                + " (customer_name, inquiry_type, title, content,"
+                + " (customer_id, customer_name, inquiry_type, title, content,"
                 + "  attachment_file_name, attachment_file_size, status, created_at)"
-                + " VALUES (?,?,?,?,?,?,?,?)",
-                inquiry.getCustomerName(), inquiryType,
+                + " VALUES (?,?,?,?,?,?,?,?,?)",
+                inquiry.getCustomerId(), inquiry.getCustomerName(), inquiryType,
                 inquiry.getTitle(), inquiry.getContent(),
                 inquiry.getAttachmentFileName(), inquiry.getAttachmentFileSize(),
                 status, inquiry.getReceivedAt());
@@ -80,6 +92,8 @@ public class InquiryRepository {
         Inquiry i = new Inquiry();
         i.setId(rs.getLong("id"));
         i.setInquiryNo("INQ" + String.format("%05d", rs.getLong("id")));
+        long customerId = rs.getLong("customer_id");
+        i.setCustomerId(rs.wasNull() ? null : customerId);
         i.setCustomerName(rs.getString("customer_name"));
         String it = rs.getString("inquiry_type");
         if (it != null) { try { i.setInquiryType(InquiryType.valueOf(it)); } catch (IllegalArgumentException ignored) {} }
