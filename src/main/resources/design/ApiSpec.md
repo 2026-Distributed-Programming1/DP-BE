@@ -2,6 +2,7 @@
 
 > 목적: 프론트 병렬 작업을 위한 수동 API 계약 문서.
 > 기준: 2026-06-02 현재 구현된 주요 인증/고객 API와 프론트 입력에 필요한 enum 값.
+> 상태: 인증 API, 고객 검색/상세 API, 주요 enum 값 1차 작성 완료. 계약/납입/청구 등 도메인 API는 후속 확장 예정.
 
 ## 공통
 
@@ -15,14 +16,48 @@
 
 ## 에러 응답
 
+공통 에러 응답:
+
 ```json
 {
   "status": 400,
   "error": "Bad Request",
+  "code": "BAD_REQUEST",
   "message": "오류 메시지",
+  "path": "/api/example",
+  "fieldErrors": [],
   "timestamp": "2026-06-02T10:00:00"
 }
 ```
+
+Validation 오류:
+
+```json
+{
+  "status": 400,
+  "error": "Bad Request",
+  "code": "VALIDATION_ERROR",
+  "message": "요청값 검증에 실패했습니다.",
+  "path": "/api/auth/signup/customer",
+  "fieldErrors": [
+    {
+      "field": "password",
+      "message": "비밀번호는 8자 이상 100자 이하로 입력하세요."
+    }
+  ],
+  "timestamp": "2026-06-02T10:00:00"
+}
+```
+
+주요 error code:
+
+- `VALIDATION_ERROR`: Bean Validation 실패
+- `REQUEST_BODY_ERROR`: JSON 파싱, enum 값, 날짜 형식 등 request body 오류
+- `BAD_REQUEST`: 일반 잘못된 요청
+- `UNAUTHORIZED`: 로그인 필요 또는 로그인 실패
+- `FORBIDDEN`: 권한 없음
+- `NOT_FOUND`: 리소스 없음
+- `INTERNAL_ERROR`: 서버 내부 오류
 
 ## 인증 API
 
