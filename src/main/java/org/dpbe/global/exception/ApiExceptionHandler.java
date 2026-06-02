@@ -1,5 +1,7 @@
 package org.dpbe.global.exception;
 
+import jakarta.servlet.http.HttpServletRequest;
+import java.util.List;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
@@ -15,37 +17,47 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 public class ApiExceptionHandler {
 
     @ExceptionHandler(ApiException.class)
-    public ResponseEntity<ErrorResponse> handleApiException(ApiException e) {
+    public ResponseEntity<ErrorResponse> handleApiException(ApiException e, HttpServletRequest request) {
         return ResponseEntity
                 .status(e.getStatus())
-                .body(ErrorResponse.of(e.getStatus().value(), e.getStatus().getReasonPhrase(), e.getMessage()));
+                .body(ErrorResponse.of(e.getStatus(), e.getCode(), e.getMessage(), request.getRequestURI()));
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
-    public ResponseEntity<ErrorResponse> handleValidationException(MethodArgumentNotValidException e) {
-        HttpStatus status = HttpStatus.BAD_REQUEST;
-        String message = e.getBindingResult().getFieldErrors().stream()
-                .findFirst()
-                .map(error -> error.getField() + ": " + error.getDefaultMessage())
-                .orElse("요청값 검증에 실패했습니다.");
+    public ResponseEntity<ErrorResponse> handleValidationException(
+            MethodArgumentNotValidException e,
+            HttpServletRequest request) {
+        List<ErrorResponse.FieldError> fieldErrors = e.getBindingResult().getFieldErrors().stream()
+                .map(error -> new ErrorResponse.FieldError(error.getField(), error.getDefaultMessage()))
+                .toList();
         return ResponseEntity
-                .status(status)
-                .body(ErrorResponse.of(status.value(), status.getReasonPhrase(), message));
+                .badRequest()
+                .body(ErrorResponse.validation(request.getRequestURI(), fieldErrors));
     }
 
     @ExceptionHandler(HttpMessageNotReadableException.class)
-    public ResponseEntity<ErrorResponse> handleNotReadableException(HttpMessageNotReadableException e) {
+    public ResponseEntity<ErrorResponse> handleNotReadableException(
+            HttpMessageNotReadableException e,
+            HttpServletRequest request) {
         HttpStatus status = HttpStatus.BAD_REQUEST;
         return ResponseEntity
                 .status(status)
-                .body(ErrorResponse.of(status.value(), status.getReasonPhrase(), "요청 본문을 읽을 수 없습니다."));
+                .body(ErrorResponse.of(
+                        status,
+                        "REQUEST_BODY_ERROR",
+                        "요청 본문을 읽을 수 없습니다.",
+                        request.getRequestURI()));
     }
 
     @ExceptionHandler(Exception.class)
-    public ResponseEntity<ErrorResponse> handleException(Exception e) {
+    public ResponseEntity<ErrorResponse> handleException(Exception e, HttpServletRequest request) {
         HttpStatus status = HttpStatus.INTERNAL_SERVER_ERROR;
         return ResponseEntity
                 .status(status)
-                .body(ErrorResponse.of(status.value(), status.getReasonPhrase(), e.getMessage()));
+                .body(ErrorResponse.of(
+                        status,
+                        "INTERNAL_ERROR",
+                        e.getMessage(),
+                        request.getRequestURI()));
     }
 }
