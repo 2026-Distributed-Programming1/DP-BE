@@ -39,6 +39,13 @@ public class AuthAccessService {
         }
     }
 
+    public void requireStaffOrAdmin() {
+        UserRole role = currentUser().role();
+        if (role != UserRole.ADMIN && !role.isStaffLike()) {
+            throw ApiException.forbidden("직원 또는 관리자만 수행할 수 있습니다.");
+        }
+    }
+
     public void requireCustomerAccess(Customer customer) {
         if (customer == null || !isCustomer()) {
             return;

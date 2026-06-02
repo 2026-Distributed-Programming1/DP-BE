@@ -10,5 +10,16 @@ public enum UserRole {
     EDUCATION_STAFF,
     FINANCE_STAFF,
     DISPATCH_STAFF,
-    ADMIN
+    ADMIN;
+
+    public boolean isStaffLike() {
+        return this == STAFF
+                || this == CONTRACT_STAFF
+                || this == CLAIM_STAFF
+                || this == UNDERWRITING_STAFF
+                || this == SALES_STAFF
+                || this == EDUCATION_STAFF
+                || this == FINANCE_STAFF
+                || this == DISPATCH_STAFF;
+    }
 }

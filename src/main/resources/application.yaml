@@ -30,12 +30,12 @@ server:
 app:
   auth:
     bootstrap:
-      enabled: ${APP_AUTH_BOOTSTRAP_ENABLED:false}
+      enabled: ${APP_AUTH_BOOTSTRAP_ENABLED:true}
       username: ${APP_AUTH_BOOTSTRAP_USERNAME:admin}
       password: ${APP_AUTH_BOOTSTRAP_PASSWORD:}
       display-name: ${APP_AUTH_BOOTSTRAP_DISPLAY_NAME:관리자}
   seed:
-    enabled: ${APP_SEED_ENABLED:false}
+    enabled: ${APP_SEED_ENABLED:true}
   upload:
     dispatch-dir: ${APP_UPLOAD_DISPATCH_DIR:uploads/dispatch}
   cors:

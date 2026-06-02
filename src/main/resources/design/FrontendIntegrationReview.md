@@ -22,7 +22,7 @@
   - 한 번에 전체를 수정하지 않는다.
   - 각 도메인마다 “현재 API로 화면 구성이 가능한가”, “프론트가 하드코딩해야 하는 값은 무엇인가”, “추가 endpoint가 필요한가”를 본다.
 - 추가 기능 후보는 바로 구현하지 않는다.
-  - 로그인/권한, 고객 CRUD, enum 옵션 API, API 문서화, 목록 응답 통일은 백로그로만 둔다.
+  - 로그인/권한, 고객 CRUD, enum 값 명세, API 문서화, 목록 응답 통일은 백로그로만 둔다.
 - 기존 버그 가능성 중심 검토는 `DomainReviewFindings.md`에 있다.
   - 이 문서는 프론트 연동 관점만 다룬다.
 
@@ -49,7 +49,7 @@
 ### 다음에 이어서 할 일
 
 1. Batch A 변경 예정 설계 작성
-2. 고객 검색/상세 API, enum/options API, 공통 에러 응답 보강 diff 초안 작성
+2. 고객 검색/상세 API, enum 값 명세, 공통 에러 응답 보강 diff 초안 작성
 3. 사용자 승인 후 Batch A부터 코드 수정
 
 ## 검토 순서
@@ -157,15 +157,11 @@
     - `PUT /api/customers/{customerId}`
   - 우선순위는 높다. 납입, 청구, 상담, 영업 고객 등록 화면이 모두 고객 선택에 의존한다.
 
-- **COMMON-API-01 / enum 옵션 API**
-  - 프론트가 `PaymentMethod`, `ContractStatus`, `ClaimType`, `ChannelType` 같은 enum 값을 하드코딩하지 않도록 옵션 API 또는 상수 문서가 필요하다.
-  - 예: `GET /api/options/payment-methods`, `GET /api/options/contract-statuses`.
-  - 1차 구현 후보:
-    - `GET /api/options`
-    - 또는 `GET /api/options/{group}`
-  - 응답은 code/label 형태가 좋다.
-  - 예: `{ "code": "IMMEDIATE_TRANSFER", "label": "즉시이체" }`
-  - 특히 한글 상태 문자열과 enum name이 섞여 있는 도메인은 code/label 분리가 필요하다.
+- **COMMON-API-01 / enum 값 명세**
+  - 프론트는 메뉴/화면 구성을 직접 관리한다.
+  - `PaymentMethod`, `ContractStatus`, `ClaimType`, `ChannelType` 같은 enum 입력값은 `ApiSpec.md`에 명시한다.
+  - 현재 단계에서는 별도 option API를 두지 않고, 프론트가 API 명세서의 enum 값을 기준으로 select/radio/filter 값을 구성한다.
+  - enum이 많아지고 여러 화면에서 반복되거나 서버 기준 동기화가 필요해지면 option API를 다시 검토한다.
 
 - **COMMON-API-02 / 에러 응답 확장**
   - 현재 에러 응답은 `status`, `error`, `message`, `timestamp` 중심이다.
@@ -201,7 +197,7 @@
   - 1차 보완 후보:
     - 상태값별 가능한 전이 표 문서화
     - 잘못된 상태 전이 요청은 400 또는 409로 명확히 응답
-    - enum/options API 또는 API 명세로 허용 상태값 제공
+    - enum 값 또는 API 명세로 허용 상태값 제공
 
 - **COMMON-API-06 / 첨부파일·이미지 업로드 정책**
   - claim 출동 사진과 inquiry 첨부 파일에서 파일 접근 정책이 필요하다.
@@ -295,11 +291,11 @@
   - 작은 데이터에서는 괜찮지만 프론트 공통 테이블 컴포넌트와 서버 페이지네이션을 생각하면 통일이 필요하다.
   - 후보 정책: 조회량이 많아질 수 있는 목록은 `page/size/total/items`로 통일.
 
-- **FE-CONTRACT-04 / enum 옵션 출처 없음**
+- **FE-CONTRACT-04 / enum 값 출처 없음**
   - 확인 위치: `PaymentSubmitRequest.paymentMethod`, `PaymentRecordRejectRequest.rejectCategory`, `NoticeResponseRequest.customerResponse`
   - 프론트가 select/radio 옵션을 만들려면 enum 값을 알아야 한다.
   - 현재는 서버가 허용하는 값 목록을 제공하지 않으므로 프론트가 Java enum 이름을 하드코딩해야 한다.
-  - 후보 작업: enum 옵션 API 또는 API 명세 문서 추가.
+  - 후보 작업: API 명세 문서에 허용 enum 값 추가.
 
 - **FE-CONTRACT-05 / 납입 preview와 submit의 중복 항목 정책 필요**
   - 확인 위치: `PaymentService.preview()`, `PaymentService.submit()`
@@ -327,7 +323,7 @@
 ### 우선순위 제안
 
 1. 고객 검색/상세 API 추가
-2. enum 옵션 제공 방식 결정
+2. enum 값 제공 방식 결정
 3. 목록 응답 페이지네이션 정책 결정
 4. 납입 중복 항목 정책 확정
 5. 해지/환급 상태 전이 규칙 문서화
@@ -446,10 +442,10 @@
   - 프론트에서 예약 지급을 만들고 바로 실행 버튼을 누르면 예약 의미가 약해진다.
   - 후보 작업: 예약 지급은 scheduledAt 이후에만 실행 허용하거나, 수동 실행 버튼을 숨기고 배치/관리자 전용으로 분리.
 
-- **FE-CLAIM-10 / enum 옵션 출처 없음**
+- **FE-CLAIM-10 / enum 값 출처 없음**
   - 확인 위치: `AccidentCreateRequest.accidentType`, `ClaimCreateRequest.claimType/authMethod`, `InvestigationCreateRequest.result`, `PaymentCreateRequest.paymentType`
   - 프론트가 select/radio 옵션을 만들려면 enum 값을 하드코딩해야 한다.
-  - 후보 작업: 공통 enum 옵션 API 또는 도메인별 API 명세에 허용값 정리.
+  - 후보 작업: 도메인별 API 명세에 허용값 정리.
 
 ### 우선순위 제안
 
@@ -705,11 +701,11 @@
   - 프론트 입장에서는 “고객 등록”이 실제 고객 master 생성인지, 영업 등록 이력인지 구분이 필요하다.
   - 후보 작업: 화면명을 “영업 고객 등록 이력”처럼 분리하거나, 공통 고객 CRUD와 연결 정책 정의.
 
-- **FE-SALES-11 / enum 옵션 출처 없음**
+- **FE-SALES-11 / enum 값 출처 없음**
   - 확인 위치: `ChannelType`, `InsuranceType`, `PlanStatus`, `ActivityType`, `EvaluationGrade`, `ScreeningStatus`
   - sales 도메인은 선택 옵션이 많다.
   - 프론트가 하드코딩하면 오타나 상태값 변경에 취약하다.
-  - 후보 작업: 공통 enum 옵션 API 또는 sales 옵션 API 추가.
+  - 후보 작업: API 명세에 sales 관련 허용값 정리.
 
 ### 우선순위 제안
 
@@ -717,7 +713,7 @@
 2. 성과급 요청을 evaluationNo 기반으로 서버에서 평가 정보 조회하도록 정리
 3. 활동계획 목록 DTO와 schedule 포함 정책 결정
 4. sales 목록 응답 페이지네이션 통일 여부 결정
-5. 채널심사 버튼 가능 여부와 enum 옵션 제공 방식 결정
+5. 채널심사 버튼 가능 여부와 enum 값 제공 방식 결정
 
 ## 5. education + inquiry
 
@@ -858,7 +854,7 @@
 중점 확인:
 
 - 지금까지 모든 도메인에서 반복되는 공통 개선 항목을 묶는다.
-- 로그인/권한, 고객 CRUD, enum 옵션 API, 에러 응답 확장, API 문서화 우선순위를 정한다.
+- 로그인/권한, 고객 CRUD, enum 값 명세, 에러 응답 확장, API 문서화 우선순위를 정한다.
 - 프론트가 먼저 붙을 화면 기준으로 1차 수정 범위를 선정한다.
 
 ---
@@ -888,12 +884,11 @@
      - `GET /api/customers?keyword=&page=&size=`
      - `GET /api/customers/{customerId}`
 
-2. **enum/options API 추가**
+2. **enum 값 명세 추가**
    - 영향 도메인: 전체
-   - 이유: 프론트 하드코딩을 줄이고 select/radio 옵션을 안정화한다.
-   - 후보 endpoint:
-     - `GET /api/options`
-     - 또는 `GET /api/options/{group}`
+   - 이유: 프론트가 API에 보낼 enum code와 화면 label을 확인해야 한다.
+   - 결과:
+     - `src/main/resources/design/ApiSpec.md`에 주요 enum 입력값을 정리한다.
 
 3. **공통 에러 응답 보강**
    - 영향 도메인: 전체
@@ -915,7 +910,7 @@
    - 후보:
      - 상태값별 허용 action 표
      - 잘못된 상태 전이의 공통 에러 응답
-     - 프론트에서 참조할 enum/options 또는 API 명세
+     - 프론트에서 참조할 enum 값 또는 API 명세
 
 6. **claim 파일 접근 정책 정리**
    - 영향 도메인: claim, inquiry
@@ -956,7 +951,7 @@
 10. **OpenAPI/Swagger 또는 API 명세 정리**
     - 영향 도메인: 전체
     - 이유: 프론트와 병렬 작업하려면 endpoint와 DTO 예시가 필요하다.
-    - enum/options API가 늦어질 경우 문서라도 먼저 필요하다.
+    - enum 값은 option API가 아니라 문서 명세로 먼저 제공한다.
 
 ### 1차 구현 묶음 제안
 
@@ -964,7 +959,7 @@
 
 - **Batch A / 프론트 시작 기반**
   - 고객 검색/상세 API
-  - enum/options API
+  - enum 값 명세
   - 공통 에러 응답 400 처리
 
 - **Batch B / 첫 화면 테이블 안정화**
@@ -1000,7 +995,7 @@
 - `domain/customer`
 - `domain/common/enums`
 - `global/exception`
-- 새 options controller/service 위치
+- enum 값 명세 위치
 
 진행 원칙:
 

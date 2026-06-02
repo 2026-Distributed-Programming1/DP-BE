@@ -34,12 +34,38 @@ public class CustomerRepository {
                 this::mapRow);
     }
 
-    public List<Customer> findByKeyword(String keyword) {
+    public int countByKeyword(String keyword) {
+        if (keyword == null) {
+            Integer count = sql.queryOne(
+                    "SELECT COUNT(*) AS cnt FROM customers",
+                    rs -> rs.getInt("cnt"));
+            return count != null ? count : 0;
+        }
+
+        String like = "%" + keyword + "%";
+        Integer count = sql.queryOne(
+                "SELECT COUNT(*) AS cnt FROM customers"
+                + " WHERE name LIKE ? OR customer_id LIKE ? OR phone LIKE ?",
+                rs -> rs.getInt("cnt"),
+                like, like, like);
+        return count != null ? count : 0;
+    }
+
+    public List<Customer> findByKeyword(String keyword, int limit, int offset) {
+        if (keyword == null) {
+            return sql.executeQuery(
+                    "SELECT id, customer_id, name, resident_no, phone, email, address, birth_date, registered_at"
+                    + " FROM customers ORDER BY id DESC LIMIT ? OFFSET ?",
+                    this::mapRow, limit, offset);
+        }
+
         String like = "%" + keyword + "%";
         return sql.executeQuery(
                 "SELECT id, customer_id, name, resident_no, phone, email, address, birth_date, registered_at"
-                + " FROM customers WHERE name LIKE ? OR customer_id LIKE ?",
-                this::mapRow, like, like);
+                + " FROM customers"
+                + " WHERE name LIKE ? OR customer_id LIKE ? OR phone LIKE ?"
+                + " ORDER BY id DESC LIMIT ? OFFSET ?",
+                this::mapRow, like, like, like, limit, offset);
     }
 
     public void save(Customer c) {
