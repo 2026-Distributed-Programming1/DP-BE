@@ -49,8 +49,8 @@
 ### 다음에 이어서 할 일
 
 1. Batch A 변경 예정 설계 작성
-2. 고객 검색/상세 API, enum 값 명세, 공통 에러 응답 보강 diff 초안 작성
-3. 사용자 승인 후 Batch A부터 코드 수정
+2. 고객 검색/상세 API, enum 값 명세 구현 완료
+3. 다음 작업: 공통 에러 응답 보강 diff 초안 작성
 
 ## 검토 순서
 
@@ -147,31 +147,37 @@
     - Spring Boot 4에서는 Flyway auto-configuration을 위해 `spring-boot-starter-flyway`가 필요하다.
     - 신규 고객 저장 시 임시 `customer_id`는 `VARCHAR(20)`을 넘지 않도록 제한한다.
 
-- **CUSTOMER-01 / 고객 CRUD**
-  - 고객 목록, 상세, 생성, 수정, 검색 API가 필요하다.
-  - 현재 일부 API가 `customerId`를 path로 받지만, 프론트가 고객을 검색/선택할 진입 API가 부족하다.
-  - 1차 구현 후보:
+- **CUSTOMER-01 / 고객 검색·상세 API**
+  - 상태: 1차 완료
+  - 완료:
     - `GET /api/customers?keyword=&page=&size=`
     - `GET /api/customers/{customerId}`
-    - `POST /api/customers`
-    - `PUT /api/customers/{customerId}`
-  - 우선순위는 높다. 납입, 청구, 상담, 영업 고객 등록 화면이 모두 고객 선택에 의존한다.
+    - 직원/관리자 권한 제한
+    - DB pagination
+    - 전화번호 keyword 검색
+    - `size` 최대 100 제한
+  - 남은 작업:
+    - 고객 생성/수정 API는 별도 정책 결정 후 진행
 
 - **COMMON-API-01 / enum 값 명세**
+  - 상태: 1차 완료
   - 프론트는 메뉴/화면 구성을 직접 관리한다.
   - `PaymentMethod`, `ContractStatus`, `ClaimType`, `ChannelType` 같은 enum 입력값은 `ApiSpec.md`에 명시한다.
-  - 현재 단계에서는 별도 option API를 두지 않고, 프론트가 API 명세서의 enum 값을 기준으로 select/radio/filter 값을 구성한다.
+  - 현재 단계에서는 별도 option API를 두지 않고, 프론트가 `ApiSpec.md`의 enum 값을 기준으로 select/radio/filter 값을 구성한다.
+  - `src/main/resources/design/ApiSpec.md`에 주요 enum 값을 정리했다.
   - enum이 많아지고 여러 화면에서 반복되거나 서버 기준 동기화가 필요해지면 option API를 다시 검토한다.
 
 - **COMMON-API-02 / 에러 응답 확장**
-  - 현재 에러 응답은 `status`, `error`, `message`, `timestamp` 중심이다.
-  - 프론트에서 화면별 분기를 안정적으로 하려면 `code`, `path`, `fieldErrors` 같은 구조를 검토한다.
-  - 1차 구현 후보:
+  - 상태: 1차 완료
+  - 기존 에러 응답은 `status`, `error`, `message`, `timestamp` 중심이었다.
+  - 프론트에서 화면별 분기를 안정적으로 할 수 있도록 아래 구조를 추가했다.
+  - 1차 구현:
     - `code`: 프론트 분기용 안정 코드
     - `path`: 요청 path
     - `fieldErrors`: 필드 단위 검증 오류
-  - `HttpMessageNotReadableException`은 잘못된 JSON/enum 값이므로 400으로 처리한다.
-  - 현재 일반 예외가 500으로 묶이기 때문에 프론트 개발 중 입력 오류와 서버 오류 구분이 어렵다.
+  - `MethodArgumentNotValidException`은 `VALIDATION_ERROR`와 `fieldErrors[]`로 처리한다.
+  - `HttpMessageNotReadableException`은 `REQUEST_BODY_ERROR`로 처리한다.
+  - `AuthInterceptor`의 미인증/비밀번호 변경 필요 응답도 공통 JSON 에러 포맷으로 맞췄다.
 
 - **COMMON-API-03 / API 문서화**
   - 프론트 연동 전 OpenAPI/Swagger 또는 별도 API 명세 문서가 있으면 화면 작업 속도가 빨라진다.
@@ -877,14 +883,14 @@
 
 프론트 연결을 빠르게 시작하기 위한 최소 수정 순서다.
 
-1. **고객 검색/상세 API 추가**
+1. **고객 검색/상세 API 추가** ✅ 완료
    - 영향 도메인: contract/payment/claim/consultation/sales
    - 이유: 프론트 대부분의 업무 시작점이 고객 선택이다.
    - 후보 endpoint:
      - `GET /api/customers?keyword=&page=&size=`
      - `GET /api/customers/{customerId}`
 
-2. **enum 값 명세 추가**
+2. **enum 값 명세 추가** ✅ 완료
    - 영향 도메인: 전체
    - 이유: 프론트가 API에 보낼 enum code와 화면 label을 확인해야 한다.
    - 결과:
@@ -958,9 +964,9 @@
 한 번에 모든 문제를 고치지 않고 아래 묶음으로 나누는 것이 좋다.
 
 - **Batch A / 프론트 시작 기반**
-  - 고객 검색/상세 API
-  - enum 값 명세
-  - 공통 에러 응답 400 처리
+  - 고객 검색/상세 API ✅ 완료
+  - enum 값 명세 ✅ 완료
+  - 공통 에러 응답 400 처리 ✅ 완료
 
 - **Batch B / 첫 화면 테이블 안정화**
   - claim 목록 필터/페이지네이션
