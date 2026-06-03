@@ -29,23 +29,23 @@ public class Revival {
     public Revival() {}
 
     public boolean checkEligibility() {
-        System.out.println("  [시스템] 부활 가능 여부를 확인합니다.");
+      // 처리 필요
         return true;
     }
 
     public long calculateUnpaidAmount() {
-        System.out.println("  [시스템] 미납보험료 및 이자를 산출합니다.");
+      // 처리 필요
         return unpaidAmount;
     }
 
     public boolean pay(String paymentMethod) {
         this.paymentMethod = paymentMethod;
-        System.out.println("  [시스템] 미납보험료가 납입되었습니다.");
+        // 처리 필요
         return true;
     }
 
     public boolean authenticate() {
-        System.out.println("  [시스템] 본인인증이 완료되었습니다.");
+      // 처리 필요
         return true;
     }
 

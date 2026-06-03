@@ -113,7 +113,6 @@ public class DamageInvestigation {
         if (validateRequired() && result == InvestigationResult.APPROVED) {
             this.investigatedAt = LocalDateTime.now();
             this.status = InvestigationStatus.INVESTIGATED;
-            System.out.println("[DamageInvestigation] 손해 조사 완료, 산출 이관: " + investigationNo);
             return new ClaimCalculation(this);
         }
         return null;
@@ -124,7 +123,7 @@ public class DamageInvestigation {
         if (result == InvestigationResult.REJECTED) {
             this.investigatedAt = LocalDateTime.now();
             this.status = InvestigationStatus.CLOSED;
-            System.out.println("[DamageInvestigation] 면책 종결: " + investigationNo);
+            // 처리 필요
         }
     }
 

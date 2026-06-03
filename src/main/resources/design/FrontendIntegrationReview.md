@@ -61,10 +61,11 @@
 
 ### 다음에 이어서 할 일
 
-1. 도메인별 상태 전이 규칙 문서화
-2. `ApiSpec.md`에 계약/납입/청구 등 주요 도메인 API 명세 확장
-3. 파일/S3 저장 정책 설계
-4. 미사용 DTO/유틸 정리
+1. ~~도메인별 상태 전이 규칙 문서화~~ ✅ (`design/StateTransitionRules.md`)
+2. ~~상태 전이 검증 엔터티 위임 리팩터링~~ ✅ (`design/StateTransitionRefactorProgress.md`)
+3. `ApiSpec.md`에 계약/납입/청구 등 주요 도메인 API 명세 확장
+4. 파일/S3 저장 정책 설계
+5. 미사용 DTO/유틸 정리
 
 ## 검토 순서
 

@@ -28,13 +28,13 @@ public class ReviewResult {
     }
 
     public void deliver() {
-        System.out.println("  [시스템] 심사 결과가 판매채널에 전달되었습니다. 결과: " + result);
+      // 처리 필요
     }
 
     public void confirm() {
         this.confirmedAt = LocalDateTime.now();
         this.processingNo = "PR-" + confirmedAt.toString().replaceAll("[^0-9]", "").substring(0, 14);
-        System.out.println("  [시스템] 심사 결과 확인이 완료되었습니다.");
+        // 처리 필요
     }
 
     public String getResult() { return result; }

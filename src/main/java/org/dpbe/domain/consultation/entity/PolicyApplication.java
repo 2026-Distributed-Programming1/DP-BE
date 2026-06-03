@@ -71,7 +71,7 @@ public class PolicyApplication {
 
     public void attachSignature(String file) {
         this.uploadedAt = LocalDateTime.now();
-        System.out.println("  [시스템] 서명 파일이 첨부되었습니다: " + file);
+        // 처리 필요
     }
 
     public void submit() {

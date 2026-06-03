@@ -5,6 +5,7 @@ import java.util.ArrayList;
 import java.util.List;
 import org.dpbe.domain.common.entity.Attachment;
 import org.dpbe.domain.common.enums.DispatchRecordStatus;
+import org.dpbe.global.exception.ApiException;
 
 /**
  * 현장 출동 기록 (DispatchRecord)
@@ -39,7 +40,7 @@ public class DispatchRecord {
      */
     public void uploadPhoto(String category, Attachment photo) {
         this.photos.add(photo);
-        System.out.println("[DispatchRecord] 사진 업로드 (카테고리: " + category + "): " + photo.getFileName());
+        // 처리 필요
     }
 
     /** 사진 삭제 */
@@ -69,11 +70,11 @@ public class DispatchRecord {
 
     /** 기록 전송 - transmittedAt=now() */
     public void transmit() {
-        if (validateRequired()) {
-            this.transmittedAt = LocalDateTime.now();
-            this.status = DispatchRecordStatus.TRANSMITTED;
-            System.out.println("[DispatchRecord] 기록 전송 완료: " + recordId);
+        if (!validateRequired()) {
+            throw ApiException.badRequest("[E1] 현장 사진을 1장 이상 첨부해야 합니다.");
         }
+        this.transmittedAt = LocalDateTime.now();
+        this.status = DispatchRecordStatus.TRANSMITTED;
     }
 
     // Getter

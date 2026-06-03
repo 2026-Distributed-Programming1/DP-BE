@@ -9,7 +9,6 @@ import org.dpbe.domain.claim.entity.AccidentReport;
 import org.dpbe.domain.claim.entity.Dispatch;
 import org.dpbe.domain.claim.repository.AccidentReportRepository;
 import org.dpbe.domain.claim.repository.DispatchRepository;
-import org.dpbe.domain.common.enums.AccidentReportStatus;
 import org.dpbe.domain.common.enums.AccidentType;
 import org.dpbe.domain.customer.repository.CustomerRepository;
 import org.dpbe.global.auth.dto.AuthenticatedUser;
@@ -126,9 +125,6 @@ public class AccidentReportService {
         }
 
         report.receive();
-        if (report.getStatus() != AccidentReportStatus.RECEIVED) {
-            throw ApiException.badRequest("사고 접수에 실패했습니다.");
-        }
         accidentRepository.save(report);
 
         // 현장출동 필요 시 같은 트랜잭션에서 Dispatch 생성
@@ -144,15 +140,6 @@ public class AccidentReportService {
     private AccidentResponse toResponse(AccidentReport r) {
         Dispatch d = dispatchRepository.findByAccidentNo(r.getReportNo());
         return AccidentResponse.from(r, d != null ? d.getDispatchNo() : null);
-    }
-
-    private boolean canAccessCustomer(Customer customer) {
-        try {
-            authAccessService.requireCustomerAccess(customer);
-            return true;
-        } catch (ApiException e) {
-            return false;
-        }
     }
 
     private AccidentType parseAccidentType(String type) {

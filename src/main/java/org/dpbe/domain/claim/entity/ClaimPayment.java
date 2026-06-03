@@ -7,6 +7,7 @@ import org.dpbe.domain.common.entity.BankAccount;
 import org.dpbe.domain.common.enums.ClaimPaymentStatus;
 import org.dpbe.domain.common.enums.NoticeMethod;
 import org.dpbe.domain.common.enums.PaymentType;
+import org.dpbe.global.exception.ApiException;
 
 /**
  * 보험금 지급 (ClaimPayment)
@@ -97,8 +98,11 @@ public class ClaimPayment {
      * 외부 시스템 연동이 필요하므로 더미로 처리한다.
      */
     public void execute() {
+        if (status == ClaimPaymentStatus.COMPLETED) {
+            throw ApiException.badRequest("이미 지급 완료된 건입니다.");
+        }
         if (!otpVerified) {
-            System.out.println("[ClaimPayment] OTP 미인증 상태로 이체 불가");
+            // 처리 필요
             return;
         }
         if (account == null || !account.isVerified()) {
@@ -107,14 +111,14 @@ public class ClaimPayment {
         }
         this.paidAt = LocalDateTime.now();
         this.status = ClaimPaymentStatus.COMPLETED;
-        System.out.println("[ClaimPayment] 보험금 이체 완료: " + paymentNo + ", 금액: " + finalAmount);
+        // 처리 필요
     }
 
     /** 예약 등록 (A1) */
     public void schedule() {
         if (paymentType == PaymentType.SCHEDULED && scheduledAt != null) {
             this.status = ClaimPaymentStatus.SCHEDULED;
-            System.out.println("[ClaimPayment] 예약 등록: " + paymentNo + ", 예약일시: " + scheduledAt);
+            // 처리 필요
         }
     }
 
@@ -123,7 +127,7 @@ public class ClaimPayment {
         this.transferFailed = true;
         this.failureReason = reason;
         this.status = ClaimPaymentStatus.FAILED;
-        System.out.println("[ClaimPayment] 이체 실패: " + reason);
+        // 처리 필요
     }
 
     /**
@@ -133,14 +137,14 @@ public class ClaimPayment {
     public void sendCompletionNotice() {
         if (status == ClaimPaymentStatus.COMPLETED) {
             this.noticeSent = true;
-            System.out.println("[ClaimPayment] 지급 완료 안내 메시지 발송: 옵션 = " + noticeOption);
+            // 처리 필요
         }
     }
 
     /** 사고건 종결 처리 */
     public void close() {
         this.status = ClaimPaymentStatus.CLOSED;
-        System.out.println("[ClaimPayment] 사고건 종결: " + paymentNo);
+        // 처리 필요
     }
 
     // Getter

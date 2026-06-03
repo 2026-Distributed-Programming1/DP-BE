@@ -9,7 +9,6 @@ import org.dpbe.domain.claim.repository.ClaimCalculationRepository;
 import org.dpbe.domain.claim.repository.ClaimPaymentRepository;
 import org.dpbe.domain.claim.repository.ClaimPaymentRepository.PayoutSource;
 import org.dpbe.domain.common.entity.BankAccount;
-import org.dpbe.domain.common.enums.CalculationStatus;
 import org.dpbe.domain.common.enums.ClaimPaymentStatus;
 import org.dpbe.domain.common.enums.PaymentType;
 import org.dpbe.global.auth.service.AuthAccessService;
@@ -65,9 +64,7 @@ public class ClaimPaymentService {
         if (calc == null) {
             throw ApiException.notFound("산출을 찾을 수 없습니다: " + calculationNo);
         }
-        if (calc.getStatus() != CalculationStatus.APPROVED) {
-            throw ApiException.badRequest("승인된 산출만 지급할 수 있습니다: " + calculationNo);
-        }
+        calc.requireApproved();
         if (paymentRepository.findByCalculationNo(calculationNo) != null) {
             throw ApiException.badRequest("이미 지급건이 생성된 산출입니다: " + calculationNo);
         }
@@ -114,10 +111,6 @@ public class ClaimPaymentService {
         if (payment == null) {
             throw ApiException.notFound("지급 건을 찾을 수 없습니다: " + paymentNo);
         }
-        if (payment.getStatus() == ClaimPaymentStatus.COMPLETED) {
-            throw ApiException.badRequest("이미 지급 완료된 건입니다: " + paymentNo);
-        }
-
         // OTP 검증 (현재 더미: 6자리 — 실제 OTP 도입 시 이 부분만 교체)
         payment.enterOTP(request.otp());
         if (!payment.verifyOTP()) {

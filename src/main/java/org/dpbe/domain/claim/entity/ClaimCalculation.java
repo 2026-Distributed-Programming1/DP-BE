@@ -1,7 +1,10 @@
 package org.dpbe.domain.claim.entity;
 
 import org.dpbe.domain.actor.Employee;
+import org.dpbe.domain.claim.entity.ClaimPayment;
+import org.dpbe.domain.claim.entity.DamageInvestigation;
 import org.dpbe.domain.common.enums.CalculationStatus;
+import org.dpbe.global.exception.ApiException;
 import java.time.LocalDateTime;
 
 /**
@@ -101,19 +104,20 @@ public class ClaimCalculation {
         this.approvalRequired = true;
     }
 
-    /** 결재 상신 (A1) */
-    public void submitForApproval() {
-        if (this.approvalRequired) {
-            this.status = CalculationStatus.APPROVAL_PENDING;
-            System.out.println("[ClaimCalculation] 결재 상신: " + calculationNo
-                    + " (결재권자: " + (approver != null ? approver.getName() : "미지정") + ")");
+    /** 지급 생성 진입 조건 — APPROVED 아니면 예외 */
+    public void requireApproved() {
+        if (this.status != CalculationStatus.APPROVED) {
+            throw ApiException.badRequest("승인된 산출만 지급할 수 있습니다.");
         }
     }
 
     /** 지급 승인 및 이관 - ClaimPayment 생성 */
     public ClaimPayment approve() {
+        if (this.status != CalculationStatus.CALCULATED) {
+            throw ApiException.badRequest("산출완료(CALCULATED) 상태만 승인할 수 있습니다.");
+        }
         this.status = CalculationStatus.APPROVED;
-        System.out.println("[ClaimCalculation] 지급 승인 및 이관: " + calculationNo);
+        // 처리 필요
         return new ClaimPayment(this);
     }
 
@@ -121,7 +125,7 @@ public class ClaimCalculation {
     public void closeAsExceeded() {
         if (this.exceededDeductible) {
             this.status = CalculationStatus.CLOSED;
-            System.out.println("[ClaimCalculation] 공제액 초과 종결: " + calculationNo);
+            // 처리 필요
         }
     }
 

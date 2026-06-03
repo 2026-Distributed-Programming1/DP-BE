@@ -14,7 +14,6 @@ import org.dpbe.domain.claim.entity.DispatchRecord;
 import org.dpbe.domain.claim.repository.DispatchRecordRepository;
 import org.dpbe.domain.claim.repository.DispatchRepository;
 import org.dpbe.domain.common.entity.Attachment;
-import org.dpbe.domain.common.enums.DispatchRecordStatus;
 import org.dpbe.global.auth.dto.AuthenticatedUser;
 import org.dpbe.global.auth.service.AuthAccessService;
 import org.dpbe.global.dto.PageResponse;
@@ -143,9 +142,6 @@ public class DispatchRecordService {
 
         // 전송 처리 (E1: 사진 1장 이상이면 통과) → transmittedAt·status 갱신
         rec.transmit();
-        if (rec.getStatus() != DispatchRecordStatus.TRANSMITTED) {
-            throw ApiException.badRequest("출동 기록 전송에 실패했습니다.");
-        }
         recordRepository.markTransmitted(rec);
 
         List<String> names = saved.stream().map(Attachment::getFileName).toList();

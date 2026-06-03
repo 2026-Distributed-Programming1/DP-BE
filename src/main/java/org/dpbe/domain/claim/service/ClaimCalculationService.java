@@ -5,7 +5,6 @@ import org.dpbe.domain.claim.entity.ClaimCalculation;
 import org.dpbe.domain.claim.entity.DamageInvestigation;
 import org.dpbe.domain.claim.repository.ClaimCalculationRepository;
 import org.dpbe.domain.claim.repository.DamageInvestigationRepository;
-import org.dpbe.domain.common.enums.CalculationStatus;
 import org.dpbe.domain.common.enums.InvestigationResult;
 import org.dpbe.global.auth.service.AuthAccessService;
 import org.dpbe.global.exception.ApiException;
@@ -49,10 +48,7 @@ public class ClaimCalculationService {
         if (calc == null) {
             throw ApiException.notFound("산출을 찾을 수 없습니다: " + calculationNo);
         }
-        if (calc.getStatus() != CalculationStatus.CALCULATED) {
-            throw ApiException.badRequest("산출완료(CALCULATED) 상태만 승인할 수 있습니다: " + calculationNo);
-        }
-        calc.approve();   // 상태 APPROVED (반환 ClaimPayment는 지급 단계에서 별도 생성하므로 폐기)
+        calc.approve();   // CALCULATED → APPROVED; 상태 검사는 엔터티 내부에서 수행
         calculationRepository.updateStatus(calc);
         return CalculationResponse.from(calc);
     }

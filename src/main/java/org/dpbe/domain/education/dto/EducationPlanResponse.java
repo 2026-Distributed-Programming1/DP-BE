@@ -29,7 +29,7 @@ public record EducationPlanResponse(
                 plan.getTargetCount(), plan.getBudget(),
                 plan.getEducationGoal(), plan.getEducationContent(),
                 plan.getTextbookList(), plan.getRejectReason(),
-                plan.getApprovedAt(), plan.getStatus()
+                plan.getApprovedAt(), plan.getStatus() != null ? plan.getStatus().name() : null
         );
     }
 }
