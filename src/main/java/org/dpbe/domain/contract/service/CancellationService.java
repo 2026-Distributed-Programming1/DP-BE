@@ -1,8 +1,6 @@
 package org.dpbe.domain.contract.service;
 
 import java.util.List;
-import java.util.stream.Collectors;
-import org.dpbe.global.auth.service.AuthAccessService;
 import org.dpbe.domain.common.enums.ContractStatus;
 import org.dpbe.domain.contract.dto.CancellationRequest;
 import org.dpbe.domain.contract.dto.CancellationResponse;
@@ -10,12 +8,19 @@ import org.dpbe.domain.contract.entity.Cancellation;
 import org.dpbe.domain.contract.entity.Contract;
 import org.dpbe.domain.contract.repository.CancellationRepository;
 import org.dpbe.domain.contract.repository.ContractRepository;
+import org.dpbe.global.auth.dto.AuthenticatedUser;
+import org.dpbe.global.auth.service.AuthAccessService;
+import org.dpbe.global.dto.PageResponse;
 import org.dpbe.global.exception.ApiException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class CancellationService {
+
+    private static final int DEFAULT_PAGE = 1;
+    private static final int DEFAULT_SIZE = 20;
+    private static final int MAX_SIZE = 100;
 
     private final ContractRepository contractRepository;
     private final CancellationRepository cancellationRepository;
@@ -73,11 +78,39 @@ public class CancellationService {
     }
 
     @Transactional(readOnly = true)
-    public List<CancellationResponse> getAll() {
-        return cancellationRepository.findAll().stream()
-                .filter(c -> c.getContract() == null || authAccessService.canAccessContract(c.getContract()))
+    public PageResponse<CancellationResponse> getAll(int page, int size) {
+        AuthenticatedUser user = authAccessService.currentUser();
+        String customerNo = authAccessService.isCustomer() ? user.linkedCustomerNo() : null;
+        if (authAccessService.isCustomer() && customerNo == null) {
+            return emptyPage(page, size);
+        }
+
+        int normalizedPage = normalizePage(page);
+        int normalizedSize = normalizeSize(size);
+        int offset = (normalizedPage - 1) * normalizedSize;
+        int total = cancellationRepository.countByCustomerNo(customerNo);
+        List<CancellationResponse> items = cancellationRepository
+                .findPageByCustomerNo(customerNo, normalizedSize, offset)
+                .stream()
                 .map(this::toResponse)
-                .collect(Collectors.toList());
+                .toList();
+
+        return new PageResponse<>(normalizedPage, normalizedSize, total, items);
+    }
+
+    private int normalizePage(int page) {
+        return page < 1 ? DEFAULT_PAGE : page;
+    }
+
+    private int normalizeSize(int size) {
+        if (size < 1) {
+            return DEFAULT_SIZE;
+        }
+        return Math.min(size, MAX_SIZE);
+    }
+
+    private <T> PageResponse<T> emptyPage(int page, int size) {
+        return new PageResponse<>(normalizePage(page), normalizeSize(size), 0, List.of());
     }
 
     @Transactional(readOnly = true)

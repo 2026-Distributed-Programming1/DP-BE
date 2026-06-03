@@ -27,6 +27,18 @@ public class ChannelRecruitmentRepository {
                 this::mapRow);
     }
 
+    public int countAll() {
+        return sql.queryOne(
+                "SELECT COUNT(*) AS cnt FROM channel_recruitments",
+                rs -> rs.getInt("cnt"));
+    }
+
+    public List<ChannelRecruitment> findPage(int limit, int offset) {
+        return sql.executeQuery(
+                "SELECT " + COLS + " FROM channel_recruitments ORDER BY id DESC LIMIT ? OFFSET ?",
+                this::mapRow, limit, offset);
+    }
+
     public void save(ChannelRecruitment r) {
         long id = sql.executeInsertReturningKey(
                 "INSERT INTO channel_recruitments"

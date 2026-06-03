@@ -1,10 +1,10 @@
 package org.dpbe.domain.sales.controller;
 
-import java.util.List;
 import org.dpbe.domain.sales.dto.ChannelScreeningRequest;
 import org.dpbe.domain.sales.dto.ChannelScreeningResponse;
 import org.dpbe.domain.sales.dto.ScreeningRejectRequest;
 import org.dpbe.domain.sales.service.ChannelScreeningService;
+import org.dpbe.global.dto.PageResponse;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -19,8 +19,10 @@ public class ChannelScreeningController {
     }
 
     @GetMapping
-    public List<ChannelScreeningResponse> findAll() {
-        return service.findAll();
+    public PageResponse<ChannelScreeningResponse> findAll(
+            @RequestParam(defaultValue = "1") int page,
+            @RequestParam(defaultValue = "20") int size) {
+        return service.findAll(page, size);
     }
 
     @PostMapping

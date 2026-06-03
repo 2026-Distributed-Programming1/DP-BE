@@ -3,6 +3,7 @@ package org.dpbe.domain.contract.repository;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
 import org.dpbe.domain.actor.Customer;
 import org.dpbe.global.jdbc.SqlExecutor;
@@ -35,6 +36,35 @@ public class ContractRepository {
     public List<Contract> findByCustomerId(String customerId) {
         return sql.executeQuery(
                 "SELECT " + COLS + " FROM contracts WHERE customer_id=?", this::mapRow, customerId);
+    }
+
+    public int countByFilters(String type, String customerNo) {
+        QueryParts query = buildFilterQuery("SELECT COUNT(*) AS cnt FROM contracts", type, customerNo);
+        return sql.queryOne(query.sql(), rs -> rs.getInt("cnt"), query.params().toArray());
+    }
+
+    public List<Contract> findPageByFilters(String type, String customerNo, int limit, int offset) {
+        QueryParts query = buildFilterQuery("SELECT " + COLS + " FROM contracts", type, customerNo);
+        List<Object> params = new ArrayList<>(query.params());
+        params.add(limit);
+        params.add(offset);
+        return sql.executeQuery(query.sql() + " ORDER BY id DESC LIMIT ? OFFSET ?",
+                this::mapRow, params.toArray());
+    }
+
+    public int countExpiring() {
+        return sql.queryOne(
+                "SELECT COUNT(*) AS cnt FROM contracts"
+                + " WHERE expiry_date BETWEEN CURRENT_DATE AND DATE_ADD(CURRENT_DATE, INTERVAL 30 DAY)",
+                rs -> rs.getInt("cnt"));
+    }
+
+    public List<Contract> findExpiringPage(int limit, int offset) {
+        return sql.executeQuery(
+                "SELECT " + COLS + " FROM contracts"
+                + " WHERE expiry_date BETWEEN CURRENT_DATE AND DATE_ADD(CURRENT_DATE, INTERVAL 30 DAY)"
+                + " ORDER BY expiry_date ASC, id DESC LIMIT ? OFFSET ?",
+                this::mapRow, limit, offset);
     }
 
     public Contract findById(Long id) {
@@ -72,6 +102,25 @@ public class ContractRepository {
         sql.executeUpdate("UPDATE contracts SET monthly_premium=? WHERE id=?", monthlyPremium, id);
     }
 
+    private QueryParts buildFilterQuery(String selectSql, String type, String customerNo) {
+        StringBuilder query = new StringBuilder(selectSql);
+        List<String> conditions = new ArrayList<>();
+        List<Object> params = new ArrayList<>();
+
+        if (customerNo != null) {
+            conditions.add("customer_id=?");
+            params.add(customerNo);
+        }
+        if (type != null && !type.isBlank()) {
+            conditions.add("insurance_type LIKE ?");
+            params.add("%" + type + "%");
+        }
+        if (!conditions.isEmpty()) {
+            query.append(" WHERE ").append(String.join(" AND ", conditions));
+        }
+        return new QueryParts(query.toString(), params);
+    }
+
     private Contract mapRow(ResultSet rs) throws SQLException {
         String st = rs.getString("status");
         ContractStatus status = ContractStatus.NORMAL;
@@ -106,5 +155,8 @@ public class ContractRepository {
 
     private LocalDate toLocalDate(java.sql.Date d) {
         return d != null ? d.toLocalDate() : null;
+    }
+
+    private record QueryParts(String sql, List<Object> params) {
     }
 }

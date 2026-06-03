@@ -2,22 +2,24 @@ package org.dpbe.domain.sales.service;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.util.List;
-import java.util.stream.Collectors;
 import org.dpbe.domain.common.enums.ChannelType;
 import org.dpbe.domain.common.enums.EvaluationGrade;
-import org.dpbe.domain.sales.dto.SalesOrgEvaluationListResponse;
 import org.dpbe.domain.sales.dto.SalesOrgEvaluationRequest;
 import org.dpbe.domain.sales.dto.SalesOrgEvaluationResponse;
 import org.dpbe.domain.sales.entity.SalesOrgEvaluation;
 import org.dpbe.domain.sales.repository.SalesOrgEvaluationRepository;
 import org.dpbe.global.auth.service.AuthAccessService;
+import org.dpbe.global.dto.PageResponse;
 import org.dpbe.global.exception.ApiException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class SalesOrgEvaluationService {
+
+    private static final int DEFAULT_PAGE = 1;
+    private static final int DEFAULT_SIZE = 20;
+    private static final int MAX_SIZE = 100;
 
     private final SalesOrgEvaluationRepository repository;
     private final AuthAccessService authAccessService;
@@ -29,35 +31,30 @@ public class SalesOrgEvaluationService {
     }
 
     @Transactional(readOnly = true)
-    public SalesOrgEvaluationListResponse findAll(
+    public PageResponse<SalesOrgEvaluationResponse> findAll(
             LocalDate startDate, LocalDate endDate, String channelType, int page, int size) {
         authAccessService.requireSalesOperationAccess();
-        if (page < 1) page = 1;
-        if (size < 1) size = 20;
 
-        List<SalesOrgEvaluation> filtered = repository.findAll().stream()
-                .filter(e -> startDate == null || (e.getEvaluatedAt() != null
-                        && !e.getEvaluatedAt().toLocalDate().isBefore(startDate)))
-                .filter(e -> endDate == null || (e.getEvaluatedAt() != null
-                        && !e.getEvaluatedAt().toLocalDate().isAfter(endDate)))
-                .filter(e -> channelType == null || channelType.isBlank()
-                        || (e.getChannelType() != null && e.getChannelType().name().equalsIgnoreCase(channelType)))
-                .sorted((a, b) -> {
-                    double ra = a.getAchievementRate() != null ? a.getAchievementRate() : 0;
-                    double rb = b.getAchievementRate() != null ? b.getAchievementRate() : 0;
-                    return Double.compare(ra, rb);
-                })
-                .collect(Collectors.toList());
-
-        int total = filtered.size();
-        int from = Math.min((page - 1) * size, total);
-        int to = Math.min(from + size, total);
-
-        List<SalesOrgEvaluationResponse> items = filtered.subList(from, to).stream()
+        int normalizedPage = normalizePage(page);
+        int normalizedSize = normalizeSize(size);
+        int offset = (normalizedPage - 1) * normalizedSize;
+        int total = repository.countByFilters(startDate, endDate, channelType);
+        var items = repository.findPageByFilters(startDate, endDate, channelType, normalizedSize, offset).stream()
                 .map(SalesOrgEvaluationResponse::from)
-                .collect(Collectors.toList());
+                .toList();
 
-        return new SalesOrgEvaluationListResponse(page, size, total, items);
+        return new PageResponse<>(normalizedPage, normalizedSize, total, items);
+    }
+
+    private int normalizePage(int page) {
+        return page < 1 ? DEFAULT_PAGE : page;
+    }
+
+    private int normalizeSize(int size) {
+        if (size < 1) {
+            return DEFAULT_SIZE;
+        }
+        return Math.min(size, MAX_SIZE);
     }
 
     @Transactional

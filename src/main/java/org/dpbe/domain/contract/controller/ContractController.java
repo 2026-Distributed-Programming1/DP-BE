@@ -1,8 +1,9 @@
 package org.dpbe.domain.contract.controller;
 
 import org.dpbe.domain.contract.dto.ContractDetailResponse;
-import org.dpbe.domain.contract.dto.ContractListResponse;
+import org.dpbe.domain.contract.dto.ContractSummaryResponse;
 import org.dpbe.domain.contract.service.ContractService;
+import org.dpbe.global.dto.PageResponse;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -22,7 +23,7 @@ public class ContractController {
 
     /** 필터·페이징 계약 목록 (type 비우면 전체 조회) */
     @GetMapping
-    public ContractListResponse list(
+    public PageResponse<ContractSummaryResponse> list(
             @RequestParam(required = false) String type,
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "20") int size) {

@@ -7,17 +7,25 @@ import org.dpbe.domain.contract.entity.Contract;
 import org.dpbe.domain.contract.repository.CancellationRepository;
 import org.dpbe.domain.common.enums.RefundPaymentStatus;
 import org.dpbe.domain.common.enums.RefundStatus;
+import org.dpbe.domain.payment.dto.RefundCalculationResponse;
+import org.dpbe.domain.payment.dto.RefundPaymentResponse;
 import org.dpbe.domain.payment.entity.RefundCalculation;
 import org.dpbe.domain.payment.entity.RefundPayment;
 import org.dpbe.domain.payment.repository.RefundCalculationRepository;
 import org.dpbe.domain.payment.repository.RefundPaymentRepository;
+import org.dpbe.global.auth.dto.AuthenticatedUser;
 import org.dpbe.global.auth.service.AuthAccessService;
+import org.dpbe.global.dto.PageResponse;
 import org.dpbe.global.exception.ApiException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class RefundService {
+
+    private static final int DEFAULT_PAGE = 1;
+    private static final int DEFAULT_SIZE = 20;
+    private static final int MAX_SIZE = 100;
 
     private final CancellationRepository cancellationRepository;
     private final RefundCalculationRepository refundCalculationRepository;
@@ -129,14 +137,27 @@ public class RefundService {
 
     /** 환급금 산출 목록 */
     @Transactional(readOnly = true)
-    public List<RefundCalculation> getAllCalculations() {
+    public PageResponse<RefundCalculationResponse> getAllCalculations(int page, int size) {
+        String customerNo = accessibleCustomerNo();
         if (!authAccessService.isCustomer()) {
             authAccessService.requireRefundOperationAccess();
         }
 
-        return refundCalculationRepository.findAll().stream()
-                .filter(this::canAccessRefund)
+        if (authAccessService.isCustomer() && customerNo == null) {
+            return emptyPage(page, size);
+        }
+
+        int normalizedPage = normalizePage(page);
+        int normalizedSize = normalizeSize(size);
+        int offset = (normalizedPage - 1) * normalizedSize;
+        int total = refundCalculationRepository.countByCustomerNo(customerNo);
+        List<RefundCalculationResponse> items = refundCalculationRepository
+                .findPageByCustomerNo(customerNo, normalizedSize, offset)
+                .stream()
+                .map(RefundCalculationResponse::from)
                 .toList();
+
+        return new PageResponse<>(normalizedPage, normalizedSize, total, items);
     }
 
     /** 환급금 지급 단건 조회 */
@@ -150,14 +171,47 @@ public class RefundService {
 
     /** 환급금 지급 목록 */
     @Transactional(readOnly = true)
-    public List<RefundPayment> getAllPayments() {
+    public PageResponse<RefundPaymentResponse> getAllPayments(int page, int size) {
+        String customerNo = accessibleCustomerNo();
         if (!authAccessService.isCustomer()) {
             authAccessService.requireRefundOperationAccess();
         }
 
-        return refundPaymentRepository.findAll().stream()
-                .filter(payment -> canAccessRefund(payment.getRefund()))
+        if (authAccessService.isCustomer() && customerNo == null) {
+            return emptyPage(page, size);
+        }
+
+        int normalizedPage = normalizePage(page);
+        int normalizedSize = normalizeSize(size);
+        int offset = (normalizedPage - 1) * normalizedSize;
+        int total = refundPaymentRepository.countByCustomerNo(customerNo);
+        List<RefundPaymentResponse> items = refundPaymentRepository
+                .findPageByCustomerNo(customerNo, normalizedSize, offset)
+                .stream()
+                .map(RefundPaymentResponse::from)
                 .toList();
+
+        return new PageResponse<>(normalizedPage, normalizedSize, total, items);
+    }
+
+    private int normalizePage(int page) {
+        return page < 1 ? DEFAULT_PAGE : page;
+    }
+
+    private int normalizeSize(int size) {
+        if (size < 1) {
+            return DEFAULT_SIZE;
+        }
+        return Math.min(size, MAX_SIZE);
+    }
+
+    private <T> PageResponse<T> emptyPage(int page, int size) {
+        return new PageResponse<>(normalizePage(page), normalizeSize(size), 0, List.of());
+    }
+
+    private String accessibleCustomerNo() {
+        AuthenticatedUser user = authAccessService.currentUser();
+        return authAccessService.isCustomer() ? user.linkedCustomerNo() : null;
     }
 
     private void requireRefundAccess(RefundCalculation refund) {

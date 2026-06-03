@@ -3,15 +3,15 @@ package org.dpbe.domain.contract.service;
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
-import java.util.stream.Collectors;
-import org.dpbe.global.auth.service.AuthAccessService;
-import org.dpbe.global.exception.ApiException;
-import org.dpbe.domain.contract.dto.ContractDetailResponse;
-import org.dpbe.domain.contract.dto.ContractListResponse;
-import org.dpbe.domain.contract.dto.ContractSummaryResponse;
-import org.dpbe.domain.contract.repository.ContractRepository;
-import org.dpbe.domain.contract.entity.Contract;
 import org.dpbe.domain.common.enums.ContractStatus;
+import org.dpbe.domain.contract.dto.ContractDetailResponse;
+import org.dpbe.domain.contract.dto.ContractSummaryResponse;
+import org.dpbe.domain.contract.entity.Contract;
+import org.dpbe.domain.contract.repository.ContractRepository;
+import org.dpbe.global.auth.dto.AuthenticatedUser;
+import org.dpbe.global.auth.service.AuthAccessService;
+import org.dpbe.global.dto.PageResponse;
+import org.dpbe.global.exception.ApiException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -24,6 +24,10 @@ import org.springframework.transaction.annotation.Transactional;
 @Transactional(readOnly = true)
 public class ContractService {
 
+    private static final int DEFAULT_PAGE = 1;
+    private static final int DEFAULT_SIZE = 20;
+    private static final int MAX_SIZE = 100;
+
     private final ContractRepository contractRepository;
     private final AuthAccessService authAccessService;
 
@@ -34,25 +38,39 @@ public class ContractService {
     }
 
     /** Basic 2 / A1(필터 없음) / A2(결과 없음) — 필터 + 페이징 목록 */
-    public ContractListResponse list(String type, int page, int size) {
-        if (page < 1) page = 1;
-        if (size < 1) size = 20;
+    public PageResponse<ContractSummaryResponse> list(String type, int page, int size) {
+        AuthenticatedUser user = authAccessService.currentUser();
+        String customerNo = authAccessService.isCustomer() ? user.linkedCustomerNo() : null;
+        if (authAccessService.isCustomer() && customerNo == null) {
+            return emptyPage(page, size);
+        }
 
-        List<Contract> filtered = contractRepository.findAll().stream()
-                .filter(authAccessService::canAccessContract)
-                .filter(c -> type == null || type.isBlank()
-                        || (c.getInsuranceType() != null && c.getInsuranceType().contains(type)))
-                .collect(Collectors.toList());
-
-        int total = filtered.size();
-        int from = Math.min((page - 1) * size, total);
-        int to = Math.min(from + size, total);
-
-        List<ContractSummaryResponse> items = filtered.subList(from, to).stream()
+        int normalizedPage = normalizePage(page);
+        int normalizedSize = normalizeSize(size);
+        int offset = (normalizedPage - 1) * normalizedSize;
+        int total = contractRepository.countByFilters(type, customerNo);
+        List<ContractSummaryResponse> items = contractRepository
+                .findPageByFilters(type, customerNo, normalizedSize, offset)
+                .stream()
                 .map(this::toSummary)
-                .collect(Collectors.toList());
+                .toList();
 
-        return new ContractListResponse(page, size, total, items);
+        return new PageResponse<>(normalizedPage, normalizedSize, total, items);
+    }
+
+    private int normalizePage(int page) {
+        return page < 1 ? DEFAULT_PAGE : page;
+    }
+
+    private int normalizeSize(int size) {
+        if (size < 1) {
+            return DEFAULT_SIZE;
+        }
+        return Math.min(size, MAX_SIZE);
+    }
+
+    private <T> PageResponse<T> emptyPage(int page, int size) {
+        return new PageResponse<>(normalizePage(page), normalizeSize(size), 0, List.of());
     }
 
     private Long parseId(String contractNo) {

@@ -34,6 +34,28 @@ public class EducationPreparationRepository {
                 this::mapRow, parseId(planNo));
     }
 
+    public int countByPlanNo(String planNo) {
+        if (planNo != null && !planNo.isBlank()) {
+            return sql.queryOne(
+                    "SELECT COUNT(*) AS cnt FROM education_preparations WHERE plan_id=?",
+                    rs -> rs.getInt("cnt"), parseId(planNo));
+        }
+        return sql.queryOne(
+                "SELECT COUNT(*) AS cnt FROM education_preparations",
+                rs -> rs.getInt("cnt"));
+    }
+
+    public List<EducationPreparation> findPageByPlanNo(String planNo, int limit, int offset) {
+        if (planNo != null && !planNo.isBlank()) {
+            return sql.executeQuery(
+                    "SELECT " + COLS + " FROM education_preparations WHERE plan_id=? ORDER BY id DESC LIMIT ? OFFSET ?",
+                    this::mapRow, parseId(planNo), limit, offset);
+        }
+        return sql.executeQuery(
+                "SELECT " + COLS + " FROM education_preparations ORDER BY id DESC LIMIT ? OFFSET ?",
+                this::mapRow, limit, offset);
+    }
+
     public EducationPreparation findById(Long id) {
         return sql.queryOne(
                 "SELECT " + COLS + " FROM education_preparations WHERE id=?", this::mapRow, id);

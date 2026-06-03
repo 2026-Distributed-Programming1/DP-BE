@@ -1,8 +1,8 @@
 package org.dpbe.domain.consultation.controller;
 
-import java.util.List;
 import org.dpbe.domain.consultation.dto.InsuranceProductResponse;
 import org.dpbe.domain.consultation.service.InsuranceProductService;
+import org.dpbe.global.dto.ItemsResponse;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -16,7 +16,7 @@ public class InsuranceProductController {
     }
 
     @GetMapping
-    public List<InsuranceProductResponse> findAll() {
-        return productService.findAll();
+    public ItemsResponse<InsuranceProductResponse> findAll() {
+        return new ItemsResponse<>(productService.findAll());
     }
 }

@@ -2,20 +2,22 @@ package org.dpbe.domain.sales.service;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.util.List;
-import java.util.stream.Collectors;
-import org.dpbe.domain.sales.dto.SalesActivityManagementListResponse;
 import org.dpbe.domain.sales.dto.SalesActivityManagementRequest;
 import org.dpbe.domain.sales.dto.SalesActivityManagementResponse;
 import org.dpbe.domain.sales.entity.SalesActivityManagement;
 import org.dpbe.domain.sales.repository.SalesActivityManagementRepository;
 import org.dpbe.global.auth.service.AuthAccessService;
+import org.dpbe.global.dto.PageResponse;
 import org.dpbe.global.exception.ApiException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class SalesActivityManagementService {
+
+    private static final int DEFAULT_PAGE = 1;
+    private static final int DEFAULT_SIZE = 20;
+    private static final int MAX_SIZE = 100;
 
     private final SalesActivityManagementRepository repository;
     private final AuthAccessService authAccessService;
@@ -27,33 +29,30 @@ public class SalesActivityManagementService {
     }
 
     @Transactional(readOnly = true)
-    public SalesActivityManagementListResponse findAll(
+    public PageResponse<SalesActivityManagementResponse> findAll(
             LocalDate startDate, LocalDate endDate, String channelType, int page, int size) {
         authAccessService.requireSalesOperationAccess();
-        if (page < 1) page = 1;
-        if (size < 1) size = 20;
 
-        List<SalesActivityManagement> filtered = repository.findAll().stream()
-                .filter(a -> startDate == null || (a.getStartDate() != null && !a.getStartDate().isBefore(startDate)))
-                .filter(a -> endDate == null || (a.getEndDate() != null && !a.getEndDate().isAfter(endDate)))
-                .filter(a -> channelType == null || channelType.isBlank()
-                        || (a.getChannelType() != null && a.getChannelType().name().equalsIgnoreCase(channelType)))
-                .sorted((a, b) -> {
-                    double ra = a.getAchievementRate() != null ? a.getAchievementRate() : 0;
-                    double rb = b.getAchievementRate() != null ? b.getAchievementRate() : 0;
-                    return Double.compare(ra, rb);
-                })
-                .collect(Collectors.toList());
-
-        int total = filtered.size();
-        int from = Math.min((page - 1) * size, total);
-        int to = Math.min(from + size, total);
-
-        List<SalesActivityManagementResponse> items = filtered.subList(from, to).stream()
+        int normalizedPage = normalizePage(page);
+        int normalizedSize = normalizeSize(size);
+        int offset = (normalizedPage - 1) * normalizedSize;
+        int total = repository.countByFilters(startDate, endDate, channelType);
+        var items = repository.findPageByFilters(startDate, endDate, channelType, normalizedSize, offset).stream()
                 .map(SalesActivityManagementResponse::from)
-                .collect(Collectors.toList());
+                .toList();
 
-        return new SalesActivityManagementListResponse(page, size, total, items);
+        return new PageResponse<>(normalizedPage, normalizedSize, total, items);
+    }
+
+    private int normalizePage(int page) {
+        return page < 1 ? DEFAULT_PAGE : page;
+    }
+
+    private int normalizeSize(int size) {
+        if (size < 1) {
+            return DEFAULT_SIZE;
+        }
+        return Math.min(size, MAX_SIZE);
     }
 
     @Transactional

@@ -31,6 +31,18 @@ public class ActivityPlanRepository {
                 this::mapPlan);
     }
 
+    public int countAll() {
+        return sql.queryOne(
+                "SELECT COUNT(*) AS cnt FROM activity_plans",
+                rs -> rs.getInt("cnt"));
+    }
+
+    public List<ActivityPlan> findPage(int limit, int offset) {
+        return sql.executeQuery(
+                "SELECT " + PLAN_COLS + " FROM activity_plans ORDER BY id DESC LIMIT ? OFFSET ?",
+                this::mapPlan, limit, offset);
+    }
+
     public ActivityPlan findById(Long id) {
         ActivityPlan plan = sql.queryOne(
                 "SELECT " + PLAN_COLS + " FROM activity_plans WHERE id=?",

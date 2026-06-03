@@ -1,7 +1,5 @@
 package org.dpbe.domain.sales.service;
 
-import java.util.List;
-import java.util.stream.Collectors;
 import org.dpbe.domain.common.enums.ChannelType;
 import org.dpbe.domain.common.enums.ScreeningStatus;
 import org.dpbe.domain.sales.dto.ChannelScreeningRequest;
@@ -10,12 +8,17 @@ import org.dpbe.domain.sales.dto.ScreeningRejectRequest;
 import org.dpbe.domain.sales.entity.ChannelScreening;
 import org.dpbe.domain.sales.repository.ChannelScreeningRepository;
 import org.dpbe.global.auth.service.AuthAccessService;
+import org.dpbe.global.dto.PageResponse;
 import org.dpbe.global.exception.ApiException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class ChannelScreeningService {
+
+    private static final int DEFAULT_PAGE = 1;
+    private static final int DEFAULT_SIZE = 20;
+    private static final int MAX_SIZE = 100;
 
     private final ChannelScreeningRepository repository;
     private final AuthAccessService authAccessService;
@@ -27,11 +30,27 @@ public class ChannelScreeningService {
     }
 
     @Transactional(readOnly = true)
-    public List<ChannelScreeningResponse> findAll() {
+    public PageResponse<ChannelScreeningResponse> findAll(int page, int size) {
         authAccessService.requireSalesOperationAccess();
-        return repository.findAll().stream()
+        int normalizedPage = normalizePage(page);
+        int normalizedSize = normalizeSize(size);
+        int offset = (normalizedPage - 1) * normalizedSize;
+        int total = repository.countAll();
+        var items = repository.findPage(normalizedSize, offset).stream()
                 .map(ChannelScreeningResponse::from)
-                .collect(Collectors.toList());
+                .toList();
+        return new PageResponse<>(normalizedPage, normalizedSize, total, items);
+    }
+
+    private int normalizePage(int page) {
+        return page < 1 ? DEFAULT_PAGE : page;
+    }
+
+    private int normalizeSize(int size) {
+        if (size < 1) {
+            return DEFAULT_SIZE;
+        }
+        return Math.min(size, MAX_SIZE);
     }
 
     @Transactional

@@ -1,12 +1,11 @@
 package org.dpbe.domain.consultation.service;
 
-import java.util.List;
-import java.util.stream.Collectors;
 import org.dpbe.domain.consultation.dto.ConsultationCreateRequest;
 import org.dpbe.domain.consultation.dto.ConsultationResponse;
 import org.dpbe.domain.consultation.entity.ConsultationRequest;
 import org.dpbe.domain.consultation.repository.ConsultationRequestRepository;
 import org.dpbe.global.auth.service.AuthAccessService;
+import org.dpbe.global.dto.PageResponse;
 import org.dpbe.global.exception.ApiException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -14,6 +13,10 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 @Transactional(readOnly = true)
 public class ConsultationService {
+
+    private static final int DEFAULT_PAGE = 1;
+    private static final int DEFAULT_SIZE = 20;
+    private static final int MAX_SIZE = 100;
 
     private final ConsultationRequestRepository consultationRepo;
     private final AuthAccessService authAccessService;
@@ -24,11 +27,27 @@ public class ConsultationService {
         this.authAccessService = authAccessService;
     }
 
-    public List<ConsultationResponse> findAll() {
+    public PageResponse<ConsultationResponse> findAll(int page, int size) {
         authAccessService.requireConsultationManageAccess();
-        return consultationRepo.findAll().stream()
+        int normalizedPage = normalizePage(page);
+        int normalizedSize = normalizeSize(size);
+        int offset = (normalizedPage - 1) * normalizedSize;
+        int total = consultationRepo.countAll();
+        var items = consultationRepo.findPage(normalizedSize, offset).stream()
                 .map(ConsultationResponse::from)
-                .collect(Collectors.toList());
+                .toList();
+        return new PageResponse<>(normalizedPage, normalizedSize, total, items);
+    }
+
+    private int normalizePage(int page) {
+        return page < 1 ? DEFAULT_PAGE : page;
+    }
+
+    private int normalizeSize(int size) {
+        if (size < 1) {
+            return DEFAULT_SIZE;
+        }
+        return Math.min(size, MAX_SIZE);
     }
 
     private Long parseId(String no) {

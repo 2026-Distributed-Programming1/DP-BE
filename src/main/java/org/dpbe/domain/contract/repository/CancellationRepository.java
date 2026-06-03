@@ -1,5 +1,6 @@
 package org.dpbe.domain.contract.repository;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import org.dpbe.domain.actor.Customer;
@@ -38,6 +39,9 @@ public class CancellationRepository {
     private static final String COLS =
             "id, contract_id, customer_name, monthly_premium,"
             + " reason, detail_reason, expected_refund, status, cancelled_at";
+    private static final String ALIASED_COLS =
+            "ca.id, ca.contract_id, ca.customer_name, ca.monthly_premium,"
+            + " ca.reason, ca.detail_reason, ca.expected_refund, ca.status, ca.cancelled_at";
 
     public Optional<Cancellation> findById(Long id) {
         List<Cancellation> list = sql.executeQuery(
@@ -50,6 +54,31 @@ public class CancellationRepository {
         return sql.executeQuery(
                 "SELECT " + COLS + " FROM cancellations ORDER BY id DESC",
                 rowMapper());
+    }
+
+    public int countByCustomerNo(String customerNo) {
+        QueryParts query = buildCustomerQuery("SELECT COUNT(*) AS cnt FROM cancellations ca", customerNo);
+        return sql.queryOne(query.sql(), rs -> rs.getInt("cnt"), query.params().toArray());
+    }
+
+    public List<Cancellation> findPageByCustomerNo(String customerNo, int limit, int offset) {
+        QueryParts query = buildCustomerQuery("SELECT " + ALIASED_COLS + " FROM cancellations ca", customerNo);
+        List<Object> params = new ArrayList<>(query.params());
+        params.add(limit);
+        params.add(offset);
+        return sql.executeQuery(query.sql() + " ORDER BY ca.id DESC LIMIT ? OFFSET ?",
+                rowMapper(), params.toArray());
+    }
+
+    private QueryParts buildCustomerQuery(String selectSql, String customerNo) {
+        StringBuilder query = new StringBuilder(selectSql);
+        List<Object> params = new ArrayList<>();
+        if (customerNo != null) {
+            query.append(" LEFT JOIN contracts c ON c.id = ca.contract_id")
+                    .append(" WHERE c.customer_id=?");
+            params.add(customerNo);
+        }
+        return new QueryParts(query.toString(), params);
     }
 
     private SqlExecutor.RowMapper<Cancellation> rowMapper() {
@@ -75,5 +104,8 @@ public class CancellationRepository {
             if (cat != null) c.setCanceledAt(cat.toLocalDateTime());
             return c;
         };
+    }
+
+    private record QueryParts(String sql, List<Object> params) {
     }
 }

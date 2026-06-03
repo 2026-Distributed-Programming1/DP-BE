@@ -1,9 +1,9 @@
 package org.dpbe.domain.consultation.controller;
 
-import java.util.List;
 import org.dpbe.domain.consultation.dto.ProposalCreateRequest;
 import org.dpbe.domain.consultation.dto.ProposalResponse;
 import org.dpbe.domain.consultation.service.ProposalService;
+import org.dpbe.global.dto.PageResponse;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -18,8 +18,10 @@ public class ProposalController {
     }
 
     @GetMapping
-    public List<ProposalResponse> findAll() {
-        return proposalService.findAll();
+    public PageResponse<ProposalResponse> findAll(
+            @RequestParam(defaultValue = "1") int page,
+            @RequestParam(defaultValue = "20") int size) {
+        return proposalService.findAll(page, size);
     }
 
     @PostMapping

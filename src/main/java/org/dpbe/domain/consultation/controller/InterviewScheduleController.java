@@ -1,10 +1,10 @@
 package org.dpbe.domain.consultation.controller;
 
-import java.util.List;
 import org.dpbe.domain.consultation.dto.InterviewScheduleCreateRequest;
 import org.dpbe.domain.consultation.dto.InterviewScheduleResponse;
 import org.dpbe.domain.consultation.dto.InterviewScheduleUpdateRequest;
 import org.dpbe.domain.consultation.service.InterviewScheduleService;
+import org.dpbe.global.dto.PageResponse;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -19,8 +19,10 @@ public class InterviewScheduleController {
     }
 
     @GetMapping
-    public List<InterviewScheduleResponse> findAll() {
-        return scheduleService.findAll();
+    public PageResponse<InterviewScheduleResponse> findAll(
+            @RequestParam(defaultValue = "1") int page,
+            @RequestParam(defaultValue = "20") int size) {
+        return scheduleService.findAll(page, size);
     }
 
     @GetMapping("/{scheduleNo}")

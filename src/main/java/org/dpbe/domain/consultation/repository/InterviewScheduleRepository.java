@@ -26,6 +26,18 @@ public class InterviewScheduleRepository {
                 "SELECT " + COLS + " FROM interview_schedules ORDER BY id DESC", this::mapRow);
     }
 
+    public int countAll() {
+        return sql.queryOne(
+                "SELECT COUNT(*) AS cnt FROM interview_schedules",
+                rs -> rs.getInt("cnt"));
+    }
+
+    public List<InterviewSchedule> findPage(int limit, int offset) {
+        return sql.executeQuery(
+                "SELECT " + COLS + " FROM interview_schedules ORDER BY id DESC LIMIT ? OFFSET ?",
+                this::mapRow, limit, offset);
+    }
+
     public InterviewSchedule findById(Long id) {
         return sql.queryOne(
                 "SELECT " + COLS + " FROM interview_schedules WHERE id=?",

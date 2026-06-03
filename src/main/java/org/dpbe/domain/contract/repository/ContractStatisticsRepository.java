@@ -48,17 +48,35 @@ public class ContractStatisticsRepository {
                 "SELECT id, total_count, active_count, expired_count,"
                 + " cancelled_count, created_at"
                 + " FROM contract_statistics ORDER BY id DESC",
-                rs -> {
-                    ContractStatistics s = new ContractStatistics();
-                    s.setId(rs.getLong("id"));
-                    s.setStatsNo("STA" + String.format("%05d", rs.getLong("id")));
-                    s.setTotalCount(rs.getInt("total_count"));
-                    s.setActiveCount(rs.getInt("active_count"));
-                    s.setExpiredCount(rs.getInt("expired_count"));
-                    s.setCancelledCount(rs.getInt("cancelled_count"));
-                    java.sql.Timestamp ca = rs.getTimestamp("created_at");
-                    if (ca != null) s.setCreatedAt(ca.toLocalDateTime());
-                    return s;
-                });
+                rowMapper());
+    }
+
+    public int countAll() {
+        return sql.queryOne(
+                "SELECT COUNT(*) AS cnt FROM contract_statistics",
+                rs -> rs.getInt("cnt"));
+    }
+
+    public List<ContractStatistics> findPage(int limit, int offset) {
+        return sql.executeQuery(
+                "SELECT id, total_count, active_count, expired_count,"
+                + " cancelled_count, created_at"
+                + " FROM contract_statistics ORDER BY id DESC LIMIT ? OFFSET ?",
+                rowMapper(), limit, offset);
+    }
+
+    private SqlExecutor.RowMapper<ContractStatistics> rowMapper() {
+        return rs -> {
+            ContractStatistics s = new ContractStatistics();
+            s.setId(rs.getLong("id"));
+            s.setStatsNo("STA" + String.format("%05d", rs.getLong("id")));
+            s.setTotalCount(rs.getInt("total_count"));
+            s.setActiveCount(rs.getInt("active_count"));
+            s.setExpiredCount(rs.getInt("expired_count"));
+            s.setCancelledCount(rs.getInt("cancelled_count"));
+            java.sql.Timestamp ca = rs.getTimestamp("created_at");
+            if (ca != null) s.setCreatedAt(ca.toLocalDateTime());
+            return s;
+        };
     }
 }

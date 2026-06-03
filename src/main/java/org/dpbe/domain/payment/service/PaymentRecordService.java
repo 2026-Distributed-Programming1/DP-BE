@@ -1,7 +1,6 @@
 package org.dpbe.domain.payment.service;
 
 import java.util.List;
-import java.util.stream.Collectors;
 import org.dpbe.domain.common.enums.PaymentRecordStatus;
 import org.dpbe.domain.common.enums.RejectCategory;
 import org.dpbe.domain.contract.entity.Contract;
@@ -11,12 +10,18 @@ import org.dpbe.domain.payment.dto.PaymentRecordRejectRequest;
 import org.dpbe.domain.payment.entity.PaymentRecord;
 import org.dpbe.domain.payment.repository.PaymentRecordRepository;
 import org.dpbe.global.auth.service.AuthAccessService;
+import org.dpbe.global.auth.dto.AuthenticatedUser;
+import org.dpbe.global.dto.PageResponse;
 import org.dpbe.global.exception.ApiException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class PaymentRecordService {
+
+    private static final int DEFAULT_PAGE = 1;
+    private static final int DEFAULT_SIZE = 20;
+    private static final int MAX_SIZE = 100;
 
     private final PaymentRecordRepository paymentRecordRepository;
     private final ContractRepository contractRepository;
@@ -32,28 +37,52 @@ public class PaymentRecordService {
 
     /** 납부 내역 목록 — contractNo·status 필터 선택 */
     @Transactional(readOnly = true)
-    public List<PaymentRecordDetail> getAll(String contractNo, String status) {
-        if (!authAccessService.isCustomer()) {
+    public PageResponse<PaymentRecordDetail> getAll(String contractNo, String status, int page, int size) {
+        AuthenticatedUser user = authAccessService.currentUser();
+        String customerNo = null;
+        if (authAccessService.isCustomer()) {
+            customerNo = user.linkedCustomerNo();
+            if (customerNo == null) {
+                return emptyPage(page, size);
+            }
+        } else {
             authAccessService.requirePaymentRecordManageAccess();
         }
 
-        List<PaymentRecord> list;
-        if (contractNo != null && !contractNo.isBlank()) {
-            list = paymentRecordRepository.findByContractNo(contractNo);
-        } else if (status != null && !status.isBlank()) {
-            PaymentRecordStatus s;
-            try { s = PaymentRecordStatus.valueOf(status); }
+        PaymentRecordStatus parsedStatus = null;
+        if (status != null && !status.isBlank()) {
+            try { parsedStatus = PaymentRecordStatus.valueOf(status); }
             catch (IllegalArgumentException e) {
                 throw ApiException.badRequest("유효하지 않은 상태값입니다 (WAITING/COMPLETED/REJECTED): " + status);
             }
-            list = paymentRecordRepository.findByStatus(s);
-        } else {
-            list = paymentRecordRepository.findAll();
         }
-        return list.stream()
-                .filter(this::canAccessRecord)
+
+        int normalizedPage = normalizePage(page);
+        int normalizedSize = normalizeSize(size);
+        int offset = (normalizedPage - 1) * normalizedSize;
+        int total = paymentRecordRepository.countByFilters(contractNo, parsedStatus, customerNo);
+        List<PaymentRecordDetail> items = paymentRecordRepository
+                .findPageByFilters(contractNo, parsedStatus, customerNo, normalizedSize, offset)
+                .stream()
                 .map(this::toDetail)
-                .collect(Collectors.toList());
+                .toList();
+
+        return new PageResponse<>(normalizedPage, normalizedSize, total, items);
+    }
+
+    private int normalizePage(int page) {
+        return page < 1 ? DEFAULT_PAGE : page;
+    }
+
+    private int normalizeSize(int size) {
+        if (size < 1) {
+            return DEFAULT_SIZE;
+        }
+        return Math.min(size, MAX_SIZE);
+    }
+
+    private <T> PageResponse<T> emptyPage(int page, int size) {
+        return new PageResponse<>(normalizePage(page), normalizeSize(size), 0, List.of());
     }
 
     private Long parseId(String recordNo) {

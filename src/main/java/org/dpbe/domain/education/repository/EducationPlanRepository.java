@@ -33,6 +33,28 @@ public class EducationPlanRepository {
                 this::mapRow, status);
     }
 
+    public int countByStatus(String status) {
+        if (status != null && !status.isBlank()) {
+            return sql.queryOne(
+                    "SELECT COUNT(*) AS cnt FROM education_plans WHERE status=?",
+                    rs -> rs.getInt("cnt"), status);
+        }
+        return sql.queryOne(
+                "SELECT COUNT(*) AS cnt FROM education_plans",
+                rs -> rs.getInt("cnt"));
+    }
+
+    public List<EducationPlan> findPageByStatus(String status, int limit, int offset) {
+        if (status != null && !status.isBlank()) {
+            return sql.executeQuery(
+                    "SELECT " + COLS + " FROM education_plans WHERE status=? ORDER BY id DESC LIMIT ? OFFSET ?",
+                    this::mapRow, status, limit, offset);
+        }
+        return sql.executeQuery(
+                "SELECT " + COLS + " FROM education_plans ORDER BY id DESC LIMIT ? OFFSET ?",
+                this::mapRow, limit, offset);
+    }
+
     public EducationPlan findById(Long id) {
         return sql.queryOne(
                 "SELECT " + COLS + " FROM education_plans WHERE id=?", this::mapRow, id);

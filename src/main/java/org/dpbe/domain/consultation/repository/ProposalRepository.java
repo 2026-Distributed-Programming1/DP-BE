@@ -25,6 +25,18 @@ public class ProposalRepository {
                 "SELECT " + COLS + " FROM proposals ORDER BY id DESC", this::mapRow);
     }
 
+    public int countAll() {
+        return sql.queryOne(
+                "SELECT COUNT(*) AS cnt FROM proposals",
+                rs -> rs.getInt("cnt"));
+    }
+
+    public List<Proposal> findPage(int limit, int offset) {
+        return sql.executeQuery(
+                "SELECT " + COLS + " FROM proposals ORDER BY id DESC LIMIT ? OFFSET ?",
+                this::mapRow, limit, offset);
+    }
+
     /** 제안서 저장 — INSERT 후 id에서 proposal_no 파생. */
     public void save(Proposal p) {
         String productName = p.getInsuranceProduct() != null ? p.getInsuranceProduct().getProductName() : null;

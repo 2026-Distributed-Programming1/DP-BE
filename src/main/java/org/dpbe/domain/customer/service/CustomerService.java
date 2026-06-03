@@ -4,10 +4,10 @@ import java.util.List;
 import java.util.stream.Collectors;
 import org.dpbe.domain.actor.Customer;
 import org.dpbe.domain.customer.dto.CustomerDetailResponse;
-import org.dpbe.domain.customer.dto.CustomerListResponse;
 import org.dpbe.domain.customer.dto.CustomerSummary;
 import org.dpbe.domain.customer.repository.CustomerRepository;
 import org.dpbe.global.auth.service.AuthAccessService;
+import org.dpbe.global.dto.PageResponse;
 import org.dpbe.global.exception.ApiException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -15,10 +15,6 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 @Transactional(readOnly = true)
 public class CustomerService {
-
-    private static final int DEFAULT_PAGE = 1;
-    private static final int DEFAULT_SIZE = 20;
-    private static final int MAX_SIZE = 100;
 
     private final CustomerRepository repository;
     private final AuthAccessService authAccessService;
@@ -28,12 +24,12 @@ public class CustomerService {
         this.authAccessService = authAccessService;
     }
 
-    public CustomerListResponse search(String keyword, int page, int size) {
+    public PageResponse<CustomerSummary> search(String keyword, int page, int size) {
         authAccessService.requireStaffOrAdmin();
 
-        int normalizedPage = page < 1 ? DEFAULT_PAGE : page;
-        int normalizedSize = size < 1 ? DEFAULT_SIZE : Math.min(size, MAX_SIZE);
         String normalizedKeyword = normalize(keyword);
+        int normalizedPage = page < 1 ? 1 : page;
+        int normalizedSize = size < 1 ? 20 : Math.min(size, 100);
         int offset = (normalizedPage - 1) * normalizedSize;
 
         int total = repository.countByKeyword(normalizedKeyword);
@@ -44,7 +40,7 @@ public class CustomerService {
                         c.getContact(), c.getEmail()))
                 .collect(Collectors.toList());
 
-        return new CustomerListResponse(normalizedPage, normalizedSize, total, items);
+        return new PageResponse<>(normalizedPage, normalizedSize, total, items);
     }
 
     public CustomerDetailResponse detail(String customerId) {

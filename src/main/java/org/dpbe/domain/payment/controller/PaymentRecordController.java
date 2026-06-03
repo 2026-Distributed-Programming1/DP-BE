@@ -1,9 +1,9 @@
 package org.dpbe.domain.payment.controller;
 
-import java.util.List;
 import org.dpbe.domain.payment.dto.PaymentRecordDetail;
 import org.dpbe.domain.payment.dto.PaymentRecordRejectRequest;
 import org.dpbe.domain.payment.service.PaymentRecordService;
+import org.dpbe.global.dto.PageResponse;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -24,10 +24,12 @@ public class PaymentRecordController {
 
     /** 납부 내역 목록 (?contractNo=, ?status= 선택 필터) */
     @GetMapping
-    public List<PaymentRecordDetail> list(
+    public PageResponse<PaymentRecordDetail> list(
             @RequestParam(required = false) String contractNo,
-            @RequestParam(required = false) String status) {
-        return paymentRecordService.getAll(contractNo, status);
+            @RequestParam(required = false) String status,
+            @RequestParam(defaultValue = "1") int page,
+            @RequestParam(defaultValue = "20") int size) {
+        return paymentRecordService.getAll(contractNo, status, page, size);
     }
 
     /** 수납 확정 */

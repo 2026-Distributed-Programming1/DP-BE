@@ -1,5 +1,6 @@
 package org.dpbe.domain.payment.repository;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import org.dpbe.domain.contract.entity.Cancellation;
@@ -43,6 +44,9 @@ public class RefundCalculationRepository {
     private static final String COLS =
             "id, cancellation_id, total_paid_premium, payment_period,"
             + " reserve_amount, applied_rate, base_refund, unpaid_premium, final_refund, status";
+    private static final String ALIASED_COLS =
+            "rc.id, rc.cancellation_id, rc.total_paid_premium, rc.payment_period,"
+            + " rc.reserve_amount, rc.applied_rate, rc.base_refund, rc.unpaid_premium, rc.final_refund, rc.status";
 
     public Optional<RefundCalculation> findById(Long id) {
         List<RefundCalculation> list = sql.executeQuery(
@@ -62,6 +66,36 @@ public class RefundCalculationRepository {
         return sql.executeQuery(
                 "SELECT " + COLS + " FROM refund_calculations ORDER BY id DESC",
                 rowMapper());
+    }
+
+    public int countByCustomerNo(String customerNo) {
+        QueryParts query = buildCustomerQuery(
+                "SELECT COUNT(*) AS cnt FROM refund_calculations rc",
+                customerNo);
+        return sql.queryOne(query.sql(), rs -> rs.getInt("cnt"), query.params().toArray());
+    }
+
+    public List<RefundCalculation> findPageByCustomerNo(String customerNo, int limit, int offset) {
+        QueryParts query = buildCustomerQuery(
+                "SELECT " + ALIASED_COLS + " FROM refund_calculations rc",
+                customerNo);
+        List<Object> params = new ArrayList<>(query.params());
+        params.add(limit);
+        params.add(offset);
+        return sql.executeQuery(query.sql() + " ORDER BY rc.id DESC LIMIT ? OFFSET ?",
+                rowMapper(), params.toArray());
+    }
+
+    private QueryParts buildCustomerQuery(String selectSql, String customerNo) {
+        StringBuilder query = new StringBuilder(selectSql);
+        List<Object> params = new ArrayList<>();
+        if (customerNo != null) {
+            query.append(" LEFT JOIN cancellations ca ON ca.id = rc.cancellation_id")
+                    .append(" LEFT JOIN contracts c ON c.id = ca.contract_id")
+                    .append(" WHERE c.customer_id=?");
+            params.add(customerNo);
+        }
+        return new QueryParts(query.toString(), params);
     }
 
     private SqlExecutor.RowMapper<RefundCalculation> rowMapper() {
@@ -96,5 +130,8 @@ public class RefundCalculationRepository {
 
     private Long parseId(String businessNo) {
         return Long.parseLong(businessNo.replaceAll("\\D", ""));
+    }
+
+    private record QueryParts(String sql, List<Object> params) {
     }
 }

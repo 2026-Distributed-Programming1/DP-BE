@@ -1,18 +1,22 @@
 package org.dpbe.domain.education.service;
 
-import java.util.List;
 import org.dpbe.domain.education.dto.EducationPlanRejectRequest;
 import org.dpbe.domain.education.dto.EducationPlanRequest;
 import org.dpbe.domain.education.dto.EducationPlanResponse;
 import org.dpbe.domain.education.entity.EducationPlan;
 import org.dpbe.domain.education.repository.EducationPlanRepository;
 import org.dpbe.global.auth.service.AuthAccessService;
+import org.dpbe.global.dto.PageResponse;
 import org.dpbe.global.exception.ApiException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class EducationPlanService {
+
+    private static final int DEFAULT_PAGE = 1;
+    private static final int DEFAULT_SIZE = 20;
+    private static final int MAX_SIZE = 100;
 
     private final EducationPlanRepository repository;
     private final AuthAccessService authAccessService;
@@ -24,12 +28,27 @@ public class EducationPlanService {
     }
 
     @Transactional(readOnly = true)
-    public List<EducationPlanResponse> getPlans(String status) {
+    public PageResponse<EducationPlanResponse> getPlans(String status, int page, int size) {
         authAccessService.requireEducationOperationAccess();
-        List<EducationPlan> plans = (status != null && !status.isBlank())
-                ? repository.findByStatus(status)
-                : repository.findAll();
-        return plans.stream().map(EducationPlanResponse::from).toList();
+        int normalizedPage = normalizePage(page);
+        int normalizedSize = normalizeSize(size);
+        int offset = (normalizedPage - 1) * normalizedSize;
+        int total = repository.countByStatus(status);
+        var items = repository.findPageByStatus(status, normalizedSize, offset).stream()
+                .map(EducationPlanResponse::from)
+                .toList();
+        return new PageResponse<>(normalizedPage, normalizedSize, total, items);
+    }
+
+    private int normalizePage(int page) {
+        return page < 1 ? DEFAULT_PAGE : page;
+    }
+
+    private int normalizeSize(int size) {
+        if (size < 1) {
+            return DEFAULT_SIZE;
+        }
+        return Math.min(size, MAX_SIZE);
     }
 
     private Long parseId(String planNo) {

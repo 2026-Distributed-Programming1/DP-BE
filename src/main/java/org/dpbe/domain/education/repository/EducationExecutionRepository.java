@@ -34,6 +34,28 @@ public class EducationExecutionRepository {
                 this::mapRow, parseId(prepNo));
     }
 
+    public int countByPrepNo(String prepNo) {
+        if (prepNo != null && !prepNo.isBlank()) {
+            return sql.queryOne(
+                    "SELECT COUNT(*) AS cnt FROM education_executions WHERE prep_id=?",
+                    rs -> rs.getInt("cnt"), parseId(prepNo));
+        }
+        return sql.queryOne(
+                "SELECT COUNT(*) AS cnt FROM education_executions",
+                rs -> rs.getInt("cnt"));
+    }
+
+    public List<EducationExecution> findPageByPrepNo(String prepNo, int limit, int offset) {
+        if (prepNo != null && !prepNo.isBlank()) {
+            return sql.executeQuery(
+                    "SELECT " + EXEC_COLS + " FROM education_executions WHERE prep_id=? ORDER BY id DESC LIMIT ? OFFSET ?",
+                    this::mapRow, parseId(prepNo), limit, offset);
+        }
+        return sql.executeQuery(
+                "SELECT " + EXEC_COLS + " FROM education_executions ORDER BY id DESC LIMIT ? OFFSET ?",
+                this::mapRow, limit, offset);
+    }
+
     public EducationExecution findById(Long id) {
         return sql.queryOne(
                 "SELECT " + EXEC_COLS + " FROM education_executions WHERE id=?",

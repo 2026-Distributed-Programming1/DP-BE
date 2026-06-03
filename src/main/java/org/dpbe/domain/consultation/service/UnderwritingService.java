@@ -1,7 +1,6 @@
 package org.dpbe.domain.consultation.service;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
 import java.util.List;
 import org.dpbe.domain.consultation.dto.PendingApplicationResponse;
 import org.dpbe.domain.consultation.dto.UnderwritingRequest;
@@ -11,6 +10,7 @@ import org.dpbe.domain.consultation.repository.InsuranceApplicationRepository;
 import org.dpbe.domain.consultation.repository.PolicyApplicationRepository;
 import org.dpbe.domain.consultation.repository.UnderwritingRepository;
 import org.dpbe.global.auth.service.AuthAccessService;
+import org.dpbe.global.dto.PageResponse;
 import org.dpbe.global.exception.ApiException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -18,6 +18,10 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 @Transactional(readOnly = true)
 public class UnderwritingService {
+
+    private static final int DEFAULT_PAGE = 1;
+    private static final int DEFAULT_SIZE = 20;
+    private static final int MAX_SIZE = 100;
 
     private final UnderwritingRepository underwritingRepo;
     private final PolicyApplicationRepository policyAppRepo;
@@ -35,20 +39,26 @@ public class UnderwritingService {
     }
 
     /** 심사 대기 목록 — 청약(POL) + 보험신청(APP) 통합. */
-    public List<PendingApplicationResponse> findPending() {
+    public PageResponse<PendingApplicationResponse> findPending(int page, int size) {
         authAccessService.requireUnderwritingOperationAccess();
-        List<PendingApplicationResponse> list = new ArrayList<>();
-        policyAppRepo.findPending().forEach(p -> list.add(new PendingApplicationResponse(
-                "청약", p.getApplicationNo(), p.getCustomerName(),
-                p.getProductName(), p.getPaymentMethod(), p.getStatus())));
-        insuranceAppRepo.findPending().forEach(a -> {
-            String customerName = a.getCustomer() != null ? a.getCustomer().getName() : null;
-            String productName  = a.getProduct()  != null ? a.getProduct().getProductName() : null;
-            list.add(new PendingApplicationResponse(
-                    "보험신청", a.getApplicationNo(), customerName,
-                    productName, a.getPaymentMethod(), a.getStatus()));
-        });
-        return list;
+        int normalizedPage = normalizePage(page);
+        int normalizedSize = normalizeSize(size);
+        int offset = (normalizedPage - 1) * normalizedSize;
+        int total = underwritingRepo.countPendingApplications();
+        List<PendingApplicationResponse> items =
+                underwritingRepo.findPendingApplicationsPage(normalizedSize, offset);
+        return new PageResponse<>(normalizedPage, normalizedSize, total, items);
+    }
+
+    private int normalizePage(int page) {
+        return page < 1 ? DEFAULT_PAGE : page;
+    }
+
+    private int normalizeSize(int size) {
+        if (size < 1) {
+            return DEFAULT_SIZE;
+        }
+        return Math.min(size, MAX_SIZE);
     }
 
     /** 심사 완료 — 결과 저장 + 원본 신청 건 status 갱신. */

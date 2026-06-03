@@ -30,6 +30,18 @@ public class ChannelScreeningRepository {
                 this::mapRow);
     }
 
+    public int countAll() {
+        return sql.queryOne(
+                "SELECT COUNT(*) AS cnt FROM channel_screenings",
+                rs -> rs.getInt("cnt"));
+    }
+
+    public List<ChannelScreening> findPage(int limit, int offset) {
+        return sql.executeQuery(
+                "SELECT " + COLS + " FROM channel_screenings ORDER BY id DESC LIMIT ? OFFSET ?",
+                this::mapRow, limit, offset);
+    }
+
     public ChannelScreening findById(Long id) {
         return sql.queryOne(
                 "SELECT " + COLS + " FROM channel_screenings WHERE id=?",

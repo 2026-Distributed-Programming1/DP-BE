@@ -1,10 +1,10 @@
 package org.dpbe.domain.payment.controller;
 
-import java.util.List;
 import org.dpbe.domain.payment.dto.RefundCalculationResponse;
 import org.dpbe.domain.payment.dto.RefundPaymentExecuteRequest;
 import org.dpbe.domain.payment.dto.RefundPaymentResponse;
 import org.dpbe.domain.payment.service.RefundService;
+import org.dpbe.global.dto.PageResponse;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -34,9 +34,10 @@ public class RefundController {
 
     /** 환급금 산출 목록 */
     @GetMapping("/refund-calculations")
-    public ResponseEntity<List<RefundCalculationResponse>> getAllCalculations() {
-        return ResponseEntity.ok(refundService.getAllCalculations().stream()
-                .map(RefundCalculationResponse::from).toList());
+    public ResponseEntity<PageResponse<RefundCalculationResponse>> getAllCalculations(
+            @RequestParam(defaultValue = "1") int page,
+            @RequestParam(defaultValue = "20") int size) {
+        return ResponseEntity.ok(refundService.getAllCalculations(page, size));
     }
 
     /** 환급금 확정 + 지급 이관 */
@@ -64,8 +65,9 @@ public class RefundController {
 
     /** 환급금 지급 목록 */
     @GetMapping("/refund-payments")
-    public ResponseEntity<List<RefundPaymentResponse>> getAllPayments() {
-        return ResponseEntity.ok(refundService.getAllPayments().stream()
-                .map(RefundPaymentResponse::from).toList());
+    public ResponseEntity<PageResponse<RefundPaymentResponse>> getAllPayments(
+            @RequestParam(defaultValue = "1") int page,
+            @RequestParam(defaultValue = "20") int size) {
+        return ResponseEntity.ok(refundService.getAllPayments(page, size));
     }
 }
