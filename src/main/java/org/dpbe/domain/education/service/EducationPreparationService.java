@@ -2,6 +2,7 @@ package org.dpbe.domain.education.service;
 
 import org.dpbe.domain.education.dto.EducationPreparationRequest;
 import org.dpbe.domain.education.dto.EducationPreparationResponse;
+import org.dpbe.domain.education.entity.EducationPlan;
 import org.dpbe.domain.education.entity.EducationPreparation;
 import org.dpbe.domain.education.repository.EducationPlanRepository;
 import org.dpbe.domain.education.repository.EducationPreparationRepository;
@@ -73,9 +74,11 @@ public class EducationPreparationService {
     @Transactional
     public EducationPreparationResponse createPreparation(EducationPreparationRequest req) {
         authAccessService.requireEducationOperationAccess();
-        if (planRepository.findById(parseId(req.planNo())) == null) {
-            throw ApiException.notFound("승인된 교육 계획안을 찾을 수 없습니다: " + req.planNo());
+        EducationPlan plan = planRepository.findById(parseId(req.planNo()));
+        if (plan == null) {
+            throw ApiException.notFound("교육 계획안을 찾을 수 없습니다: " + req.planNo());
         }
+        plan.requireApproved();
         EducationPreparation prep = new EducationPreparation();
         prep.setPlanNo(req.planNo());
         prep.enterPreparationInfo(req.venue(), req.instructorName(), req.additionalNotice());

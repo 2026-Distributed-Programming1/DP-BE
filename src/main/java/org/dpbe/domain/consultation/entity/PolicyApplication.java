@@ -2,6 +2,7 @@ package org.dpbe.domain.consultation.entity;
 
 import java.time.LocalDateTime;
 import org.dpbe.domain.actor.Customer;
+import org.dpbe.global.exception.ApiException;
 
 /**
  * 청약서 (PolicyApplication)
@@ -76,6 +77,13 @@ public class PolicyApplication {
 
     public void submit() {
         this.submittedAt = LocalDateTime.now();
+    }
+
+    public void applyUnderwritingResult(String result) {
+        if (!"신청".equals(this.status)) {
+            throw ApiException.badRequest("심사 대기(신청) 상태의 청약서만 결과를 반영할 수 있습니다. 현재 상태: " + this.status);
+        }
+        this.status = result;
     }
 
     public Long getId() { return id; }

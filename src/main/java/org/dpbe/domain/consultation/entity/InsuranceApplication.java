@@ -4,6 +4,7 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import org.dpbe.domain.actor.Customer;
+import org.dpbe.global.exception.ApiException;
 
 /**
  * 보험가입신청서 (InsuranceApplication)
@@ -76,6 +77,13 @@ public class InsuranceApplication {
 
     public void apply() {
         this.appliedAt = LocalDateTime.now();
+    }
+
+    public void applyUnderwritingResult(String result) {
+        if (!"신청".equals(this.status)) {
+            throw ApiException.badRequest("심사 대기(신청) 상태의 청약신청만 결과를 반영할 수 있습니다. 현재 상태: " + this.status);
+        }
+        this.status = result;
     }
 
     public Long getId() { return id; }
