@@ -117,6 +117,12 @@ public class EducationPlan {
         this.status = PlanStatus.REJECTED;
     }
 
+    public void requireApproved() {
+        if (this.status != PlanStatus.APPROVED) {
+            throw ApiException.badRequest("승인된 교육 계획안에만 제반을 등록할 수 있습니다. 현재 상태: " + this.status);
+        }
+    }
+
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
     public String getPlanNo() { return planNo; }

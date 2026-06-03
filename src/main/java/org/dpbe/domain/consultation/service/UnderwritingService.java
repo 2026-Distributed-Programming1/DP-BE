@@ -2,6 +2,7 @@ package org.dpbe.domain.consultation.service;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import org.dpbe.domain.common.enums.ApplicationType;
 import org.dpbe.domain.consultation.dto.PendingApplicationResponse;
 import org.dpbe.domain.consultation.dto.UnderwritingRequest;
 import org.dpbe.domain.consultation.dto.UnderwritingResponse;
@@ -65,8 +66,8 @@ public class UnderwritingService {
     @Transactional
     public UnderwritingResponse complete(UnderwritingRequest req) {
         authAccessService.requireUnderwritingOperationAccess();
-        if (req.applicationType() == null || req.applicationType().isBlank())
-            throw ApiException.badRequest("신청 유형(청약/보험신청)은 필수입니다.");
+        if (req.applicationType() == null)
+            throw ApiException.badRequest("신청 유형(POLICY/INSURANCE)은 필수입니다.");
         if (req.appNo() == null || req.appNo().isBlank())
             throw ApiException.badRequest("심사 대상 신청번호는 필수입니다.");
         if (req.result() == null || req.result().isBlank())
@@ -90,24 +91,16 @@ public class UnderwritingService {
         underwritingRepo.save(u);
 
         // 원본 신청 건 status 갱신 — applicationType으로 명시적 분기
-        if ("청약".equals(req.applicationType())) {
-            policyAppRepo.findPending().stream()
-                    .filter(p -> req.appNo().equals(p.getApplicationNo()))
-                    .findFirst()
-                    .ifPresent(p -> {
-                        p.setStatus(req.result());
-                        policyAppRepo.updateStatus(p);
-                    });
-        } else if ("보험신청".equals(req.applicationType())) {
-            insuranceAppRepo.findPending().stream()
-                    .filter(a -> req.appNo().equals(a.getApplicationNo()))
-                    .findFirst()
-                    .ifPresent(a -> {
-                        a.setStatus(req.result());
-                        insuranceAppRepo.updateStatus(a);
-                    });
+        if (ApplicationType.POLICY == req.applicationType()) {
+            var p = policyAppRepo.findByNo(req.appNo());
+            if (p == null) throw ApiException.notFound("청약서를 찾을 수 없습니다: " + req.appNo());
+            p.applyUnderwritingResult(req.result());
+            policyAppRepo.updateStatus(p);
         } else {
-            throw ApiException.badRequest("알 수 없는 신청 유형입니다: " + req.applicationType());
+            var a = insuranceAppRepo.findByNo(req.appNo());
+            if (a == null) throw ApiException.notFound("청약신청을 찾을 수 없습니다: " + req.appNo());
+            a.applyUnderwritingResult(req.result());
+            insuranceAppRepo.updateStatus(a);
         }
 
         return UnderwritingResponse.from(u);

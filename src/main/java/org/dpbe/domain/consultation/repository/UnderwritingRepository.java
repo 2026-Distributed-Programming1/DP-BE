@@ -3,6 +3,7 @@ package org.dpbe.domain.consultation.repository;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.List;
+import org.dpbe.domain.common.enums.ApplicationType;
 import org.dpbe.domain.consultation.dto.PendingApplicationResponse;
 import org.dpbe.domain.consultation.entity.ReviewResult;
 import org.dpbe.domain.consultation.entity.Underwriting;
@@ -53,19 +54,19 @@ public class UnderwritingRepository {
         return sql.executeQuery(
                 "SELECT application_type, application_no, customer_name, product_name, payment_method, status"
                 + " FROM ("
-                + " SELECT 1 AS type_order, id, '청약' AS application_type,"
+                + " SELECT 1 AS type_order, id, 'POLICY' AS application_type,"
                 + "        CONCAT('POL', LPAD(id, 5, '0')) AS application_no,"
                 + "        customer_name, product_name, payment_method, status"
                 + " FROM policy_applications WHERE status='신청'"
                 + " UNION ALL"
-                + " SELECT 2 AS type_order, id, '보험신청' AS application_type,"
+                + " SELECT 2 AS type_order, id, 'INSURANCE' AS application_type,"
                 + "        CONCAT('APP', LPAD(id, 5, '0')) AS application_no,"
                 + "        customer_name, product_name, payment_method, status"
                 + " FROM insurance_applications WHERE status='신청'"
                 + " ) pending"
                 + " ORDER BY type_order ASC, id ASC LIMIT ? OFFSET ?",
                 rs -> new PendingApplicationResponse(
-                        rs.getString("application_type"),
+                        ApplicationType.valueOf(rs.getString("application_type")),
                         rs.getString("application_no"),
                         rs.getString("customer_name"),
                         rs.getString("product_name"),

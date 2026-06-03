@@ -1,7 +1,9 @@
 package org.dpbe.domain.consultation.dto;
 
+import org.dpbe.domain.common.enums.ApplicationType;
+
 public record PendingApplicationResponse(
-        String applicationType,
+        ApplicationType applicationType,
         String applicationNo,
         String customerName,
         String productName,
