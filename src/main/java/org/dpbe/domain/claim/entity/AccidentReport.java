@@ -110,6 +110,9 @@ public class AccidentReport {
 
     /** 접수만 진행/취소 (A2) */
     public void cancel() {
+        if (this.status != AccidentReportStatus.RECEIVED) {
+            throw ApiException.badRequest("접수 완료(RECEIVED) 상태에서만 취소할 수 있습니다.");
+        }
         this.status = AccidentReportStatus.CANCELED;
     }
 

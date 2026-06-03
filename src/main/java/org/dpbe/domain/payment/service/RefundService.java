@@ -76,6 +76,7 @@ public class RefundService {
         }
 
         RefundPayment payment = refund.confirm();
+        refundCalculationRepository.updateStatus(refund);
         refundPaymentRepository.save(payment);
         return payment;
     }

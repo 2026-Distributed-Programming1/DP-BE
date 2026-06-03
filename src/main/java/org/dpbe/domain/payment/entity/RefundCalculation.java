@@ -153,7 +153,7 @@ public class RefundCalculation {
             throw ApiException.badRequest("산출 완료 상태인 경우에만 확정할 수 있습니다.");
         }
         this.confirmedAt = LocalDateTime.now();
-        this.status = RefundStatus.CALCULATED;
+        this.status = RefundStatus.PAID;
         return new RefundPayment(this);
     }
 

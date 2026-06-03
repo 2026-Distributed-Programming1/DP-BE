@@ -95,19 +95,6 @@ public class Contract {
         return days >= 0 && days <= 30;
     }
 
-    /** 계약 상태 갱신 */
-    public void updateStatus(String newStatus) {
-        if ("정상".equals(newStatus) || "정상유지".equals(newStatus)) {
-            this.status = ContractStatus.NORMAL;
-        } else if ("만기".equals(newStatus)) {
-            this.status = ContractStatus.EXPIRED;
-        } else if ("해지".equals(newStatus)) {
-            this.status = ContractStatus.CANCELLED;
-        } else if ("실효".equals(newStatus)) {
-            this.status = ContractStatus.LAPSED;
-        }
-    }
-
     public boolean verifyAccount(int amount, String code) { return true; }
 
     // ── Getters / Setters ─────────────────────────────────────────────────────

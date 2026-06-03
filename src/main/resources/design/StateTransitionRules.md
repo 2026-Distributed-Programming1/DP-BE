@@ -296,6 +296,8 @@ PENDING ── POST /api/channel-screenings/{screeningNo}/reject  ──▶ REJE
 |---|---|
 | `TEMP_SAVE` | 임시저장 |
 | `UNDER_REVIEW` | 승인요청 (검토중) |
+| `APPROVED` | 승인 |
+| `REJECTED` | 반려 |
 
 **전이 규칙**
 
@@ -304,11 +306,11 @@ POST /api/education-plans
     action != "REQUEST_APPROVAL" ──▶ TEMP_SAVE
     action == "REQUEST_APPROVAL" ──▶ UNDER_REVIEW   (필수 항목 검증 통과 시)
 
-UNDER_REVIEW ── POST /api/education-plans/{planNo}/approve ──▶ 승인
-UNDER_REVIEW ── POST /api/education-plans/{planNo}/reject  ──▶ 반려 (reason 필수)
+UNDER_REVIEW ── POST /api/education-plans/{planNo}/approve ──▶ APPROVED
+UNDER_REVIEW ── POST /api/education-plans/{planNo}/reject  ──▶ REJECTED  (reason 필수)
 ```
 
-> **주의**: `approvePlan()`, `rejectPlan()` 내부 조건 검사는 `PlanStatus` enum이 아니라 한글 문자열 `"승인요청"`과 비교함. `plan.approve()`/`plan.reject()` 이후 실제로 저장되는 status 값은 `EducationPlan` 엔터티 내부에서 결정됨.
+- `UNDER_REVIEW` 이외 상태에서 승인/반려 시 `badRequest`.
 
 ---
 
@@ -327,3 +329,6 @@ UNDER_REVIEW ── POST /api/education-plans/{planNo}/reject  ──▶ 반려 
 | ChannelScreening | `PENDING` 아닌 상태에서 approve/reject | 400 |
 | DamageInvestigation | 동일 청구에 조사 중복 등록 | 400 |
 | ClaimCalculation | 동일 조사에 산출 중복 등록 | 400 |
+| EducationPlan | `UNDER_REVIEW` 아닌 상태에서 approve/reject | 400 |
+| AccidentReport | `RECEIVED` 아닌 상태에서 cancel | 400 |
+| Dispatch | 순서 외 전이 (예: REQUESTED → DEPARTED) | 400 |

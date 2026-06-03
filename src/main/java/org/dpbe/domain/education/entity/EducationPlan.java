@@ -2,6 +2,7 @@ package org.dpbe.domain.education.entity;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import org.dpbe.domain.common.enums.PlanStatus;
 import org.dpbe.global.exception.ApiException;
 
 /**
@@ -25,10 +26,10 @@ public class EducationPlan {
     private String textbookList;
     private String rejectReason;
     private LocalDateTime approvedAt;
-    private String status;
+    private PlanStatus status;
 
     public EducationPlan(int planNumber, String educationName, LocalDate startDate, LocalDate endDate,
-                         String channelType, int targetCount, long budget, String status) {
+                         String channelType, int targetCount, long budget, PlanStatus status) {
         this.planNumber = planNumber;
         this.educationName = educationName;
         this.startDate = startDate;
@@ -40,7 +41,7 @@ public class EducationPlan {
     }
 
     public EducationPlan() {
-        this.status = "작성중";
+        this.status = PlanStatus.TEMP_SAVE;
     }
 
     private EducationPlan(boolean fromDb) {}
@@ -49,7 +50,7 @@ public class EducationPlan {
                                         String channelType, LocalDate startDate, LocalDate endDate,
                                         int targetCount, long budget,
                                         String educationGoal, String educationContent,
-                                        String textbookList, String rejectReason, String status) {
+                                        String textbookList, String rejectReason, PlanStatus status) {
         EducationPlan p = new EducationPlan(true);
         p.planNumber      = planNumber;
         p.trainerName     = trainerName;
@@ -93,27 +94,27 @@ public class EducationPlan {
     }
 
     public void requestApproval() {
-        this.status = "승인요청";
+        this.status = PlanStatus.UNDER_REVIEW;
     }
 
     public void tempSave() {
-        this.status = "임시저장";
+        this.status = PlanStatus.TEMP_SAVE;
     }
 
     public void approve() {
-        if (!"승인요청".equals(this.status)) {
+        if (this.status != PlanStatus.UNDER_REVIEW) {
             throw ApiException.badRequest("승인 요청 상태의 계획안만 승인할 수 있습니다.");
         }
         this.approvedAt = LocalDateTime.now();
-        this.status = "승인";
+        this.status = PlanStatus.APPROVED;
     }
 
     public void reject(String reason) {
-        if (!"승인요청".equals(this.status)) {
+        if (this.status != PlanStatus.UNDER_REVIEW) {
             throw ApiException.badRequest("승인 요청 상태의 계획안만 반려할 수 있습니다.");
         }
         this.rejectReason = reason;
-        this.status = "반려";
+        this.status = PlanStatus.REJECTED;
     }
 
     public Long getId() { return id; }
@@ -135,5 +136,5 @@ public class EducationPlan {
     public String getRejectReason() { return rejectReason; }
     public LocalDateTime getApprovedAt() { return approvedAt; }
     public void setApprovedAt(LocalDateTime approvedAt) { this.approvedAt = approvedAt; }
-    public String getStatus() { return status; }
+    public PlanStatus getStatus() { return status; }
 }

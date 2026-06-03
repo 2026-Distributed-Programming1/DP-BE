@@ -61,6 +61,47 @@
 
 ---
 
+---
+
+## 코드 점검 결과 (2026-06-03) — 수정 완료
+
+리팩터링 완료 후 전 도메인 엔터티·서비스를 재점검한 결과. 아래 항목 모두 수정 완료.
+
+### A. 실제 버그 (동작 오류)
+
+**`payment/entity/RefundCalculation.java:156`**
+`confirm()` 메서드가 확정 처리 후에도 상태를 `CALCULATED → CALCULATED`로 유지한다. `PAID`로 바꿔야 한다.
+
+```java
+// 현재 (버그)
+this.status = RefundStatus.CALCULATED;
+// 수정
+this.status = RefundStatus.PAID;
+```
+
+추가로 `payment/service/RefundService.java`의 `confirm()` 메서드가 `refundCalculationRepository.updateStatus(refund)`를 호출하지 않아, confirm 후에도 DB의 `RefundCalculation` 상태가 `CALCULATED`로 남는다. 두 곳을 함께 수정해야 한다.
+
+---
+
+### B. Dead Code (호출되지 않아 의미 없는 코드)
+
+| 위치 | 문제 |
+|---|---|
+| `contract/entity/Contract.java:99-109` `updateStatus(String)` | 한글 문자열("해지", "만기" 등)로 상태를 비교하는 메서드. `CancellationService`는 `contractRepository.updateStatus(id, enum)`으로 직접 우회하므로 이 메서드는 아무데서도 호출되지 않는다. 삭제 가능. |
+| `claim/entity/ClaimCalculation.java:108-113` `submitForApproval()` | `APPROVAL_PENDING` 상태로 전이하는 메서드. 서비스에서 호출하지 않고 `approve()`가 `CALCULATED→APPROVED`를 직접 처리한다. 삭제 가능. |
+| `domain/common/enums/PlanStatus.java` | `EducationPlan`은 `String status` 필드에 "작성중"/"임시저장"/"승인요청"/"승인"/"반려" 한글 문자열을 직접 사용한다. `PlanStatus` enum(TEMP_SAVE, UNDER_REVIEW)은 어디서도 import되지 않는다. enum을 쓰려면 "승인"/"반려" 상태 추가와 DB 마이그레이션이 필요해 별도 작업으로 판단, 우선 삭제 후 String 방식 유지하거나 전환 계획을 세운다. |
+
+---
+
+### C. Guard Check 누락
+
+| 위치 | 문제 |
+|---|---|
+| `claim/entity/AccidentReport.java:112-114` `cancel()` | 현재 상태 확인 없이 바로 `CANCELED`로 전이. 문서 기준(RECEIVED 상태에서만 취소 가능)과 불일치. `status != RECEIVED`면 `badRequest` 추가 필요. |
+| `claim/entity/Dispatch.java` `assignAgent()`, `depart()`, `arrive()`, `complete()`, `cancel()` | 전이 전 상태 검증이 없어 어떤 순서로도 전이 가능. 단, 현재 서비스에서 REQUESTED 이후 API가 미구현이므로 실제 호출 경로가 없다. API 추가 시 함께 guard check를 넣는다. |
+
+---
+
 ## 참고: 이동하지 않는 검사 (단순 읽기용)
 
 아래는 응답 DTO 매핑에 사용하는 `getStatus()` 호출이므로 서비스에 그대로 둔다.

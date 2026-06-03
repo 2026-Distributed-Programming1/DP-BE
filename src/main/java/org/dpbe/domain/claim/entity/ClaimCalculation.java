@@ -104,14 +104,6 @@ public class ClaimCalculation {
         this.approvalRequired = true;
     }
 
-    /** 결재 상신 (A1) */
-    public void submitForApproval() {
-        if (this.approvalRequired) {
-            this.status = CalculationStatus.APPROVAL_PENDING;
-            // 처리 필요
-        }
-    }
-
     /** 지급 생성 진입 조건 — APPROVED 아니면 예외 */
     public void requireApproved() {
         if (this.status != CalculationStatus.APPROVED) {
