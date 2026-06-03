@@ -33,13 +33,13 @@ public class Underwriting {
 
     public void startReview() {
         this.reviewedAt = LocalDateTime.now();
-        System.out.println("  [시스템] 인수 심사를 시작합니다.");
+        // 처리 필요
     }
 
     public ReviewResult autoReview() {
         this.riskGrade = "일반";
         this.reviewResult = new ReviewResult("승인", null, null);
-        System.out.println("  [시스템] 자동 심사가 완료되었습니다. 위험등급: " + riskGrade);
+        // 처리 필요 
         return reviewResult;
     }
 
@@ -47,7 +47,7 @@ public class Underwriting {
         this.reviewType = reviewType;
         this.reviewOpinion = opinion;
         this.reviewResult = new ReviewResult("승인", null, null);
-        System.out.println("  [시스템] 수동 심사가 완료되었습니다.");
+        // 처리 필요 
         return reviewResult;
     }
 

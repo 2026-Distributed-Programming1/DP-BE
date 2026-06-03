@@ -31,7 +31,7 @@ public class Attachment {
      * 외부 파일시스템 연동이 필요한 부분이므로 더미로 처리한다.
      */
     public File download() {
-        System.out.println("[Attachment] 파일 다운로드: " + fileName);
+        //처리 필요
         return new File(filePath);
     }
 

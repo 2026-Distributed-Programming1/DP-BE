@@ -112,15 +112,10 @@ public class InquiryService {
         authAccessService.requireInquiryAnswerAccess();
         Inquiry inquiry = repository.findById(parseId(inquiryNo));
         if (inquiry == null) throw ApiException.notFound("문의를 찾을 수 없습니다: " + inquiryNo);
-        if (InquiryStatus.ANSWERED.equals(inquiry.getStatus())) {
-            throw ApiException.badRequest("이미 답변이 완료된 문의입니다.");
-        }
         if (req.answerContent() == null || req.answerContent().isBlank()) {
             throw ApiException.badRequest("답변 내용을 입력해주세요.");
         }
-        inquiry.setAnswerContent(req.answerContent());
-        inquiry.setAnsweredAt(LocalDateTime.now());
-        inquiry.setStatus(InquiryStatus.ANSWERED);
+        inquiry.answer(req.answerContent());
         repository.updateAnswer(inquiry);
         return InquiryResponse.from(inquiry);
     }

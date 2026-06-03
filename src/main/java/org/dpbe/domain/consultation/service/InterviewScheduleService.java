@@ -93,8 +93,6 @@ public class InterviewScheduleService {
         authAccessService.requireInterviewManageAccess();
         InterviewSchedule s = scheduleRepo.findById(parseId(scheduleNo));
         if (s == null) throw ApiException.notFound("면담일정을 찾을 수 없습니다: " + scheduleNo);
-        if ("취소".equals(s.getStatus()))
-            throw ApiException.badRequest("취소된 면담일정은 수정할 수 없습니다.");
         if (req.interviewType() == null || req.interviewType().isBlank())
             throw ApiException.badRequest("면담 유형은 필수입니다.");
         if (req.scheduledAt() == null)
@@ -114,8 +112,6 @@ public class InterviewScheduleService {
         authAccessService.requireInterviewManageAccess();
         InterviewSchedule s = scheduleRepo.findById(parseId(scheduleNo));
         if (s == null) throw ApiException.notFound("면담일정을 찾을 수 없습니다: " + scheduleNo);
-        if ("취소".equals(s.getStatus()))
-            throw ApiException.badRequest("이미 취소된 면담일정입니다.");
         s.cancel();
         scheduleRepo.updateCancel(s);
         return InterviewScheduleResponse.from(s);

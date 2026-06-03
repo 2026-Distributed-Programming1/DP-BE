@@ -94,9 +94,6 @@ public class EducationPlanService {
         authAccessService.requireEducationOperationAccess();
         EducationPlan plan = repository.findById(parseId(planNo));
         if (plan == null) throw ApiException.notFound("교육 계획안을 찾을 수 없습니다: " + planNo);
-        if (!"승인요청".equals(plan.getStatus())) {
-            throw ApiException.badRequest("승인 요청 상태의 계획안만 승인할 수 있습니다.");
-        }
         plan.approve();
         repository.updateStatus(plan);
         return EducationPlanResponse.from(plan);
@@ -107,9 +104,6 @@ public class EducationPlanService {
         authAccessService.requireEducationOperationAccess();
         EducationPlan plan = repository.findById(parseId(planNo));
         if (plan == null) throw ApiException.notFound("교육 계획안을 찾을 수 없습니다: " + planNo);
-        if (!"승인요청".equals(plan.getStatus())) {
-            throw ApiException.badRequest("승인 요청 상태의 계획안만 반려할 수 있습니다.");
-        }
         if (req.reason() == null || req.reason().isBlank()) {
             throw ApiException.badRequest("반려 사유를 입력해주세요.");
         }

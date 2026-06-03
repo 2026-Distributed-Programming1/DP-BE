@@ -100,10 +100,6 @@ public class PaymentRecordService {
         PaymentRecord record = paymentRecordRepository.findById(parseId(recordNo))
                 .orElseThrow(() -> ApiException.notFound("납부 내역을 찾을 수 없습니다: " + recordNo));
 
-        if (record.getStatus() != PaymentRecordStatus.WAITING) {
-            throw ApiException.badRequest("대기 상태인 납부 내역만 확정할 수 있습니다. 현재 상태: " + record.getStatus());
-        }
-
         record.confirm();
         paymentRecordRepository.update(record);
         return toDetail(record);
@@ -119,10 +115,6 @@ public class PaymentRecordService {
 
         PaymentRecord record = paymentRecordRepository.findById(parseId(recordNo))
                 .orElseThrow(() -> ApiException.notFound("납부 내역을 찾을 수 없습니다: " + recordNo));
-
-        if (record.getStatus() != PaymentRecordStatus.WAITING) {
-            throw ApiException.badRequest("대기 상태인 납부 내역만 반려할 수 있습니다. 현재 상태: " + record.getStatus());
-        }
 
         RejectCategory category;
         try { category = RejectCategory.valueOf(req.rejectCategory()); }

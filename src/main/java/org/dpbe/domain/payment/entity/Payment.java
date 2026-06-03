@@ -120,13 +120,13 @@ public class Payment {
         calculateTotal();
         this.requestedAt = LocalDateTime.now();
         this.status = PaymentStatus.COMPLETED;
-        System.out.println("[Payment] 보험료 납입 신청 완료: " + paymentNo + ", 금액: " + discountedAmount);
+        // 처리 필요
     }
 
     /** 납입 처리 오류 (E1) */
     public void handleProcessingError() {
         this.status = PaymentStatus.ERROR;
-        System.out.println("[Payment] 납입 처리 오류 발생: " + paymentNo);
+        // 처리 필요 
     }
 
     // Getter

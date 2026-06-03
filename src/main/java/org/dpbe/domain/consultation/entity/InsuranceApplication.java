@@ -70,7 +70,7 @@ public class InsuranceApplication {
     }
 
     public boolean authenticate() {
-        System.out.println("  [시스템] 본인인증이 완료되었습니다.");
+        // 처리 필요
         return true;
     }
 

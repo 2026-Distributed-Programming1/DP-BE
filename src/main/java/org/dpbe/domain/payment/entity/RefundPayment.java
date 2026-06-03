@@ -3,6 +3,7 @@ package org.dpbe.domain.payment.entity;
 import java.time.LocalDateTime;
 import org.dpbe.domain.common.entity.BankAccount;
 import org.dpbe.domain.common.enums.RefundPaymentStatus;
+import org.dpbe.global.exception.ApiException;
 
 /**
  * 환급금 지급 (RefundPayment)
@@ -79,7 +80,6 @@ public class RefundPayment {
    */
   public boolean verifyOTP() {
     if (locked) {
-      System.out.println("[RefundPayment] 계정이 잠겨 있어 OTP 검증 불가");
       return false;
     }
     if (otpInput != null && otpInput.length() == 6) {
@@ -99,15 +99,21 @@ public class RefundPayment {
   public void lockOnFailure() {
     this.locked = true;
     this.status = RefundPaymentStatus.LOCKED;
-    System.out.println("[RefundPayment] OTP 5회 실패로 잠금 처리: " + paymentNo);
+    // 처리 필요
   }
 
   /**
    * 이체 실행 - transferredAt=now() 외부 시스템 연동이 필요하므로 더미로 처리한다.
    */
   public void execute() {
+    if (status == RefundPaymentStatus.COMPLETED) {
+      throw ApiException.badRequest("이미 완료된 지급 건입니다.");
+    }
+    if (status == RefundPaymentStatus.LOCKED) {
+      throw ApiException.badRequest("OTP 5회 실패로 잠금된 지급 건입니다. 관리자에게 문의하세요.");
+    }
     if (!otpVerified) {
-      System.out.println("[RefundPayment] OTP 미인증 상태로 이체 불가");
+      // 처리 필요
       return;
     }
     if (account == null || !account.isVerified()) {
@@ -117,7 +123,7 @@ public class RefundPayment {
     try {
       this.transferredAt = LocalDateTime.now();
       this.status = RefundPaymentStatus.COMPLETED;
-      System.out.println("[RefundPayment] 환급금 이체 완료: " + paymentNo + ", 금액: " + finalAmount);
+      // 처리 필요
     } catch (Exception e) {
       handleTransferFailure();
     }
@@ -128,7 +134,7 @@ public class RefundPayment {
    */
   public void handleTransferFailure() {
     this.status = RefundPaymentStatus.FAILED;
-    System.out.println("[RefundPayment] 이체 처리 오류: " + paymentNo);
+    // 처리 필요
   }
 
   /**
@@ -138,7 +144,7 @@ public class RefundPayment {
     try {
       if (status == RefundPaymentStatus.COMPLETED) {
         this.noticeSent = true;
-        System.out.println("[RefundPayment] 알림톡 발송 완료: " + paymentNo);
+        // 처리 필요
       }
     } catch (Exception e) {
       handleNoticeFailure();
@@ -150,7 +156,7 @@ public class RefundPayment {
    */
   public void handleNoticeFailure() {
     this.noticeFailureMessage = "알림톡 발송에 실패했습니다.";
-    System.out.println("[RefundPayment] " + noticeFailureMessage);
+    // 처리 필요
   }
 
   /**

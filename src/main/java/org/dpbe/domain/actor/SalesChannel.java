@@ -25,7 +25,7 @@ public class SalesChannel {
     // ===== API 응답과 DB 복원에서 사용 =====
     public void acceptConsultation(ConsultationRequest request) {
         request.accept();
-        System.out.println("  [" + channelName + "] 상담 요청을 수락했습니다.");
+        // 처리 필요
     }
 
     public PolicyApplication createPolicyApplication() {

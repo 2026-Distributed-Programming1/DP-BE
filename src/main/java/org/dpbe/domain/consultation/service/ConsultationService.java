@@ -89,8 +89,6 @@ public class ConsultationService {
         authAccessService.requireConsultationManageAccess();
         ConsultationRequest r = consultationRepo.findById(parseId(consultNo));
         if (r == null) throw ApiException.notFound("상담 요청을 찾을 수 없습니다: " + consultNo);
-        if (!"접수".equals(r.getStatus()))
-            throw ApiException.badRequest("이미 처리된 상담 요청입니다. (현재 상태: " + r.getStatus() + ")");
         r.accept();
         consultationRepo.updateAccept(r);
         return ConsultationResponse.from(r);

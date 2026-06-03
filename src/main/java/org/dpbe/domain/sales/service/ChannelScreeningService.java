@@ -83,9 +83,6 @@ public class ChannelScreeningService {
     public ChannelScreeningResponse approve(String screeningNo) {
         authAccessService.requireSalesOperationAccess();
         ChannelScreening s = findOrThrow(screeningNo);
-        if (s.getScreeningStatus() != ScreeningStatus.PENDING) {
-            throw ApiException.badRequest("대기 상태의 심사만 승인할 수 있습니다.");
-        }
         s.approve();
         repository.updateReview(s);
         return ChannelScreeningResponse.from(s);
@@ -95,9 +92,6 @@ public class ChannelScreeningService {
     public ChannelScreeningResponse reject(String screeningNo, ScreeningRejectRequest request) {
         authAccessService.requireSalesOperationAccess();
         ChannelScreening s = findOrThrow(screeningNo);
-        if (s.getScreeningStatus() != ScreeningStatus.PENDING) {
-            throw ApiException.badRequest("대기 상태의 심사만 거절할 수 있습니다.");
-        }
         s.setRejectionReason(request.rejectionReason());
         s.reject();
         repository.updateReview(s);

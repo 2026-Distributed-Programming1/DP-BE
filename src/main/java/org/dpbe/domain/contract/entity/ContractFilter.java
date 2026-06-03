@@ -24,6 +24,5 @@ public class ContractFilter {
         this.contractNo = null;
         this.insuranceType = null;
         this.contractDate = null;
-        System.out.println("  [시스템] 필터 조건이 초기화되었습니다.");
     }
 }

@@ -2,6 +2,7 @@ package org.dpbe.domain.education.entity;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import org.dpbe.global.exception.ApiException;
 
 /**
  * 교육계획안 (EducationPlan)
@@ -100,11 +101,17 @@ public class EducationPlan {
     }
 
     public void approve() {
+        if (!"승인요청".equals(this.status)) {
+            throw ApiException.badRequest("승인 요청 상태의 계획안만 승인할 수 있습니다.");
+        }
         this.approvedAt = LocalDateTime.now();
         this.status = "승인";
     }
 
     public void reject(String reason) {
+        if (!"승인요청".equals(this.status)) {
+            throw ApiException.badRequest("승인 요청 상태의 계획안만 반려할 수 있습니다.");
+        }
         this.rejectReason = reason;
         this.status = "반려";
     }

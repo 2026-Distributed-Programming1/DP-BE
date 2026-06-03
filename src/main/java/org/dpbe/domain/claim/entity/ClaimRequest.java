@@ -11,6 +11,7 @@ import org.dpbe.domain.common.enums.AuthMethod;
 import org.dpbe.domain.common.enums.ClaimRequestStatus;
 import org.dpbe.domain.common.enums.ClaimType;
 import org.dpbe.domain.common.enums.NoticeMethod;
+import org.dpbe.global.exception.ApiException;
 
 /**
  * 보험금 청구 (ClaimRequest)
@@ -177,11 +178,11 @@ public class ClaimRequest {
 
     /** 청구 제출 - requestedAt=now() */
     public void submit() {
-        if (validateBeforeSubmit()) {
-            this.requestedAt = LocalDateTime.now();
-            this.status = ClaimRequestStatus.RECEIVED;
-            System.out.println("[ClaimRequest] 보험금 청구 접수 완료: " + claimNo);
+        if (!validateBeforeSubmit()) {
+            throw ApiException.badRequest("필수 입력값이 누락되어 청구를 제출할 수 없습니다.");
         }
+        this.requestedAt = LocalDateTime.now();
+        this.status = ClaimRequestStatus.RECEIVED;
     }
 
     // Getter

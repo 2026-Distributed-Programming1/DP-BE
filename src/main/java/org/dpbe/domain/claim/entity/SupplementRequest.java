@@ -29,7 +29,7 @@ public class SupplementRequest {
      */
     public void send() {
         this.sentAt = LocalDateTime.now();
-        System.out.println("[SupplementRequest] 보완 서류 요청 발송: " + requestedItems);
+        // 처리 필요
     }
 
     // Getter
