@@ -14,7 +14,7 @@ import org.springframework.stereotype.Repository;
 public class UnderwritingRepository {
 
     private static final String COLS =
-            "id, review_type, app_no, customer_name,"
+            "id, review_type, app_no, application_type, customer_name,"
             + " risk_grade, review_opinion, result, result_condition, rejection_reason, reviewed_at";
 
     private final SqlExecutor sql;
@@ -28,12 +28,13 @@ public class UnderwritingRepository {
         String result = u.getReviewResult() != null ? u.getReviewResult().getResult() : null;
         String condition = u.getReviewResult() != null ? u.getReviewResult().getCondition() : null;
         String rejection = u.getReviewResult() != null ? u.getReviewResult().getRejectionReason() : null;
+        String appType = u.getApplicationType() != null ? u.getApplicationType().name() : null;
         long id = sql.executeInsertReturningKey(
                 "INSERT INTO underwritings"
-                + " (review_type, app_no, customer_name, risk_grade, review_opinion,"
+                + " (review_type, app_no, application_type, customer_name, risk_grade, review_opinion,"
                 + " result, result_condition, rejection_reason, reviewed_at)"
-                + " VALUES (?,?,?,?,?,?,?,?,?)",
-                u.getReviewType(), u.getAppNo(), u.getCustomerName(),
+                + " VALUES (?,?,?,?,?,?,?,?,?,?)",
+                u.getReviewType(), u.getAppNo(), appType, u.getCustomerName(),
                 u.getRiskGrade(), u.getReviewOpinion(),
                 result, condition, rejection, u.getReviewedAt());
         u.setId(id);
@@ -90,6 +91,10 @@ public class UnderwritingRepository {
         u.setId(rs.getLong("id"));
         u.setUnderwritingNo("UDW" + String.format("%05d", rs.getLong("id")));
         u.setAppNo(rs.getString("app_no"));
+        String at = rs.getString("application_type");
+        if (at != null) {
+            try { u.setApplicationType(ApplicationType.valueOf(at)); } catch (IllegalArgumentException ignored) {}
+        }
         u.setCustomerName(rs.getString("customer_name"));
         return u;
     }

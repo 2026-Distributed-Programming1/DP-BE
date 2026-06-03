@@ -79,6 +79,7 @@ public class UnderwritingService {
 
         Underwriting u = new Underwriting();
         u.setAppNo(req.appNo());
+        u.setApplicationType(req.applicationType());
         u.setCustomerName(req.customerName());
         u.startReview();
         if (req.reviewType() != null && !req.reviewType().isBlank()) {
