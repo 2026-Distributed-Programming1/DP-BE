@@ -1,7 +1,9 @@
 package org.dpbe.domain.consultation.dto;
 
+import org.dpbe.domain.common.enums.ApplicationType;
+
 public record UnderwritingRequest(
-        String applicationType,
+        ApplicationType applicationType,
         String appNo,
         String customerName,
         String reviewType,

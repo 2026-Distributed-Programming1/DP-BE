@@ -1,6 +1,7 @@
 package org.dpbe.domain.consultation.entity;
 
 import java.time.LocalDateTime;
+import org.dpbe.domain.common.enums.ApplicationType;
 
 /**
  * 인수심사 (Underwriting)
@@ -12,6 +13,7 @@ public class Underwriting {
     private String underwritingNo;
     private int reviewNumber;
     private String appNo;
+    private ApplicationType applicationType;
     private String customerName;
     private LocalDateTime reviewedAt;
     private String riskGrade;
@@ -62,6 +64,8 @@ public class Underwriting {
     public int getReviewNumber() { return reviewNumber; }
     public String getAppNo() { return appNo; }
     public void setAppNo(String appNo) { this.appNo = appNo; }
+    public ApplicationType getApplicationType() { return applicationType; }
+    public void setApplicationType(ApplicationType applicationType) { this.applicationType = applicationType; }
     public String getCustomerName() { return customerName; }
     public void setCustomerName(String customerName) { this.customerName = customerName; }
     public LocalDateTime getReviewedAt() { return reviewedAt; }

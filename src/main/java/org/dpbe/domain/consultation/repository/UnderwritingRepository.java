@@ -3,6 +3,7 @@ package org.dpbe.domain.consultation.repository;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.List;
+import org.dpbe.domain.common.enums.ApplicationType;
 import org.dpbe.domain.consultation.dto.PendingApplicationResponse;
 import org.dpbe.domain.consultation.entity.ReviewResult;
 import org.dpbe.domain.consultation.entity.Underwriting;
@@ -13,7 +14,7 @@ import org.springframework.stereotype.Repository;
 public class UnderwritingRepository {
 
     private static final String COLS =
-            "id, review_type, app_no, customer_name,"
+            "id, review_type, app_no, application_type, customer_name,"
             + " risk_grade, review_opinion, result, result_condition, rejection_reason, reviewed_at";
 
     private final SqlExecutor sql;
@@ -27,12 +28,13 @@ public class UnderwritingRepository {
         String result = u.getReviewResult() != null ? u.getReviewResult().getResult() : null;
         String condition = u.getReviewResult() != null ? u.getReviewResult().getCondition() : null;
         String rejection = u.getReviewResult() != null ? u.getReviewResult().getRejectionReason() : null;
+        String appType = u.getApplicationType() != null ? u.getApplicationType().name() : null;
         long id = sql.executeInsertReturningKey(
                 "INSERT INTO underwritings"
-                + " (review_type, app_no, customer_name, risk_grade, review_opinion,"
+                + " (review_type, app_no, application_type, customer_name, risk_grade, review_opinion,"
                 + " result, result_condition, rejection_reason, reviewed_at)"
-                + " VALUES (?,?,?,?,?,?,?,?,?)",
-                u.getReviewType(), u.getAppNo(), u.getCustomerName(),
+                + " VALUES (?,?,?,?,?,?,?,?,?,?)",
+                u.getReviewType(), u.getAppNo(), appType, u.getCustomerName(),
                 u.getRiskGrade(), u.getReviewOpinion(),
                 result, condition, rejection, u.getReviewedAt());
         u.setId(id);
@@ -53,19 +55,19 @@ public class UnderwritingRepository {
         return sql.executeQuery(
                 "SELECT application_type, application_no, customer_name, product_name, payment_method, status"
                 + " FROM ("
-                + " SELECT 1 AS type_order, id, '청약' AS application_type,"
+                + " SELECT 1 AS type_order, id, 'POLICY' AS application_type,"
                 + "        CONCAT('POL', LPAD(id, 5, '0')) AS application_no,"
                 + "        customer_name, product_name, payment_method, status"
                 + " FROM policy_applications WHERE status='신청'"
                 + " UNION ALL"
-                + " SELECT 2 AS type_order, id, '보험신청' AS application_type,"
+                + " SELECT 2 AS type_order, id, 'INSURANCE' AS application_type,"
                 + "        CONCAT('APP', LPAD(id, 5, '0')) AS application_no,"
                 + "        customer_name, product_name, payment_method, status"
                 + " FROM insurance_applications WHERE status='신청'"
                 + " ) pending"
                 + " ORDER BY type_order ASC, id ASC LIMIT ? OFFSET ?",
                 rs -> new PendingApplicationResponse(
-                        rs.getString("application_type"),
+                        ApplicationType.valueOf(rs.getString("application_type")),
                         rs.getString("application_no"),
                         rs.getString("customer_name"),
                         rs.getString("product_name"),
@@ -89,6 +91,10 @@ public class UnderwritingRepository {
         u.setId(rs.getLong("id"));
         u.setUnderwritingNo("UDW" + String.format("%05d", rs.getLong("id")));
         u.setAppNo(rs.getString("app_no"));
+        String at = rs.getString("application_type");
+        if (at != null) {
+            try { u.setApplicationType(ApplicationType.valueOf(at)); } catch (IllegalArgumentException ignored) {}
+        }
         u.setCustomerName(rs.getString("customer_name"));
         return u;
     }
