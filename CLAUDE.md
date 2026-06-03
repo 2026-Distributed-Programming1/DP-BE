@@ -4,8 +4,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 > **현재 상태 (2026-06-03)**: 콘솔(Runner) 구조를 Spring REST API 구조로 전환 완료. 최종 수렴도 완료되어 `old/`/`OldMain` 삭제, 업무번호 format-on-read, FK `id` 전환이 반영됨.
 > - 완료: 전 UC Controller/Service/Repository/DTO 전환 · 웹 시더 · `old/` 제거 · `xxx_no` 저장 컬럼 제거 · FK `id(BIGINT)` 전환 · Docker DB 재생성 및 주요 API smoke test ✅
-> - 추가 완료: Flyway 도입 · HTTP 세션 로그인 · Spring Session JDBC · `auth_users` 기반 role · 고객 직접 회원가입 · 직원 계정 발급 · 고객 검색/상세 API · 공통 에러 응답 보강 · 문의 customer_id 연결 · 도메인별 role 기반 권한 보강 1차 적용.
-> - **다음 작업**: 목록 응답 형태 통일 · 상태 전이 규칙 문서화 · 주요 도메인 API 명세 확장 · 파일/S3 정책.
+> - 추가 완료: Flyway 도입 · HTTP 세션 로그인 · Spring Session JDBC · `auth_users` 기반 role · 고객 직접 회원가입 · 직원 계정 발급 · 고객 검색/상세 API · 공통 에러 응답 보강 · 문의 customer_id 연결 · 도메인별 role 기반 권한 보강 1차 적용 · 목록 응답 `page/size/total/items` 통일 · 주요 목록 API DB pagination 전환 · 미사용 DTO/유틸 삭제(`PageResponses`, `CustomerListResponse`, `ContractListResponse`).
+> - **다음 작업**: 상태 전이 규칙 문서화 · 주요 도메인 API 명세 확장 · 파일/S3 정책.
 > - **작업 전 반드시 참고**: 전환 계획은 **`src/main/resources/design/ApiMigrationPlan.md`**, 프론트/인증 방향은 **`src/main/resources/design/FrontendIntegrationReview.md`**, 배포 env는 **`src/main/resources/design/DeploymentPlan.md`**.
 
 ## 빌드 및 실행
@@ -76,6 +76,7 @@ org.dpbe
 - **DB migration**: Flyway가 전체 schema를 관리한다. `V1__init_schema.sql`은 현재 최신 전체 schema이고, 이후 변경은 `V{n}__*.sql`로 추가한다.
 - **인증**: `/api/auth/signup/customer`, `/api/auth/login`, `/api/auth/logout`, `/api/auth/me`, `/api/auth/password`는 세션 기반이다. 고객 직접 회원가입은 `customers`와 `auth_users`를 같은 트랜잭션에서 생성하고 `password_change_required=false`로 둔다. 관리자는 `/api/auth/customer-accounts`로 기존 고객에게 로그인 계정을 발급한다. 발급 계정은 임시 비밀번호와 `password_change_required=true`로 생성되며 최초 로그인 후 비밀번호 변경이 필요하다. 세션은 Spring Session JDBC로 MySQL에 저장한다. 프론트가 다른 origin이면 `credentials: include`/`withCredentials=true`가 필요하다.
 - **권한/소유권**: `role`은 도메인 엔터티가 아니라 `auth_users.role`에서 관리한다. 공통 interceptor는 로그인 여부만 검사하고, 고객 데이터 소유권은 Service 계층에서 `AuthAccessService`로 검증한다. `CUSTOMER`는 `linked_customer_id`로 연결된 본인 고객 데이터만, 직원/관리자는 업무 role에 따라 접근한다. contract/payment/refund/claim/consultation/sales/education/inquiry/customer는 role 기반 접근 제한 1차 적용이 완료됐다.
+- **목록 응답/페이징**: 테이블용 목록 API는 `PageResponse<T>`(`page`, `size`, `total`, `items`)를 사용한다. 주요 도메인 목록은 DB `COUNT` + `LIMIT/OFFSET` 기반 pagination으로 전환됐다. 고객 소유권이 필요한 목록은 SQL 조건에 고객 식별자(`linkedCustomerNo` 또는 `linkedCustomerId`)를 내려 `total`과 `items`가 같은 범위를 보도록 한다. 메모리 페이징 유틸 `PageResponses`는 더 이상 사용하지 않는다.
 - **권한 추상화 원칙**: 도메인 Service에서 `currentUser()`를 꺼내 role을 직접 비교하지 않는다. `currentUser()`는 세션 사용자 조회용 저수준 메서드로 두고, Service는 `requireRefundOperationAccess()`, `requireClaimInvestigationAccess()`, `requirePaymentRecordManageAccess()` 같은 업무 권한 메서드나 `requireCustomerAccess()`/`canAccessContract()` 같은 소유권 메서드를 우선 사용한다. role 조합 변경은 Service가 아니라 `AuthAccessService`의 그룹/업무 메서드에서 처리한다.
 - **직원 role 확장 방향**: 직원 역할은 `CONTRACT_STAFF`, `CLAIM_STAFF`, `UNDERWRITING_STAFF`, `SALES_STAFF`, `EDUCATION_STAFF`, `FINANCE_STAFF`, `DISPATCH_STAFF`로 세분화한다. 1차 직원 계정은 actor 테이블과 연결하지 않고 `auth_users.role`만으로 API 접근 권한을 판단한다. actor 연결은 처리자 기록/담당자 배정/담당자별 실적이 필요해지는 시점에 `linked_actor_type`, `linked_actor_id` 같은 확장으로 검토한다.
 - **AuthUser 분리 원칙**: `domain/actor/User.java`와 `Customer`는 업무 도메인 모델이고 인증 저장 모델이 아니다. 로그인 계정은 `global/auth/entity/AuthUser.java`와 `auth_users` 테이블을 사용한다. `Customer`와 `AuthUser`를 합치지 않는 이유는 직원/관리자 계정도 필요하고, 고객 1명이 여러 로그인 계정을 가질 가능성, 비활성화/role/password_hash 같은 인증 전용 필드가 업무 고객 정보와 다른 생명주기를 갖기 때문이다.
