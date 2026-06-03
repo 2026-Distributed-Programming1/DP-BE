@@ -7,6 +7,7 @@ import org.dpbe.domain.consultation.dto.InterviewScheduleResponse;
 import org.dpbe.domain.consultation.dto.InterviewScheduleUpdateRequest;
 import org.dpbe.domain.consultation.entity.InterviewSchedule;
 import org.dpbe.domain.consultation.repository.InterviewScheduleRepository;
+import org.dpbe.global.auth.service.AuthAccessService;
 import org.dpbe.global.exception.ApiException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -16,12 +17,16 @@ import org.springframework.transaction.annotation.Transactional;
 public class InterviewScheduleService {
 
     private final InterviewScheduleRepository scheduleRepo;
+    private final AuthAccessService authAccessService;
 
-    public InterviewScheduleService(InterviewScheduleRepository scheduleRepo) {
+    public InterviewScheduleService(InterviewScheduleRepository scheduleRepo,
+                                    AuthAccessService authAccessService) {
         this.scheduleRepo = scheduleRepo;
+        this.authAccessService = authAccessService;
     }
 
     public List<InterviewScheduleResponse> findAll() {
+        authAccessService.requireInterviewManageAccess();
         return scheduleRepo.findAll().stream()
                 .map(InterviewScheduleResponse::from)
                 .collect(Collectors.toList());
@@ -36,6 +41,7 @@ public class InterviewScheduleService {
     }
 
     public InterviewScheduleResponse findByScheduleNo(String scheduleNo) {
+        authAccessService.requireInterviewManageAccess();
         InterviewSchedule s = scheduleRepo.findById(parseId(scheduleNo));
         if (s == null) throw ApiException.notFound("면담일정을 찾을 수 없습니다: " + scheduleNo);
         return InterviewScheduleResponse.from(s);
@@ -44,6 +50,7 @@ public class InterviewScheduleService {
     /** 면담일정 등록 — E1: 필수항목 검증. */
     @Transactional
     public InterviewScheduleResponse create(InterviewScheduleCreateRequest req) {
+        authAccessService.requireInterviewManageAccess();
         if (req.customerName() == null || req.customerName().isBlank())
             throw ApiException.badRequest("고객명은 필수입니다.");
         if (req.interviewType() == null || req.interviewType().isBlank())
@@ -64,6 +71,7 @@ public class InterviewScheduleService {
     /** 면담일정 수정 — E2: 필수항목 검증. */
     @Transactional
     public InterviewScheduleResponse update(String scheduleNo, InterviewScheduleUpdateRequest req) {
+        authAccessService.requireInterviewManageAccess();
         InterviewSchedule s = scheduleRepo.findById(parseId(scheduleNo));
         if (s == null) throw ApiException.notFound("면담일정을 찾을 수 없습니다: " + scheduleNo);
         if ("취소".equals(s.getStatus()))
@@ -84,6 +92,7 @@ public class InterviewScheduleService {
     /** 면담 취소 (A5). */
     @Transactional
     public InterviewScheduleResponse cancel(String scheduleNo) {
+        authAccessService.requireInterviewManageAccess();
         InterviewSchedule s = scheduleRepo.findById(parseId(scheduleNo));
         if (s == null) throw ApiException.notFound("면담일정을 찾을 수 없습니다: " + scheduleNo);
         if ("취소".equals(s.getStatus()))

@@ -7,6 +7,7 @@ import org.dpbe.domain.consultation.dto.InterviewRecordResponse;
 import org.dpbe.domain.consultation.dto.InterviewRecordUpdateRequest;
 import org.dpbe.domain.consultation.entity.InterviewRecord;
 import org.dpbe.domain.consultation.repository.InterviewRecordRepository;
+import org.dpbe.global.auth.service.AuthAccessService;
 import org.dpbe.global.exception.ApiException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -16,12 +17,16 @@ import org.springframework.transaction.annotation.Transactional;
 public class InterviewRecordService {
 
     private final InterviewRecordRepository recordRepo;
+    private final AuthAccessService authAccessService;
 
-    public InterviewRecordService(InterviewRecordRepository recordRepo) {
+    public InterviewRecordService(InterviewRecordRepository recordRepo,
+                                  AuthAccessService authAccessService) {
         this.recordRepo = recordRepo;
+        this.authAccessService = authAccessService;
     }
 
     public List<InterviewRecordResponse> findAll() {
+        authAccessService.requireInterviewManageAccess();
         return recordRepo.findAll().stream()
                 .map(InterviewRecordResponse::from)
                 .collect(Collectors.toList());
@@ -36,6 +41,7 @@ public class InterviewRecordService {
     }
 
     public InterviewRecordResponse findByRecordNo(String recordNo) {
+        authAccessService.requireInterviewManageAccess();
         InterviewRecord r = recordRepo.findById(parseId(recordNo));
         if (r == null) throw ApiException.notFound("면담기록을 찾을 수 없습니다: " + recordNo);
         return InterviewRecordResponse.from(r);
@@ -44,6 +50,7 @@ public class InterviewRecordService {
     /** 면담기록 등록 — E1: 필수항목 검증. */
     @Transactional
     public InterviewRecordResponse create(InterviewRecordCreateRequest req) {
+        authAccessService.requireInterviewManageAccess();
         if (req.customerName() == null || req.customerName().isBlank())
             throw ApiException.badRequest("고객명은 필수입니다.");
         if (req.interviewedAt() == null)
@@ -64,6 +71,7 @@ public class InterviewRecordService {
     /** 면담기록 수정 — E2: 면담 내용 필수. */
     @Transactional
     public InterviewRecordResponse update(String recordNo, InterviewRecordUpdateRequest req) {
+        authAccessService.requireInterviewManageAccess();
         InterviewRecord r = recordRepo.findById(parseId(recordNo));
         if (r == null) throw ApiException.notFound("면담기록을 찾을 수 없습니다: " + recordNo);
         if (req.content() == null || req.content().isBlank())

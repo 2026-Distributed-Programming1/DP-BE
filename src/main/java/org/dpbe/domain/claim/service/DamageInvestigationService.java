@@ -8,6 +8,7 @@ import org.dpbe.domain.claim.entity.DamageInvestigation;
 import org.dpbe.domain.claim.repository.ClaimRequestRepository;
 import org.dpbe.domain.claim.repository.DamageInvestigationRepository;
 import org.dpbe.domain.common.enums.InvestigationResult;
+import org.dpbe.global.auth.service.AuthAccessService;
 import org.dpbe.global.exception.ApiException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -24,14 +25,18 @@ public class DamageInvestigationService {
 
     private final DamageInvestigationRepository investigationRepository;
     private final ClaimRequestRepository claimRequestRepository;
+    private final AuthAccessService authAccessService;
 
     public DamageInvestigationService(DamageInvestigationRepository investigationRepository,
-                                      ClaimRequestRepository claimRequestRepository) {
+                                      ClaimRequestRepository claimRequestRepository,
+                                      AuthAccessService authAccessService) {
         this.investigationRepository = investigationRepository;
         this.claimRequestRepository = claimRequestRepository;
+        this.authAccessService = authAccessService;
     }
 
     public InvestigationResponse findByClaimNo(String claimNo) {
+        authAccessService.requireClaimInvestigationAccess();
         parseId(claimNo);
         DamageInvestigation inv = investigationRepository.findByClaimNo(claimNo);
         if (inv == null) {
@@ -54,6 +59,7 @@ public class DamageInvestigationService {
     /** 조사 등록 — 청구 건에 대해 조사 결과를 제출하고 저장(@Transactional). */
     @Transactional
     public InvestigationResponse create(String claimNo, InvestigationCreateRequest request) {
+        authAccessService.requireClaimInvestigationAccess();
         ClaimRequest claim = claimRequestRepository.findById(parseId(claimNo));
         if (claim == null) {
             throw ApiException.notFound("청구를 찾을 수 없습니다: " + claimNo);

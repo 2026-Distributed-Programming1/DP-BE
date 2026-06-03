@@ -16,6 +16,7 @@ import org.dpbe.domain.claim.repository.DispatchRecordRepository;
 import org.dpbe.domain.claim.repository.DispatchRepository;
 import org.dpbe.domain.common.entity.Attachment;
 import org.dpbe.domain.common.enums.DispatchRecordStatus;
+import org.dpbe.global.auth.service.AuthAccessService;
 import org.dpbe.global.exception.ApiException;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -34,24 +35,29 @@ public class DispatchRecordService {
 
     private final DispatchRecordRepository recordRepository;
     private final DispatchRepository dispatchRepository;
+    private final AuthAccessService authAccessService;
     private final String uploadRoot;
 
     public DispatchRecordService(DispatchRecordRepository recordRepository,
                                  DispatchRepository dispatchRepository,
+                                 AuthAccessService authAccessService,
                                  @Value("${app.upload.dispatch-dir:uploads/dispatch}") String uploadRoot) {
         this.recordRepository = recordRepository;
         this.dispatchRepository = dispatchRepository;
+        this.authAccessService = authAccessService;
         this.uploadRoot = uploadRoot;
     }
 
     /** 현장 출동 목록 (기록 대상 선택용). */
     public List<DispatchResponse> listDispatches() {
+        authAccessService.requireDispatchRecordAccess();
         return dispatchRepository.findAll().stream()
                 .map(DispatchResponse::from)
                 .collect(Collectors.toList());
     }
 
     public DispatchRecordResponse findByDispatchNo(String dispatchNo) {
+        authAccessService.requireDispatchRecordAccess();
         DispatchRecord rec = recordRepository.findByDispatchNo(dispatchNo);
         if (rec == null) {
             throw ApiException.notFound("해당 출동의 기록이 없습니다: " + dispatchNo);
@@ -72,6 +78,7 @@ public class DispatchRecordService {
     public DispatchRecordResponse create(String dispatchNo, String agentName,
                                          boolean policeRequired, boolean towingRequired,
                                          String notes, MultipartFile[] photos) {
+        authAccessService.requireDispatchRecordAccess();
         Dispatch dispatch = dispatchRepository.findById(parseId(dispatchNo));
         if (dispatch == null) {
             throw ApiException.notFound("출동 건을 찾을 수 없습니다: " + dispatchNo);

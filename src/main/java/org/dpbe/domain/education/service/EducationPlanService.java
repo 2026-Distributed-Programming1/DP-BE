@@ -6,6 +6,7 @@ import org.dpbe.domain.education.dto.EducationPlanRequest;
 import org.dpbe.domain.education.dto.EducationPlanResponse;
 import org.dpbe.domain.education.entity.EducationPlan;
 import org.dpbe.domain.education.repository.EducationPlanRepository;
+import org.dpbe.global.auth.service.AuthAccessService;
 import org.dpbe.global.exception.ApiException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -14,13 +15,17 @@ import org.springframework.transaction.annotation.Transactional;
 public class EducationPlanService {
 
     private final EducationPlanRepository repository;
+    private final AuthAccessService authAccessService;
 
-    public EducationPlanService(EducationPlanRepository repository) {
+    public EducationPlanService(EducationPlanRepository repository,
+                                AuthAccessService authAccessService) {
         this.repository = repository;
+        this.authAccessService = authAccessService;
     }
 
     @Transactional(readOnly = true)
     public List<EducationPlanResponse> getPlans(String status) {
+        authAccessService.requireEducationOperationAccess();
         List<EducationPlan> plans = (status != null && !status.isBlank())
                 ? repository.findByStatus(status)
                 : repository.findAll();
@@ -37,6 +42,7 @@ public class EducationPlanService {
 
     @Transactional(readOnly = true)
     public EducationPlanResponse getPlan(String planNo) {
+        authAccessService.requireEducationOperationAccess();
         EducationPlan plan = repository.findById(parseId(planNo));
         if (plan == null) throw ApiException.notFound("교육 계획안을 찾을 수 없습니다: " + planNo);
         return EducationPlanResponse.from(plan);
@@ -44,6 +50,7 @@ public class EducationPlanService {
 
     @Transactional
     public EducationPlanResponse createPlan(EducationPlanRequest req) {
+        authAccessService.requireEducationOperationAccess();
         EducationPlan plan = new EducationPlan();
         plan.setTrainerName(req.trainerName());
         plan.enterPlanInfo(req.educationName(), req.startDate(), req.endDate(),
@@ -65,6 +72,7 @@ public class EducationPlanService {
 
     @Transactional
     public EducationPlanResponse approvePlan(String planNo) {
+        authAccessService.requireEducationOperationAccess();
         EducationPlan plan = repository.findById(parseId(planNo));
         if (plan == null) throw ApiException.notFound("교육 계획안을 찾을 수 없습니다: " + planNo);
         if (!"승인요청".equals(plan.getStatus())) {
@@ -77,6 +85,7 @@ public class EducationPlanService {
 
     @Transactional
     public EducationPlanResponse rejectPlan(String planNo, EducationPlanRejectRequest req) {
+        authAccessService.requireEducationOperationAccess();
         EducationPlan plan = repository.findById(parseId(planNo));
         if (plan == null) throw ApiException.notFound("교육 계획안을 찾을 수 없습니다: " + planNo);
         if (!"승인요청".equals(plan.getStatus())) {

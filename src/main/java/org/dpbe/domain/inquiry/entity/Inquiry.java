@@ -12,6 +12,7 @@ import org.dpbe.domain.common.enums.InquiryType;
 public class Inquiry {
     private Long id;
     private String inquiryNo;               // 문의 번호 - 자동부여
+    private Long customerId;                // 로그인 고객 식별자(customers.id)
     private String customerName;            // 문의 고객명
     private InquiryType inquiryType;        // 문의 유형 - 보험료/보험금/계약변경/해지/기타 필수 (enum)
     private String title;                   // 제목 필수, 최대 50자
@@ -61,6 +62,8 @@ public class Inquiry {
     public void setId(Long id) { this.id = id; }
     public String getInquiryNo() { return inquiryNo; }
     public void setInquiryNo(String inquiryNo) { this.inquiryNo = inquiryNo; }
+    public Long getCustomerId() { return customerId; }
+    public void setCustomerId(Long customerId) { this.customerId = customerId; }
     public String getCustomerName() { return customerName; }
     public void setCustomerName(String customerName) { this.customerName = customerName; }
     public InquiryType getInquiryType() { return inquiryType; }

@@ -10,6 +10,7 @@ import org.dpbe.domain.consultation.entity.Underwriting;
 import org.dpbe.domain.consultation.repository.InsuranceApplicationRepository;
 import org.dpbe.domain.consultation.repository.PolicyApplicationRepository;
 import org.dpbe.domain.consultation.repository.UnderwritingRepository;
+import org.dpbe.global.auth.service.AuthAccessService;
 import org.dpbe.global.exception.ApiException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -21,17 +22,21 @@ public class UnderwritingService {
     private final UnderwritingRepository underwritingRepo;
     private final PolicyApplicationRepository policyAppRepo;
     private final InsuranceApplicationRepository insuranceAppRepo;
+    private final AuthAccessService authAccessService;
 
     public UnderwritingService(UnderwritingRepository underwritingRepo,
                                PolicyApplicationRepository policyAppRepo,
-                               InsuranceApplicationRepository insuranceAppRepo) {
+                               InsuranceApplicationRepository insuranceAppRepo,
+                               AuthAccessService authAccessService) {
         this.underwritingRepo = underwritingRepo;
         this.policyAppRepo = policyAppRepo;
         this.insuranceAppRepo = insuranceAppRepo;
+        this.authAccessService = authAccessService;
     }
 
     /** 심사 대기 목록 — 청약(POL) + 보험신청(APP) 통합. */
     public List<PendingApplicationResponse> findPending() {
+        authAccessService.requireUnderwritingOperationAccess();
         List<PendingApplicationResponse> list = new ArrayList<>();
         policyAppRepo.findPending().forEach(p -> list.add(new PendingApplicationResponse(
                 "청약", p.getApplicationNo(), p.getCustomerName(),
@@ -49,6 +54,7 @@ public class UnderwritingService {
     /** 심사 완료 — 결과 저장 + 원본 신청 건 status 갱신. */
     @Transactional
     public UnderwritingResponse complete(UnderwritingRequest req) {
+        authAccessService.requireUnderwritingOperationAccess();
         if (req.applicationType() == null || req.applicationType().isBlank())
             throw ApiException.badRequest("신청 유형(청약/보험신청)은 필수입니다.");
         if (req.appNo() == null || req.appNo().isBlank())

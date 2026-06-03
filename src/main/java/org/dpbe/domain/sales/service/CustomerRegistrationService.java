@@ -7,6 +7,7 @@ import org.dpbe.domain.sales.dto.CustomerRegistrationRequest;
 import org.dpbe.domain.sales.dto.CustomerRegistrationResponse;
 import org.dpbe.domain.sales.entity.CustomerRegistration;
 import org.dpbe.domain.sales.repository.CustomerRegistrationRepository;
+import org.dpbe.global.auth.service.AuthAccessService;
 import org.dpbe.global.exception.ApiException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -15,13 +16,17 @@ import org.springframework.transaction.annotation.Transactional;
 public class CustomerRegistrationService {
 
     private final CustomerRegistrationRepository repository;
+    private final AuthAccessService authAccessService;
 
-    public CustomerRegistrationService(CustomerRegistrationRepository repository) {
+    public CustomerRegistrationService(CustomerRegistrationRepository repository,
+                                       AuthAccessService authAccessService) {
         this.repository = repository;
+        this.authAccessService = authAccessService;
     }
 
     @Transactional(readOnly = true)
     public List<CustomerRegistrationResponse> findAll() {
+        authAccessService.requireSalesOperationAccess();
         return repository.findAll().stream()
                 .map(CustomerRegistrationResponse::from)
                 .collect(Collectors.toList());
@@ -29,6 +34,7 @@ public class CustomerRegistrationService {
 
     @Transactional
     public CustomerRegistrationResponse register(CustomerRegistrationRequest request) {
+        authAccessService.requireSalesOperationAccess();
         if (request.name() == null || request.ssn() == null || request.phone() == null
                 || request.insuranceType() == null || request.contractDate() == null
                 || request.expiryDate() == null || request.monthlyPremium() == null) {

@@ -1,8 +1,8 @@
 # API 명세서
 
 > 목적: 프론트 병렬 작업을 위한 수동 API 계약 문서.
-> 기준: 2026-06-02 현재 구현된 주요 인증/고객 API와 프론트 입력에 필요한 enum 값.
-> 상태: 인증 API, 고객 검색/상세 API, 주요 enum 값 1차 작성 완료. 계약/납입/청구 등 도메인 API는 후속 확장 예정.
+> 기준: 2026-06-03 현재 구현된 주요 인증/고객 API, role 기반 권한 정책, 프론트 입력에 필요한 enum 값.
+> 상태: 인증 API, 고객 검색/상세 API, 주요 enum 값, 도메인별 권한 정책 1차 작성 완료. 계약/납입/청구 등 상세 API 명세는 후속 확장 예정.
 
 ## 공통
 
@@ -13,6 +13,44 @@
 - 로그인 이후 요청은 `Authorization` 헤더가 아니라 쿠키로 인증한다.
 - 프론트와 백엔드 origin이 다르면 `fetch`는 `credentials: "include"`, axios는 `withCredentials: true`가 필요하다.
 - 요청/응답 body는 JSON을 기본으로 한다.
+
+## 권한 정책 요약
+
+인증은 HTTP Session Cookie로 처리하고, 인가는 `auth_users.role` 기반으로 처리한다. `/api/auth/**`를 제외한 `/api/**`는 로그인 세션이 필요하다.
+
+| 영역 | 접근 정책 |
+|---|---|
+| 고객 검색 | 직원 또는 관리자 |
+| 고객 상세 | 직원 또는 관리자, 고객 본인 |
+| 계약 목록/상세 | 직원 또는 관리자 전체, 고객은 본인 계약만 |
+| 계약 통계/만기계약 관리 | `CONTRACT_STAFF`, `ADMIN` |
+| 해지 | 직원 또는 관리자 전체, 고객은 본인 계약만 |
+| 납입 기록 관리 | `FINANCE_STAFF`, `ADMIN` |
+| 환급 계산/지급 | `FINANCE_STAFF`, `ADMIN` |
+| 손해조사/보험금 산출 | `CLAIM_STAFF`, `ADMIN` |
+| 보험금 지급 | `FINANCE_STAFF`, `CLAIM_STAFF`, `ADMIN` |
+| 출동 기록 | `DISPATCH_STAFF`, `CLAIM_STAFF`, `ADMIN` |
+| 상담/제안/면담 | `SALES_STAFF`, `UNDERWRITING_STAFF`, `ADMIN` |
+| 인수심사 | `UNDERWRITING_STAFF`, `ADMIN` |
+| 영업/채널 | `SALES_STAFF`, `ADMIN` |
+| 성과급 요청 생성 | `ADMIN` |
+| 교육 계획/제반/진행 | `EDUCATION_STAFF`, `ADMIN` |
+| 문의 조회 | 직원/관리자 전체, 고객은 본인 문의만 |
+| 문의 답변 | 직원 또는 관리자 |
+
+## 인증 API 권한 요약
+
+| Endpoint | 인증 필요 | 권한 |
+|---|---:|---|
+| `POST /api/auth/login` | 아니오 | 공개 |
+| `POST /api/auth/signup/customer` | 아니오 | 공개 |
+| `POST /api/auth/customer-accounts` | 예 | `ADMIN` |
+| `POST /api/auth/staff-accounts` | 예 | `ADMIN` |
+| `POST /api/auth/password` | 예 | 로그인 사용자 |
+| `POST /api/auth/logout` | 예 | 로그인 사용자 |
+| `GET /api/auth/me` | 예 | 로그인 사용자 |
+
+비밀번호 변경이 필요한 계정은 `/api/auth/**`를 제외한 업무 API 호출이 403으로 차단된다.
 
 ## 에러 응답
 
@@ -297,7 +335,7 @@ Response:
 
 `GET /api/customers/{customerId}`
 
-권한: 직원 또는 관리자
+권한: 직원 또는 관리자, 고객 본인
 
 Response:
 

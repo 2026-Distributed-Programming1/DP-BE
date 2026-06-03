@@ -8,6 +8,7 @@ import org.dpbe.domain.sales.dto.ChannelRecruitmentRequest;
 import org.dpbe.domain.sales.dto.ChannelRecruitmentResponse;
 import org.dpbe.domain.sales.entity.ChannelRecruitment;
 import org.dpbe.domain.sales.repository.ChannelRecruitmentRepository;
+import org.dpbe.global.auth.service.AuthAccessService;
 import org.dpbe.global.exception.ApiException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -16,13 +17,17 @@ import org.springframework.transaction.annotation.Transactional;
 public class ChannelRecruitmentService {
 
     private final ChannelRecruitmentRepository repository;
+    private final AuthAccessService authAccessService;
 
-    public ChannelRecruitmentService(ChannelRecruitmentRepository repository) {
+    public ChannelRecruitmentService(ChannelRecruitmentRepository repository,
+                                     AuthAccessService authAccessService) {
         this.repository = repository;
+        this.authAccessService = authAccessService;
     }
 
     @Transactional(readOnly = true)
     public List<ChannelRecruitmentResponse> findAll() {
+        authAccessService.requireSalesOperationAccess();
         return repository.findAll().stream()
                 .map(ChannelRecruitmentResponse::from)
                 .collect(Collectors.toList());
@@ -30,6 +35,7 @@ public class ChannelRecruitmentService {
 
     @Transactional
     public ChannelRecruitmentResponse create(ChannelRecruitmentRequest request) {
+        authAccessService.requireSalesOperationAccess();
         if (request.channelType() == null || request.recruitCount() == null
                 || request.startDate() == null || request.endDate() == null) {
             throw ApiException.badRequest("필수 항목 누락: channelType, recruitCount, startDate, endDate");

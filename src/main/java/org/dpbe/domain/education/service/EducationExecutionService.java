@@ -11,6 +11,7 @@ import org.dpbe.domain.education.entity.EducationExecution;
 import org.dpbe.domain.education.entity.EducationPreparation;
 import org.dpbe.domain.education.repository.EducationExecutionRepository;
 import org.dpbe.domain.education.repository.EducationPreparationRepository;
+import org.dpbe.global.auth.service.AuthAccessService;
 import org.dpbe.global.exception.ApiException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -20,15 +21,19 @@ public class EducationExecutionService {
 
     private final EducationExecutionRepository repository;
     private final EducationPreparationRepository prepRepository;
+    private final AuthAccessService authAccessService;
 
     public EducationExecutionService(EducationExecutionRepository repository,
-                                     EducationPreparationRepository prepRepository) {
+                                     EducationPreparationRepository prepRepository,
+                                     AuthAccessService authAccessService) {
         this.repository = repository;
         this.prepRepository = prepRepository;
+        this.authAccessService = authAccessService;
     }
 
     @Transactional(readOnly = true)
     public List<EducationExecutionResponse> getExecutions(String prepNo) {
+        authAccessService.requireEducationOperationAccess();
         List<EducationExecution> list = (prepNo != null && !prepNo.isBlank())
                 ? repository.findByPrepNo(prepNo)
                 : repository.findAll();
@@ -47,6 +52,7 @@ public class EducationExecutionService {
 
     @Transactional(readOnly = true)
     public EducationExecutionResponse getExecution(String executionNo) {
+        authAccessService.requireEducationOperationAccess();
         EducationExecution exec = repository.findById(parseId(executionNo));
         if (exec == null) throw ApiException.notFound("교육 진행 기록을 찾을 수 없습니다: " + executionNo);
         List<AttendanceDetail> attendances = repository.findAttendances(exec.getExecutionNo());
@@ -55,6 +61,7 @@ public class EducationExecutionService {
 
     @Transactional
     public EducationExecutionResponse createExecution(EducationExecutionRequest req) {
+        authAccessService.requireEducationOperationAccess();
         if (prepRepository.findById(parseId(req.prepNo())) == null) {
             throw ApiException.notFound("교육 제반을 찾을 수 없습니다: " + req.prepNo());
         }

@@ -46,11 +46,125 @@ public class AuthAccessService {
         }
     }
 
+    public void requireAnyRole(UserRole... allowedRoles) {
+        UserRole currentRole = currentUser().role();
+        for (UserRole allowedRole : allowedRoles) {
+            if (currentRole == allowedRole) {
+                return;
+            }
+        }
+        throw ApiException.forbidden("요청한 작업을 수행할 권한이 없습니다.");
+    }
+
+    public void requireFinanceStaff() {
+        requireAnyRole(UserRole.FINANCE_STAFF, UserRole.ADMIN);
+    }
+
+    public void requireClaimStaff() {
+        requireAnyRole(UserRole.CLAIM_STAFF, UserRole.ADMIN);
+    }
+
+    public void requireDispatchStaff() {
+        requireAnyRole(UserRole.DISPATCH_STAFF, UserRole.CLAIM_STAFF, UserRole.ADMIN);
+    }
+
+    public void requireSalesStaff() {
+        requireAnyRole(UserRole.SALES_STAFF, UserRole.ADMIN);
+    }
+
+    public void requireEducationStaff() {
+        requireAnyRole(UserRole.EDUCATION_STAFF, UserRole.ADMIN);
+    }
+
+    public void requireUnderwritingStaff() {
+        requireAnyRole(UserRole.UNDERWRITING_STAFF, UserRole.ADMIN);
+    }
+
+    public void requireContractStaff() {
+        requireAnyRole(UserRole.CONTRACT_STAFF, UserRole.ADMIN);
+    }
+
+    public void requirePaymentRecordManageAccess() {
+        requireFinanceStaff();
+    }
+
+    public void requireRefundOperationAccess() {
+        requireFinanceStaff();
+    }
+
+    public void requireClaimInvestigationAccess() {
+        requireClaimStaff();
+    }
+
+    public void requireClaimCalculationAccess() {
+        requireClaimStaff();
+    }
+
+    public void requireClaimPaymentAccess() {
+        requireAnyRole(UserRole.FINANCE_STAFF, UserRole.CLAIM_STAFF, UserRole.ADMIN);
+    }
+
+    public void requireDispatchRecordAccess() {
+        requireDispatchStaff();
+    }
+
+    public void requireConsultationManageAccess() {
+        requireAnyRole(UserRole.SALES_STAFF, UserRole.UNDERWRITING_STAFF, UserRole.ADMIN);
+    }
+
+    public void requireProposalManageAccess() {
+        requireAnyRole(UserRole.SALES_STAFF, UserRole.UNDERWRITING_STAFF, UserRole.ADMIN);
+    }
+
+    public void requireInterviewManageAccess() {
+        requireAnyRole(UserRole.SALES_STAFF, UserRole.UNDERWRITING_STAFF, UserRole.ADMIN);
+    }
+
+    public void requireUnderwritingOperationAccess() {
+        requireUnderwritingStaff();
+    }
+
+    public void requireSalesOperationAccess() {
+        requireSalesStaff();
+    }
+
+    public void requireEducationOperationAccess() {
+        requireEducationStaff();
+    }
+
+    public void requireContractOperationAccess() {
+        requireContractStaff();
+    }
+
+    public void requireBonusRequestManageAccess() {
+        requireAdmin();
+    }
+
+    public void requireInquiryAnswerAccess() {
+        requireStaffOrAdmin();
+    }
+
     public void requireCustomerAccess(Customer customer) {
         if (customer == null || !isCustomer()) {
             return;
         }
         requireCustomerNoAccess(customer.getCustomerId());
+    }
+
+    public void requireCustomerIdAccess(Long customerId) {
+        if (!canAccessCustomerId(customerId)) {
+            throw ApiException.forbidden("본인 고객 데이터만 접근할 수 있습니다.");
+        }
+    }
+
+    public boolean canAccessCustomerId(Long customerId) {
+        AuthenticatedUser user = currentUser();
+        if (user.role() != UserRole.CUSTOMER) {
+            return true;
+        }
+        return customerId != null
+                && user.linkedCustomerId() != null
+                && user.linkedCustomerId().equals(customerId);
     }
 
     public void requireCustomerNoAccess(String customerNo) {

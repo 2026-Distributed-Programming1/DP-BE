@@ -8,6 +8,8 @@ import org.dpbe.domain.inquiry.dto.InquiryRequest;
 import org.dpbe.domain.inquiry.dto.InquiryResponse;
 import org.dpbe.domain.inquiry.entity.Inquiry;
 import org.dpbe.domain.inquiry.repository.InquiryRepository;
+import org.dpbe.global.auth.dto.AuthenticatedUser;
+import org.dpbe.global.auth.service.AuthAccessService;
 import org.dpbe.global.exception.ApiException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -16,13 +18,24 @@ import org.springframework.transaction.annotation.Transactional;
 public class InquiryService {
 
     private final InquiryRepository repository;
+    private final AuthAccessService authAccessService;
 
-    public InquiryService(InquiryRepository repository) {
+    public InquiryService(InquiryRepository repository,
+                          AuthAccessService authAccessService) {
         this.repository = repository;
+        this.authAccessService = authAccessService;
     }
 
     @Transactional(readOnly = true)
     public List<InquiryResponse> getInquiries(String customerName, String status) {
+        if (authAccessService.isCustomer()) {
+            Long customerId = currentLinkedCustomerId();
+            List<Inquiry> list = status != null && !status.isBlank()
+                    ? repository.findByCustomerIdAndStatus(customerId, status)
+                    : repository.findByCustomerId(customerId);
+            return list.stream().map(InquiryResponse::from).toList();
+        }
+
         List<Inquiry> list;
         if (customerName != null && !customerName.isBlank() && status != null && !status.isBlank()) {
             list = repository.findByCustomerNameAndStatus(customerName, status);
@@ -40,6 +53,7 @@ public class InquiryService {
     public InquiryResponse getInquiry(String inquiryNo) {
         Inquiry inquiry = repository.findById(parseId(inquiryNo));
         if (inquiry == null) throw ApiException.notFound("문의를 찾을 수 없습니다: " + inquiryNo);
+        authAccessService.requireCustomerIdAccess(inquiry.getCustomerId());
         return InquiryResponse.from(inquiry);
     }
 
@@ -54,7 +68,16 @@ public class InquiryService {
     @Transactional
     public InquiryResponse submit(InquiryRequest req) {
         Inquiry inquiry = new Inquiry();
-        inquiry.setCustomerName(req.customerName());
+        if (authAccessService.isCustomer()) {
+            AuthenticatedUser user = authAccessService.currentUser();
+            if (user.linkedCustomerId() == null) {
+                throw ApiException.forbidden("연결된 고객 정보가 없습니다.");
+            }
+            inquiry.setCustomerId(user.linkedCustomerId());
+            inquiry.setCustomerName(user.displayName());
+        } else {
+            inquiry.setCustomerName(req.customerName());
+        }
         inquiry.setInquiryType(req.inquiryType());
         inquiry.setTitle(req.title());
         inquiry.setContent(req.content());
@@ -76,6 +99,7 @@ public class InquiryService {
 
     @Transactional
     public InquiryResponse answer(String inquiryNo, InquiryAnswerRequest req) {
+        authAccessService.requireInquiryAnswerAccess();
         Inquiry inquiry = repository.findById(parseId(inquiryNo));
         if (inquiry == null) throw ApiException.notFound("문의를 찾을 수 없습니다: " + inquiryNo);
         if (InquiryStatus.ANSWERED.equals(inquiry.getStatus())) {
@@ -89,5 +113,13 @@ public class InquiryService {
         inquiry.setStatus(InquiryStatus.ANSWERED);
         repository.updateAnswer(inquiry);
         return InquiryResponse.from(inquiry);
+    }
+
+    private Long currentLinkedCustomerId() {
+        AuthenticatedUser user = authAccessService.currentUser();
+        if (user.linkedCustomerId() == null) {
+            throw ApiException.forbidden("연결된 고객 정보가 없습니다.");
+        }
+        return user.linkedCustomerId();
     }
 }

@@ -14,6 +14,7 @@ import org.dpbe.domain.contract.entity.Contract;
 import org.dpbe.domain.contract.entity.ExpiringContractManagement;
 import org.dpbe.domain.contract.repository.ContractRepository;
 import org.dpbe.domain.contract.repository.ExpiringContractManagementRepository;
+import org.dpbe.global.auth.service.AuthAccessService;
 import org.dpbe.global.exception.ApiException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -23,16 +24,20 @@ public class ExpiringContractManagementService {
 
     private final ContractRepository contractRepository;
     private final ExpiringContractManagementRepository noticeRepository;
+    private final AuthAccessService authAccessService;
 
     public ExpiringContractManagementService(ContractRepository contractRepository,
-                                             ExpiringContractManagementRepository noticeRepository) {
+                                             ExpiringContractManagementRepository noticeRepository,
+                                             AuthAccessService authAccessService) {
         this.contractRepository = contractRepository;
         this.noticeRepository = noticeRepository;
+        this.authAccessService = authAccessService;
     }
 
     /** 만기 임박(D-30 이내) 계약 목록 */
     @Transactional(readOnly = true)
     public List<ExpiringContractSummaryResponse> getExpiringContracts() {
+        authAccessService.requireContractOperationAccess();
         return contractRepository.findAll().stream()
                 .filter(Contract::isMaturityNear)
                 .map(this::toSummary)
@@ -50,6 +55,7 @@ public class ExpiringContractManagementService {
     /** 안내 기록 저장 */
     @Transactional
     public NoticeResponse createNotice(String contractNo, NoticeCreateRequest req) {
+        authAccessService.requireContractOperationAccess();
         Contract contract = contractRepository.findById(parseId(contractNo));
         if (contract == null) {
             throw ApiException.notFound("계약을 찾을 수 없습니다: " + contractNo);
@@ -73,6 +79,7 @@ public class ExpiringContractManagementService {
     /** 고객 응답 기록 — RENEWAL 시 contract.monthly_premium 업데이트도 같은 트랜잭션 */
     @Transactional
     public NoticeResponse recordResponse(String noticeNo, NoticeResponseRequest req) {
+        authAccessService.requireContractOperationAccess();
         ExpiringContractManagement m = noticeRepository.findById(parseId(noticeNo))
                 .orElseThrow(() -> ApiException.notFound("안내 기록을 찾을 수 없습니다: " + noticeNo));
 
@@ -110,6 +117,7 @@ public class ExpiringContractManagementService {
     /** 안내 기록 목록 (contractNo 필터 선택) */
     @Transactional(readOnly = true)
     public List<NoticeResponse> getNotices(String contractNo) {
+        authAccessService.requireContractOperationAccess();
         List<ExpiringContractManagement> list = contractNo != null && !contractNo.isBlank()
                 ? noticeRepository.findByContractNo(contractNo)
                 : noticeRepository.findAll();

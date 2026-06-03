@@ -6,6 +6,7 @@ import org.dpbe.domain.education.dto.EducationPreparationResponse;
 import org.dpbe.domain.education.entity.EducationPreparation;
 import org.dpbe.domain.education.repository.EducationPlanRepository;
 import org.dpbe.domain.education.repository.EducationPreparationRepository;
+import org.dpbe.global.auth.service.AuthAccessService;
 import org.dpbe.global.exception.ApiException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -15,15 +16,19 @@ public class EducationPreparationService {
 
     private final EducationPreparationRepository repository;
     private final EducationPlanRepository planRepository;
+    private final AuthAccessService authAccessService;
 
     public EducationPreparationService(EducationPreparationRepository repository,
-                                       EducationPlanRepository planRepository) {
+                                       EducationPlanRepository planRepository,
+                                       AuthAccessService authAccessService) {
         this.repository = repository;
         this.planRepository = planRepository;
+        this.authAccessService = authAccessService;
     }
 
     @Transactional(readOnly = true)
     public List<EducationPreparationResponse> getPreparations(String planNo) {
+        authAccessService.requireEducationOperationAccess();
         List<EducationPreparation> list = (planNo != null && !planNo.isBlank())
                 ? repository.findByPlanNo(planNo)
                 : repository.findAll();
@@ -40,6 +45,7 @@ public class EducationPreparationService {
 
     @Transactional(readOnly = true)
     public EducationPreparationResponse getPreparation(String prepNo) {
+        authAccessService.requireEducationOperationAccess();
         EducationPreparation prep = repository.findById(parseId(prepNo));
         if (prep == null) throw ApiException.notFound("교육 제반을 찾을 수 없습니다: " + prepNo);
         return EducationPreparationResponse.from(prep);
@@ -47,6 +53,7 @@ public class EducationPreparationService {
 
     @Transactional
     public EducationPreparationResponse createPreparation(EducationPreparationRequest req) {
+        authAccessService.requireEducationOperationAccess();
         if (planRepository.findById(parseId(req.planNo())) == null) {
             throw ApiException.notFound("승인된 교육 계획안을 찾을 수 없습니다: " + req.planNo());
         }

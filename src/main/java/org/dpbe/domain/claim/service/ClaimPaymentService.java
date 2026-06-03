@@ -7,10 +7,12 @@ import org.dpbe.domain.claim.entity.ClaimCalculation;
 import org.dpbe.domain.claim.entity.ClaimPayment;
 import org.dpbe.domain.claim.repository.ClaimCalculationRepository;
 import org.dpbe.domain.claim.repository.ClaimPaymentRepository;
+import org.dpbe.domain.claim.repository.ClaimPaymentRepository.PayoutSource;
 import org.dpbe.domain.common.entity.BankAccount;
 import org.dpbe.domain.common.enums.CalculationStatus;
 import org.dpbe.domain.common.enums.ClaimPaymentStatus;
 import org.dpbe.domain.common.enums.PaymentType;
+import org.dpbe.global.auth.service.AuthAccessService;
 import org.dpbe.global.exception.ApiException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -28,14 +30,18 @@ public class ClaimPaymentService {
 
     private final ClaimPaymentRepository paymentRepository;
     private final ClaimCalculationRepository calculationRepository;
+    private final AuthAccessService authAccessService;
 
     public ClaimPaymentService(ClaimPaymentRepository paymentRepository,
-                               ClaimCalculationRepository calculationRepository) {
+                               ClaimCalculationRepository calculationRepository,
+                               AuthAccessService authAccessService) {
         this.paymentRepository = paymentRepository;
         this.calculationRepository = calculationRepository;
+        this.authAccessService = authAccessService;
     }
 
     public PaymentResponse findByCalculationNo(String calculationNo) {
+        authAccessService.requireClaimPaymentAccess();
         ClaimPayment p = paymentRepository.findByCalculationNo(calculationNo);
         if (p == null) {
             throw ApiException.notFound("해당 산출의 지급 건이 없습니다: " + calculationNo);
@@ -54,6 +60,7 @@ public class ClaimPaymentService {
     /** 지급 생성 — 승인된 산출 건에 대해 지급건을 만든다(WAITING/SCHEDULED). */
     @Transactional
     public PaymentResponse create(String calculationNo, PaymentCreateRequest request) {
+        authAccessService.requireClaimPaymentAccess();
         ClaimCalculation calc = calculationRepository.findById(parseId(calculationNo));
         if (calc == null) {
             throw ApiException.notFound("산출을 찾을 수 없습니다: " + calculationNo);
@@ -102,6 +109,7 @@ public class ClaimPaymentService {
     /** 이체 실행 — OTP 검증 후 이체(COMPLETED) 또는 실패(FAILED). */
     @Transactional
     public PaymentResponse execute(String paymentNo, PaymentExecuteRequest request) {
+        authAccessService.requireClaimPaymentAccess();
         ClaimPayment payment = paymentRepository.findById(parseId(paymentNo));
         if (payment == null) {
             throw ApiException.notFound("지급 건을 찾을 수 없습니다: " + paymentNo);
@@ -119,7 +127,7 @@ public class ClaimPaymentService {
         // 단일 테이블 복원이라 계좌가 번호만 있음 → 청구 계좌를 조인으로 다시 승계
         String calcNo = payment.getCalculation() != null
                 ? payment.getCalculation().getCalculationNo() : null;
-        ClaimPaymentRepository.PayoutSource src =
+        PayoutSource src =
                 calcNo != null ? paymentRepository.loadPayoutSource(parseId(calcNo)) : null;
         if (src != null) {
             BankAccount account = new BankAccount();

@@ -6,6 +6,7 @@ import org.dpbe.domain.consultation.dto.ConsultationCreateRequest;
 import org.dpbe.domain.consultation.dto.ConsultationResponse;
 import org.dpbe.domain.consultation.entity.ConsultationRequest;
 import org.dpbe.domain.consultation.repository.ConsultationRequestRepository;
+import org.dpbe.global.auth.service.AuthAccessService;
 import org.dpbe.global.exception.ApiException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -15,12 +16,16 @@ import org.springframework.transaction.annotation.Transactional;
 public class ConsultationService {
 
     private final ConsultationRequestRepository consultationRepo;
+    private final AuthAccessService authAccessService;
 
-    public ConsultationService(ConsultationRequestRepository consultationRepo) {
+    public ConsultationService(ConsultationRequestRepository consultationRepo,
+                               AuthAccessService authAccessService) {
         this.consultationRepo = consultationRepo;
+        this.authAccessService = authAccessService;
     }
 
     public List<ConsultationResponse> findAll() {
+        authAccessService.requireConsultationManageAccess();
         return consultationRepo.findAll().stream()
                 .map(ConsultationResponse::from)
                 .collect(Collectors.toList());
@@ -35,6 +40,7 @@ public class ConsultationService {
     }
 
     public ConsultationResponse findByConsultNo(String consultNo) {
+        authAccessService.requireConsultationManageAccess();
         ConsultationRequest r = consultationRepo.findById(parseId(consultNo));
         if (r == null) throw ApiException.notFound("상담 요청을 찾을 수 없습니다: " + consultNo);
         return ConsultationResponse.from(r);
@@ -61,6 +67,7 @@ public class ConsultationService {
     /** 상담 수락. */
     @Transactional
     public ConsultationResponse accept(String consultNo) {
+        authAccessService.requireConsultationManageAccess();
         ConsultationRequest r = consultationRepo.findById(parseId(consultNo));
         if (r == null) throw ApiException.notFound("상담 요청을 찾을 수 없습니다: " + consultNo);
         if (!"접수".equals(r.getStatus()))

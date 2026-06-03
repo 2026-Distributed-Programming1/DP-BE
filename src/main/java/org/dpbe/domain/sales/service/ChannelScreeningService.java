@@ -9,6 +9,7 @@ import org.dpbe.domain.sales.dto.ChannelScreeningResponse;
 import org.dpbe.domain.sales.dto.ScreeningRejectRequest;
 import org.dpbe.domain.sales.entity.ChannelScreening;
 import org.dpbe.domain.sales.repository.ChannelScreeningRepository;
+import org.dpbe.global.auth.service.AuthAccessService;
 import org.dpbe.global.exception.ApiException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -17,13 +18,17 @@ import org.springframework.transaction.annotation.Transactional;
 public class ChannelScreeningService {
 
     private final ChannelScreeningRepository repository;
+    private final AuthAccessService authAccessService;
 
-    public ChannelScreeningService(ChannelScreeningRepository repository) {
+    public ChannelScreeningService(ChannelScreeningRepository repository,
+                                   AuthAccessService authAccessService) {
         this.repository = repository;
+        this.authAccessService = authAccessService;
     }
 
     @Transactional(readOnly = true)
     public List<ChannelScreeningResponse> findAll() {
+        authAccessService.requireSalesOperationAccess();
         return repository.findAll().stream()
                 .map(ChannelScreeningResponse::from)
                 .collect(Collectors.toList());
@@ -31,6 +36,7 @@ public class ChannelScreeningService {
 
     @Transactional
     public ChannelScreeningResponse register(ChannelScreeningRequest request) {
+        authAccessService.requireSalesOperationAccess();
         if (request.applicantName() == null || request.channelType() == null) {
             throw ApiException.badRequest("필수 항목 누락: applicantName, channelType");
         }
@@ -56,6 +62,7 @@ public class ChannelScreeningService {
 
     @Transactional
     public ChannelScreeningResponse approve(String screeningNo) {
+        authAccessService.requireSalesOperationAccess();
         ChannelScreening s = findOrThrow(screeningNo);
         if (s.getScreeningStatus() != ScreeningStatus.PENDING) {
             throw ApiException.badRequest("대기 상태의 심사만 승인할 수 있습니다.");
@@ -67,6 +74,7 @@ public class ChannelScreeningService {
 
     @Transactional
     public ChannelScreeningResponse reject(String screeningNo, ScreeningRejectRequest request) {
+        authAccessService.requireSalesOperationAccess();
         ChannelScreening s = findOrThrow(screeningNo);
         if (s.getScreeningStatus() != ScreeningStatus.PENDING) {
             throw ApiException.badRequest("대기 상태의 심사만 거절할 수 있습니다.");
