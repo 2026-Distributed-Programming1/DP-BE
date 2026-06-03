@@ -33,6 +33,10 @@ public class PaymentRecordService {
     /** 납부 내역 목록 — contractNo·status 필터 선택 */
     @Transactional(readOnly = true)
     public List<PaymentRecordDetail> getAll(String contractNo, String status) {
+        if (!authAccessService.isCustomer()) {
+            authAccessService.requirePaymentRecordManageAccess();
+        }
+
         List<PaymentRecord> list;
         if (contractNo != null && !contractNo.isBlank()) {
             list = paymentRecordRepository.findByContractNo(contractNo);

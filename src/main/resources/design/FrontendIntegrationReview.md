@@ -1217,7 +1217,8 @@
   - S3 저장 구조 설계
 
 - **Batch E / 운영 보강**
-  - role별 API smoke test
+  - role별 API smoke test 시나리오 문서화 ✅ 완료
+  - role별 API smoke test 수행
   - 직원 actor 연결
   - 세션 쿠키 불안정 시 JWT 전환
   - API 문서화 확장

@@ -130,6 +130,10 @@ public class RefundService {
     /** 환급금 산출 목록 */
     @Transactional(readOnly = true)
     public List<RefundCalculation> getAllCalculations() {
+        if (!authAccessService.isCustomer()) {
+            authAccessService.requireRefundOperationAccess();
+        }
+
         return refundCalculationRepository.findAll().stream()
                 .filter(this::canAccessRefund)
                 .toList();
@@ -147,12 +151,21 @@ public class RefundService {
     /** 환급금 지급 목록 */
     @Transactional(readOnly = true)
     public List<RefundPayment> getAllPayments() {
+        if (!authAccessService.isCustomer()) {
+            authAccessService.requireRefundOperationAccess();
+        }
+
         return refundPaymentRepository.findAll().stream()
                 .filter(payment -> canAccessRefund(payment.getRefund()))
                 .toList();
     }
 
     private void requireRefundAccess(RefundCalculation refund) {
+        if (!authAccessService.isCustomer()) {
+            authAccessService.requireRefundOperationAccess();
+            return;
+        }
+
         if (!canAccessRefund(refund)) {
             throw ApiException.forbidden("본인 환급 데이터만 접근할 수 있습니다.");
         }
