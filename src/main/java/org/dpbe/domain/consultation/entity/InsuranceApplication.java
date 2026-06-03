@@ -84,6 +84,7 @@ public class InsuranceApplication {
     public void setApplicationNo(String applicationNo) { this.applicationNo = applicationNo; }
     public int getApplicationNumber() { return applicationNumber; }
     public LocalDateTime getAppliedAt() { return appliedAt; }
+    public void setAppliedAt(LocalDateTime appliedAt) { this.appliedAt = appliedAt; }
     public String getPaymentMethod() { return paymentMethod; }
     public List<String> getSelectedSpecialTerms() { return selectedSpecialTerms; }
     public String getStatus() { return status; }

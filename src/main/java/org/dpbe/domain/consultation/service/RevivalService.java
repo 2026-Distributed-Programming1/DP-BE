@@ -1,9 +1,11 @@
 package org.dpbe.domain.consultation.service;
 
+import java.util.List;
 import org.dpbe.domain.actor.Customer;
 import org.dpbe.global.auth.service.AuthAccessService;
 import org.dpbe.domain.consultation.dto.RevivalRequest;
 import org.dpbe.domain.consultation.dto.RevivalResponse;
+import org.dpbe.global.dto.PageResponse;
 import org.dpbe.domain.consultation.entity.Revival;
 import org.dpbe.domain.consultation.repository.RevivalRepository;
 import org.dpbe.domain.contract.repository.ContractRepository;
@@ -29,6 +31,22 @@ public class RevivalService {
         this.contractRepo = contractRepo;
         this.customerRepo = customerRepo;
         this.authAccessService = authAccessService;
+    }
+
+    public PageResponse<RevivalResponse> findAll(int page, int size) {
+        authAccessService.requireConsultationManageAccess();
+        int total = revivalRepo.countAll();
+        int offset = (page - 1) * size;
+        List<RevivalResponse> items = revivalRepo.findPage(size, offset).stream()
+                .map(RevivalResponse::from).toList();
+        return new PageResponse<>(page, size, total, items);
+    }
+
+    public RevivalResponse findByNo(String revivalNo) {
+        authAccessService.requireConsultationManageAccess();
+        var r = revivalRepo.findByNo(revivalNo);
+        if (r == null) throw org.dpbe.global.exception.ApiException.notFound("부활신청을 찾을 수 없습니다: " + revivalNo);
+        return RevivalResponse.from(r);
     }
 
     private Long parseContractId(String contractNo) {

@@ -1,9 +1,11 @@
 package org.dpbe.domain.consultation.service;
 
+import java.util.List;
 import org.dpbe.domain.actor.Customer;
 import org.dpbe.global.auth.service.AuthAccessService;
 import org.dpbe.domain.consultation.dto.PolicyApplicationRequest;
 import org.dpbe.domain.consultation.dto.PolicyApplicationResponse;
+import org.dpbe.global.dto.PageResponse;
 import org.dpbe.domain.consultation.entity.PolicyApplication;
 import org.dpbe.domain.consultation.repository.InsuranceProductRepository;
 import org.dpbe.domain.consultation.repository.PolicyApplicationRepository;
@@ -29,6 +31,22 @@ public class PolicyApplicationService {
         this.productRepo = productRepo;
         this.customerRepo = customerRepo;
         this.authAccessService = authAccessService;
+    }
+
+    public PageResponse<PolicyApplicationResponse> findAll(int page, int size) {
+        authAccessService.requireConsultationManageAccess();
+        int total = policyAppRepo.countAll();
+        int offset = (page - 1) * size;
+        List<PolicyApplicationResponse> items = policyAppRepo.findPage(size, offset).stream()
+                .map(PolicyApplicationResponse::from).toList();
+        return new PageResponse<>(page, size, total, items);
+    }
+
+    public PolicyApplicationResponse findByNo(String applicationNo) {
+        authAccessService.requireConsultationManageAccess();
+        var p = policyAppRepo.findByNo(applicationNo);
+        if (p == null) throw org.dpbe.global.exception.ApiException.notFound("청약서를 찾을 수 없습니다: " + applicationNo);
+        return PolicyApplicationResponse.from(p);
     }
 
     /** 청약서 제출. */
