@@ -314,6 +314,22 @@ UNDER_REVIEW ── POST /api/education-plans/{planNo}/reject  ──▶ REJECTE
 
 ---
 
+## 15. EducationPreparation — 교육 제반
+
+교육 제반은 별도 상태 enum 없이 단일 등록 흐름이다.
+
+**진입 조건**
+
+```
+POST /api/education-preparations
+    연결된 EducationPlan.status == APPROVED ──▶ 제반 등록 성공
+    연결된 EducationPlan.status != APPROVED ──▶ 400 (EducationPlan.requireApproved() 실패)
+```
+
+- 등록 전 연결된 교육 계획을 조회해 `requireApproved()`를 호출한다. 계획이 없거나 APPROVED 이외 상태면 `badRequest`.
+
+---
+
 ## 전이 금지 요약
 
 각 도메인에서 서비스 계층이 명시적으로 막는 역방향/중복 전이:
@@ -330,5 +346,7 @@ UNDER_REVIEW ── POST /api/education-plans/{planNo}/reject  ──▶ REJECTE
 | DamageInvestigation | 동일 청구에 조사 중복 등록 | 400 |
 | ClaimCalculation | 동일 조사에 산출 중복 등록 | 400 |
 | EducationPlan | `UNDER_REVIEW` 아닌 상태에서 approve/reject | 400 |
+| EducationPreparation | `APPROVED` 아닌 계획에 제반 등록 | 400 |
+| Underwriting | 존재하지 않는 신청번호로 인수심사 완료 | 404 |
 | AccidentReport | `RECEIVED` 아닌 상태에서 cancel | 400 |
 | Dispatch | 순서 외 전이 (예: REQUESTED → DEPARTED) | 400 |

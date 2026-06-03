@@ -475,6 +475,11 @@ Response:
 - `CONTRACT_MISMATCH`: 계약 불일치
 - `OTHER`: 기타
 
+### ApplicationType (인수심사 대상 신청 유형)
+
+- `POLICY`: 청약서 (`policy_applications`)
+- `INSURANCE`: 청약신청 (`insurance_applications`)
+
 ---
 
 ## 계약 API
@@ -2364,7 +2369,7 @@ Response:
   "total": 2,
   "items": [
     {
-      "applicationType": "청약",
+      "applicationType": "POLICY",
       "applicationNo": "APP00001",
       "customerName": "김고객",
       "productName": "자동차보험 기본형",
@@ -2385,7 +2390,7 @@ Request:
 
 ```json
 {
-  "applicationType": "청약",
+  "applicationType": "POLICY",
   "appNo": "APP00001",
   "customerName": "김고객",
   "reviewType": "표준심사",
@@ -2413,6 +2418,9 @@ Response:
   "reviewedAt": "2026-06-04T10:30:00"
 }
 ```
+
+- `applicationType`: `POLICY`(청약) 또는 `INSURANCE`(보험신청). 지정한 유형의 신청 건 상태가 심사 결과(`result`)로 갱신된다.
+- `result`: `APPROVED` 또는 `REJECTED`.
 
 ---
 
