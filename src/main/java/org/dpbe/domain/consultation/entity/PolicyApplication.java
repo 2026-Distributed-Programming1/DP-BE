@@ -84,6 +84,7 @@ public class PolicyApplication {
     public void setApplicationNo(String applicationNo) { this.applicationNo = applicationNo; }
     public int getApplicationNumber() { return applicationNumber; }
     public LocalDateTime getSubmittedAt() { return submittedAt; }
+    public void setSubmittedAt(LocalDateTime submittedAt) { this.submittedAt = submittedAt; }
     public LocalDateTime getUploadedAt() { return uploadedAt; }
     public void setUploadedAt(LocalDateTime uploadedAt) { this.uploadedAt = uploadedAt; }
     public String getCustomerName() { return customerName; }

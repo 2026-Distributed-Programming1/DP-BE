@@ -1,10 +1,12 @@
 package org.dpbe.domain.sales.service;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import org.dpbe.domain.common.enums.ChannelType;
 import org.dpbe.domain.common.enums.EvaluationGrade;
 import org.dpbe.domain.sales.dto.BonusRequestRequest;
 import org.dpbe.domain.sales.dto.BonusRequestResponse;
+import org.dpbe.global.dto.PageResponse;
 import org.dpbe.domain.sales.entity.BonusRequest;
 import org.dpbe.domain.sales.repository.BonusRequestRepository;
 import org.dpbe.global.auth.service.AuthAccessService;
@@ -22,6 +24,22 @@ public class BonusRequestService {
                                AuthAccessService authAccessService) {
         this.repository = repository;
         this.authAccessService = authAccessService;
+    }
+
+    public PageResponse<BonusRequestResponse> findAll(int page, int size) {
+        authAccessService.requireSalesOperationAccess();
+        int total = repository.countAll();
+        int offset = (page - 1) * size;
+        List<BonusRequestResponse> items = repository.findPage(size, offset).stream()
+                .map(BonusRequestResponse::from).toList();
+        return new PageResponse<>(page, size, total, items);
+    }
+
+    public BonusRequestResponse findByNo(String requestNo) {
+        authAccessService.requireSalesOperationAccess();
+        var r = repository.findByNo(requestNo);
+        if (r == null) throw org.dpbe.global.exception.ApiException.notFound("성과급 요청을 찾을 수 없습니다: " + requestNo);
+        return BonusRequestResponse.from(r);
     }
 
     @Transactional

@@ -20,6 +20,23 @@ public class PolicyApplicationRepository {
         this.sql = sql;
     }
 
+    public int countAll() {
+        return sql.queryOne("SELECT COUNT(*) AS cnt FROM policy_applications", rs -> rs.getInt("cnt"));
+    }
+
+    public List<PolicyApplication> findPage(int limit, int offset) {
+        return sql.executeQuery(
+                "SELECT " + COLS + " FROM policy_applications ORDER BY id DESC LIMIT ? OFFSET ?",
+                this::mapRow, limit, offset);
+    }
+
+    public PolicyApplication findByNo(String applicationNo) {
+        long id = Long.parseLong(applicationNo.replaceAll("\\D", ""));
+        return sql.queryOne(
+                "SELECT " + COLS + " FROM policy_applications WHERE id=?",
+                this::mapRow, id);
+    }
+
     /** 심사 대기 중인 청약 목록 (status='신청'). */
     public List<PolicyApplication> findPending() {
         return sql.executeQuery(
@@ -62,7 +79,7 @@ public class PolicyApplicationRepository {
         p.setStatus(rs.getString("status"));
         java.sql.Timestamp subTs = rs.getTimestamp("submitted_at");
         java.sql.Timestamp upTs  = rs.getTimestamp("uploaded_at");
-        if (subTs != null) p.submit();
+        if (subTs != null) p.setSubmittedAt(subTs.toLocalDateTime());
         if (upTs  != null) p.setUploadedAt(upTs.toLocalDateTime());
         return p;
     }

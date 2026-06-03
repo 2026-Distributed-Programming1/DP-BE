@@ -63,6 +63,7 @@ public class Revival {
     public String getContractNo() { return contractNo; }
     public void setContractNo(String contractNo) { this.contractNo = contractNo; }
     public LocalDateTime getAppliedAt() { return appliedAt; }
+    public void setAppliedAt(LocalDateTime appliedAt) { this.appliedAt = appliedAt; }
     public long getUnpaidAmount() { return unpaidAmount; }
     public void setUnpaidAmount(long unpaidAmount) { this.unpaidAmount = unpaidAmount; }
     public String getPaymentMethod() { return paymentMethod; }

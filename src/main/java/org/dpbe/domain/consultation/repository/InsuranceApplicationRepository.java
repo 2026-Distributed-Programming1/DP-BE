@@ -22,6 +22,23 @@ public class InsuranceApplicationRepository {
         this.sql = sql;
     }
 
+    public int countAll() {
+        return sql.queryOne("SELECT COUNT(*) AS cnt FROM insurance_applications", rs -> rs.getInt("cnt"));
+    }
+
+    public List<InsuranceApplication> findPage(int limit, int offset) {
+        return sql.executeQuery(
+                "SELECT " + COLS + " FROM insurance_applications ORDER BY id DESC LIMIT ? OFFSET ?",
+                this::mapRow, limit, offset);
+    }
+
+    public InsuranceApplication findByNo(String applicationNo) {
+        long id = Long.parseLong(applicationNo.replaceAll("\\D", ""));
+        return sql.queryOne(
+                "SELECT " + COLS + " FROM insurance_applications WHERE id=?",
+                this::mapRow, id);
+    }
+
     /** 심사 대기 중인 신청 목록 (status='신청'). */
     public List<InsuranceApplication> findPending() {
         return sql.executeQuery(
@@ -66,7 +83,7 @@ public class InsuranceApplicationRepository {
         a.setId(rs.getLong("id"));
         a.setApplicationNo("APP" + String.format("%05d", rs.getLong("id")));
         a.setStatus(rs.getString("status"));
-        if (ts != null) a.apply();
+        if (ts != null) a.setAppliedAt(ts.toLocalDateTime());
         return a;
     }
 }

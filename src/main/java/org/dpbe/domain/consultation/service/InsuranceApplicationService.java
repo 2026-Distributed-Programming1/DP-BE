@@ -1,9 +1,11 @@
 package org.dpbe.domain.consultation.service;
 
+import java.util.List;
 import org.dpbe.domain.actor.Customer;
 import org.dpbe.global.auth.service.AuthAccessService;
 import org.dpbe.domain.consultation.dto.InsuranceApplicationRequest;
 import org.dpbe.domain.consultation.dto.InsuranceApplicationResponse;
+import org.dpbe.global.dto.PageResponse;
 import org.dpbe.domain.consultation.entity.InsuranceApplication;
 import org.dpbe.domain.consultation.entity.InsuranceProduct;
 import org.dpbe.domain.consultation.repository.InsuranceApplicationRepository;
@@ -30,6 +32,22 @@ public class InsuranceApplicationService {
         this.productRepo = productRepo;
         this.customerRepo = customerRepo;
         this.authAccessService = authAccessService;
+    }
+
+    public PageResponse<InsuranceApplicationResponse> findAll(int page, int size) {
+        authAccessService.requireConsultationManageAccess();
+        int total = appRepo.countAll();
+        int offset = (page - 1) * size;
+        List<InsuranceApplicationResponse> items = appRepo.findPage(size, offset).stream()
+                .map(InsuranceApplicationResponse::from).toList();
+        return new PageResponse<>(page, size, total, items);
+    }
+
+    public InsuranceApplicationResponse findByNo(String applicationNo) {
+        authAccessService.requireConsultationManageAccess();
+        var a = appRepo.findByNo(applicationNo);
+        if (a == null) throw org.dpbe.global.exception.ApiException.notFound("청약신청을 찾을 수 없습니다: " + applicationNo);
+        return InsuranceApplicationResponse.from(a);
     }
 
     /** 보험 가입 신청. */
