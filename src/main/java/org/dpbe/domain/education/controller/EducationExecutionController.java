@@ -1,9 +1,9 @@
 package org.dpbe.domain.education.controller;
 
-import java.util.List;
 import org.dpbe.domain.education.dto.EducationExecutionRequest;
 import org.dpbe.domain.education.dto.EducationExecutionResponse;
 import org.dpbe.domain.education.service.EducationExecutionService;
+import org.dpbe.global.dto.PageResponse;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -25,8 +25,11 @@ public class EducationExecutionController {
     }
 
     @GetMapping
-    public List<EducationExecutionResponse> list(@RequestParam(required = false) String prepNo) {
-        return service.getExecutions(prepNo);
+    public PageResponse<EducationExecutionResponse> list(
+            @RequestParam(required = false) String prepNo,
+            @RequestParam(defaultValue = "1") int page,
+            @RequestParam(defaultValue = "20") int size) {
+        return service.getExecutions(prepNo, page, size);
     }
 
     @GetMapping("/{executionNo}")

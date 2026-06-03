@@ -1,10 +1,10 @@
 package org.dpbe.domain.inquiry.controller;
 
-import java.util.List;
 import org.dpbe.domain.inquiry.dto.InquiryAnswerRequest;
 import org.dpbe.domain.inquiry.dto.InquiryRequest;
 import org.dpbe.domain.inquiry.dto.InquiryResponse;
 import org.dpbe.domain.inquiry.service.InquiryService;
+import org.dpbe.global.dto.PageResponse;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -26,10 +26,12 @@ public class InquiryController {
     }
 
     @GetMapping
-    public List<InquiryResponse> list(
+    public PageResponse<InquiryResponse> list(
             @RequestParam(required = false) String customerName,
-            @RequestParam(required = false) String status) {
-        return service.getInquiries(customerName, status);
+            @RequestParam(required = false) String status,
+            @RequestParam(defaultValue = "1") int page,
+            @RequestParam(defaultValue = "20") int size) {
+        return service.getInquiries(customerName, status, page, size);
     }
 
     @GetMapping("/{inquiryNo}")

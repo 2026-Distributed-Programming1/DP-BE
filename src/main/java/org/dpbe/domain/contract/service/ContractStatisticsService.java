@@ -1,16 +1,20 @@
 package org.dpbe.domain.contract.service;
 
 import java.util.List;
-import java.util.stream.Collectors;
 import org.dpbe.domain.contract.dto.ContractStatisticsResponse;
 import org.dpbe.domain.contract.entity.ContractStatistics;
 import org.dpbe.domain.contract.repository.ContractStatisticsRepository;
 import org.dpbe.global.auth.service.AuthAccessService;
+import org.dpbe.global.dto.PageResponse;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class ContractStatisticsService {
+
+    private static final int DEFAULT_PAGE = 1;
+    private static final int DEFAULT_SIZE = 20;
+    private static final int MAX_SIZE = 100;
 
     private final ContractStatisticsRepository statsRepository;
     private final AuthAccessService authAccessService;
@@ -40,11 +44,27 @@ public class ContractStatisticsService {
 
     /** 저장된 스냅샷 이력 */
     @Transactional(readOnly = true)
-    public List<ContractStatisticsResponse> getHistory() {
+    public PageResponse<ContractStatisticsResponse> getHistory(int page, int size) {
         authAccessService.requireContractOperationAccess();
-        return statsRepository.findAll().stream()
+        int normalizedPage = normalizePage(page);
+        int normalizedSize = normalizeSize(size);
+        int offset = (normalizedPage - 1) * normalizedSize;
+        int total = statsRepository.countAll();
+        List<ContractStatisticsResponse> items = statsRepository.findPage(normalizedSize, offset).stream()
                 .map(this::toResponse)
-                .collect(Collectors.toList());
+                .toList();
+        return new PageResponse<>(normalizedPage, normalizedSize, total, items);
+    }
+
+    private int normalizePage(int page) {
+        return page < 1 ? DEFAULT_PAGE : page;
+    }
+
+    private int normalizeSize(int size) {
+        if (size < 1) {
+            return DEFAULT_SIZE;
+        }
+        return Math.min(size, MAX_SIZE);
     }
 
     private ContractStatisticsResponse toResponse(ContractStatistics s) {

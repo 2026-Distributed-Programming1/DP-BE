@@ -27,6 +27,18 @@ public class CustomerRegistrationRepository {
                 this::mapRow);
     }
 
+    public int countAll() {
+        return sql.queryOne(
+                "SELECT COUNT(*) AS cnt FROM customer_registrations",
+                rs -> rs.getInt("cnt"));
+    }
+
+    public List<CustomerRegistration> findPage(int limit, int offset) {
+        return sql.executeQuery(
+                "SELECT " + COLS + " FROM customer_registrations ORDER BY id DESC LIMIT ? OFFSET ?",
+                this::mapRow, limit, offset);
+    }
+
     public void save(CustomerRegistration r) {
         long id = sql.executeInsertReturningKey(
                 "INSERT INTO customer_registrations"

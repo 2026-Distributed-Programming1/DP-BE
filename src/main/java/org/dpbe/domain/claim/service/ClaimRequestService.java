@@ -1,7 +1,6 @@
 package org.dpbe.domain.claim.service;
 
 import java.util.List;
-import java.util.stream.Collectors;
 import org.dpbe.domain.actor.Customer;
 import org.dpbe.global.auth.service.AuthAccessService;
 import org.dpbe.domain.claim.dto.ClaimCreateRequest;
@@ -14,6 +13,8 @@ import org.dpbe.domain.common.enums.ClaimType;
 import org.dpbe.domain.contract.entity.Contract;
 import org.dpbe.domain.contract.repository.ContractRepository;
 import org.dpbe.domain.customer.repository.CustomerRepository;
+import org.dpbe.global.auth.dto.AuthenticatedUser;
+import org.dpbe.global.dto.PageResponse;
 import org.dpbe.global.exception.ApiException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -26,6 +27,10 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 @Transactional(readOnly = true)
 public class ClaimRequestService {
+
+    private static final int DEFAULT_PAGE = 1;
+    private static final int DEFAULT_SIZE = 20;
+    private static final int MAX_SIZE = 100;
 
     private final ClaimRequestRepository claimRequestRepository;
     private final CustomerRepository customerRepository;
@@ -58,11 +63,39 @@ public class ClaimRequestService {
         }
     }
 
-    public List<ClaimResponse> findAll() {
-        return claimRequestRepository.findAll().stream()
-                .filter(r -> r.getCustomer() == null || canAccessCustomer(r.getCustomer()))
+    public PageResponse<ClaimResponse> findAll(int page, int size) {
+        AuthenticatedUser user = authAccessService.currentUser();
+        String customerNo = authAccessService.isCustomer() ? user.linkedCustomerNo() : null;
+        if (authAccessService.isCustomer() && customerNo == null) {
+            return emptyPage(page, size);
+        }
+
+        int normalizedPage = normalizePage(page);
+        int normalizedSize = normalizeSize(size);
+        int offset = (normalizedPage - 1) * normalizedSize;
+        int total = claimRequestRepository.countByCustomerNo(customerNo);
+        List<ClaimResponse> items = claimRequestRepository
+                .findPageByCustomerNo(customerNo, normalizedSize, offset)
+                .stream()
                 .map(ClaimResponse::from)
-                .collect(Collectors.toList());
+                .toList();
+
+        return new PageResponse<>(normalizedPage, normalizedSize, total, items);
+    }
+
+    private int normalizePage(int page) {
+        return page < 1 ? DEFAULT_PAGE : page;
+    }
+
+    private int normalizeSize(int size) {
+        if (size < 1) {
+            return DEFAULT_SIZE;
+        }
+        return Math.min(size, MAX_SIZE);
+    }
+
+    private <T> PageResponse<T> emptyPage(int page, int size) {
+        return new PageResponse<>(normalizePage(page), normalizeSize(size), 0, List.of());
     }
 
     public ClaimResponse findByClaimNo(String claimNo) {

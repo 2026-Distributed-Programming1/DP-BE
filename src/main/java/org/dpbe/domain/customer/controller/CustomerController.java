@@ -1,8 +1,9 @@
 package org.dpbe.domain.customer.controller;
 
 import org.dpbe.domain.customer.dto.CustomerDetailResponse;
-import org.dpbe.domain.customer.dto.CustomerListResponse;
+import org.dpbe.domain.customer.dto.CustomerSummary;
 import org.dpbe.domain.customer.service.CustomerService;
+import org.dpbe.global.dto.PageResponse;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -20,7 +21,7 @@ public class CustomerController {
     }
 
     @GetMapping
-    public CustomerListResponse search(
+    public PageResponse<CustomerSummary> search(
             @RequestParam(required = false) String keyword,
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "20") int size) {

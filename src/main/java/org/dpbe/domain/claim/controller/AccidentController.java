@@ -1,14 +1,15 @@
 package org.dpbe.domain.claim.controller;
 
-import java.util.List;
 import org.dpbe.domain.claim.dto.AccidentCreateRequest;
 import org.dpbe.domain.claim.dto.AccidentResponse;
 import org.dpbe.domain.claim.service.AccidentReportService;
+import org.dpbe.global.dto.PageResponse;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 /** UC '사고를 접수한다' REST 엔드포인트 (무상태). 접수 시 needs_dispatch면 출동 동반 생성. */
@@ -30,8 +31,10 @@ public class AccidentController {
 
     /** 사고 접수 목록 */
     @GetMapping
-    public List<AccidentResponse> list() {
-        return accidentService.findAll();
+    public PageResponse<AccidentResponse> list(
+            @RequestParam(defaultValue = "1") int page,
+            @RequestParam(defaultValue = "20") int size) {
+        return accidentService.findAll(page, size);
     }
 
     /** 사고 접수 상세 */

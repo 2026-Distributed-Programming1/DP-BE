@@ -1,10 +1,10 @@
 package org.dpbe.domain.sales.controller;
 
 import java.time.LocalDate;
-import org.dpbe.domain.sales.dto.SalesActivityManagementListResponse;
 import org.dpbe.domain.sales.dto.SalesActivityManagementRequest;
 import org.dpbe.domain.sales.dto.SalesActivityManagementResponse;
 import org.dpbe.domain.sales.service.SalesActivityManagementService;
+import org.dpbe.global.dto.PageResponse;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -20,7 +20,7 @@ public class SalesActivityManagementController {
     }
 
     @GetMapping
-    public SalesActivityManagementListResponse findAll(
+    public PageResponse<SalesActivityManagementResponse> findAll(
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate,
             @RequestParam(required = false) String channelType,

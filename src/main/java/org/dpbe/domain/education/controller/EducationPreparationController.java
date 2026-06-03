@@ -1,9 +1,9 @@
 package org.dpbe.domain.education.controller;
 
-import java.util.List;
 import org.dpbe.domain.education.dto.EducationPreparationRequest;
 import org.dpbe.domain.education.dto.EducationPreparationResponse;
 import org.dpbe.domain.education.service.EducationPreparationService;
+import org.dpbe.global.dto.PageResponse;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -25,8 +25,11 @@ public class EducationPreparationController {
     }
 
     @GetMapping
-    public List<EducationPreparationResponse> list(@RequestParam(required = false) String planNo) {
-        return service.getPreparations(planNo);
+    public PageResponse<EducationPreparationResponse> list(
+            @RequestParam(required = false) String planNo,
+            @RequestParam(defaultValue = "1") int page,
+            @RequestParam(defaultValue = "20") int size) {
+        return service.getPreparations(planNo, page, size);
     }
 
     @GetMapping("/{prepNo}")

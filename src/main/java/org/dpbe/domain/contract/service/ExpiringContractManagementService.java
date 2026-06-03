@@ -3,8 +3,6 @@ package org.dpbe.domain.contract.service;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
-import java.util.List;
-import java.util.stream.Collectors;
 import org.dpbe.domain.common.enums.CustomerResponse;
 import org.dpbe.domain.contract.dto.ExpiringContractSummaryResponse;
 import org.dpbe.domain.contract.dto.NoticeCreateRequest;
@@ -15,12 +13,17 @@ import org.dpbe.domain.contract.entity.ExpiringContractManagement;
 import org.dpbe.domain.contract.repository.ContractRepository;
 import org.dpbe.domain.contract.repository.ExpiringContractManagementRepository;
 import org.dpbe.global.auth.service.AuthAccessService;
+import org.dpbe.global.dto.PageResponse;
 import org.dpbe.global.exception.ApiException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class ExpiringContractManagementService {
+
+    private static final int DEFAULT_PAGE = 1;
+    private static final int DEFAULT_SIZE = 20;
+    private static final int MAX_SIZE = 100;
 
     private final ContractRepository contractRepository;
     private final ExpiringContractManagementRepository noticeRepository;
@@ -36,12 +39,16 @@ public class ExpiringContractManagementService {
 
     /** 만기 임박(D-30 이내) 계약 목록 */
     @Transactional(readOnly = true)
-    public List<ExpiringContractSummaryResponse> getExpiringContracts() {
+    public PageResponse<ExpiringContractSummaryResponse> getExpiringContracts(int page, int size) {
         authAccessService.requireContractOperationAccess();
-        return contractRepository.findAll().stream()
-                .filter(Contract::isMaturityNear)
+        int normalizedPage = normalizePage(page);
+        int normalizedSize = normalizeSize(size);
+        int offset = (normalizedPage - 1) * normalizedSize;
+        int total = contractRepository.countExpiring();
+        var items = contractRepository.findExpiringPage(normalizedSize, offset).stream()
                 .map(this::toSummary)
-                .collect(Collectors.toList());
+                .toList();
+        return new PageResponse<>(normalizedPage, normalizedSize, total, items);
     }
 
     private Long parseId(String no) {
@@ -116,12 +123,27 @@ public class ExpiringContractManagementService {
 
     /** 안내 기록 목록 (contractNo 필터 선택) */
     @Transactional(readOnly = true)
-    public List<NoticeResponse> getNotices(String contractNo) {
+    public PageResponse<NoticeResponse> getNotices(String contractNo, int page, int size) {
         authAccessService.requireContractOperationAccess();
-        List<ExpiringContractManagement> list = contractNo != null && !contractNo.isBlank()
-                ? noticeRepository.findByContractNo(contractNo)
-                : noticeRepository.findAll();
-        return list.stream().map(this::toNoticeResponse).collect(Collectors.toList());
+        int normalizedPage = normalizePage(page);
+        int normalizedSize = normalizeSize(size);
+        int offset = (normalizedPage - 1) * normalizedSize;
+        int total = noticeRepository.countByContractNo(contractNo);
+        var items = noticeRepository.findPageByContractNo(contractNo, normalizedSize, offset).stream()
+                .map(this::toNoticeResponse)
+                .toList();
+        return new PageResponse<>(normalizedPage, normalizedSize, total, items);
+    }
+
+    private int normalizePage(int page) {
+        return page < 1 ? DEFAULT_PAGE : page;
+    }
+
+    private int normalizeSize(int size) {
+        if (size < 1) {
+            return DEFAULT_SIZE;
+        }
+        return Math.min(size, MAX_SIZE);
     }
 
     private ExpiringContractSummaryResponse toSummary(Contract c) {

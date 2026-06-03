@@ -2,6 +2,8 @@ package org.dpbe.domain.sales.repository;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
 import org.dpbe.domain.sales.entity.SalesActivityManagement;
 import org.dpbe.global.jdbc.SqlExecutor;
@@ -25,6 +27,29 @@ public class SalesActivityManagementRepository {
         return sql.executeQuery(
                 "SELECT " + COLS + " FROM sales_activity_managements ORDER BY id DESC",
                 this::mapRow);
+    }
+
+    public int countByFilters(LocalDate startDate, LocalDate endDate, String channelType) {
+        QueryParts query = buildFilterQuery(
+                "SELECT COUNT(*) AS cnt FROM sales_activity_managements",
+                startDate,
+                endDate,
+                channelType);
+        return sql.queryOne(query.sql(), rs -> rs.getInt("cnt"), query.params().toArray());
+    }
+
+    public List<SalesActivityManagement> findPageByFilters(
+            LocalDate startDate, LocalDate endDate, String channelType, int limit, int offset) {
+        QueryParts query = buildFilterQuery(
+                "SELECT " + COLS + " FROM sales_activity_managements",
+                startDate,
+                endDate,
+                channelType);
+        List<Object> params = new ArrayList<>(query.params());
+        params.add(limit);
+        params.add(offset);
+        return sql.executeQuery(query.sql() + " ORDER BY achievement_rate ASC, id DESC LIMIT ? OFFSET ?",
+                this::mapRow, params.toArray());
     }
 
     public void save(SalesActivityManagement a) {
@@ -68,5 +93,31 @@ public class SalesActivityManagementRepository {
         java.sql.Timestamp ts = rs.getTimestamp("created_at");
         if (ts != null) a.setRegisteredAt(ts.toLocalDateTime());
         return a;
+    }
+
+    private QueryParts buildFilterQuery(String selectSql, LocalDate startDate, LocalDate endDate, String channelType) {
+        StringBuilder query = new StringBuilder(selectSql);
+        List<String> conditions = new ArrayList<>();
+        List<Object> params = new ArrayList<>();
+
+        if (startDate != null) {
+            conditions.add("start_date >= ?");
+            params.add(startDate);
+        }
+        if (endDate != null) {
+            conditions.add("end_date <= ?");
+            params.add(endDate);
+        }
+        if (channelType != null && !channelType.isBlank()) {
+            conditions.add("UPPER(activity_type) = UPPER(?)");
+            params.add(channelType);
+        }
+        if (!conditions.isEmpty()) {
+            query.append(" WHERE ").append(String.join(" AND ", conditions));
+        }
+        return new QueryParts(query.toString(), params);
+    }
+
+    private record QueryParts(String sql, List<Object> params) {
     }
 }

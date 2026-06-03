@@ -1,11 +1,11 @@
 package org.dpbe.domain.contract.controller;
 
-import java.util.List;
 import org.dpbe.domain.contract.dto.ExpiringContractSummaryResponse;
 import org.dpbe.domain.contract.dto.NoticeCreateRequest;
 import org.dpbe.domain.contract.dto.NoticeResponse;
 import org.dpbe.domain.contract.dto.NoticeResponseRequest;
 import org.dpbe.domain.contract.service.ExpiringContractManagementService;
+import org.dpbe.global.dto.PageResponse;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -24,8 +24,10 @@ public class ExpiringContractManagementController {
 
     /** 만기 임박(D-30) 계약 목록 */
     @GetMapping("/api/expiring-contracts")
-    public List<ExpiringContractSummaryResponse> list() {
-        return expiringService.getExpiringContracts();
+    public PageResponse<ExpiringContractSummaryResponse> list(
+            @RequestParam(defaultValue = "1") int page,
+            @RequestParam(defaultValue = "20") int size) {
+        return expiringService.getExpiringContracts(page, size);
     }
 
     /** 안내 기록 저장 */
@@ -37,8 +39,11 @@ public class ExpiringContractManagementController {
 
     /** 안내 기록 목록 (contractNo 필터 선택) */
     @GetMapping("/api/expiring-notices")
-    public List<NoticeResponse> notices(@RequestParam(required = false) String contractNo) {
-        return expiringService.getNotices(contractNo);
+    public PageResponse<NoticeResponse> notices(
+            @RequestParam(required = false) String contractNo,
+            @RequestParam(defaultValue = "1") int page,
+            @RequestParam(defaultValue = "20") int size) {
+        return expiringService.getNotices(contractNo, page, size);
     }
 
     /** 고객 응답 기록 */

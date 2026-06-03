@@ -25,6 +25,18 @@ public class ConsultationRequestRepository {
                 "SELECT " + COLS + " FROM consultation_requests ORDER BY id DESC", this::mapRow);
     }
 
+    public int countAll() {
+        return sql.queryOne(
+                "SELECT COUNT(*) AS cnt FROM consultation_requests",
+                rs -> rs.getInt("cnt"));
+    }
+
+    public List<ConsultationRequest> findPage(int limit, int offset) {
+        return sql.executeQuery(
+                "SELECT " + COLS + " FROM consultation_requests ORDER BY id DESC LIMIT ? OFFSET ?",
+                this::mapRow, limit, offset);
+    }
+
     public ConsultationRequest findById(Long id) {
         return sql.queryOne(
                 "SELECT " + COLS + " FROM consultation_requests WHERE id=?",

@@ -12,12 +12,17 @@ import org.dpbe.domain.education.entity.EducationPreparation;
 import org.dpbe.domain.education.repository.EducationExecutionRepository;
 import org.dpbe.domain.education.repository.EducationPreparationRepository;
 import org.dpbe.global.auth.service.AuthAccessService;
+import org.dpbe.global.dto.PageResponse;
 import org.dpbe.global.exception.ApiException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class EducationExecutionService {
+
+    private static final int DEFAULT_PAGE = 1;
+    private static final int DEFAULT_SIZE = 20;
+    private static final int MAX_SIZE = 100;
 
     private final EducationExecutionRepository repository;
     private final EducationPreparationRepository prepRepository;
@@ -32,14 +37,27 @@ public class EducationExecutionService {
     }
 
     @Transactional(readOnly = true)
-    public List<EducationExecutionResponse> getExecutions(String prepNo) {
+    public PageResponse<EducationExecutionResponse> getExecutions(String prepNo, int page, int size) {
         authAccessService.requireEducationOperationAccess();
-        List<EducationExecution> list = (prepNo != null && !prepNo.isBlank())
-                ? repository.findByPrepNo(prepNo)
-                : repository.findAll();
-        return list.stream()
+        int normalizedPage = normalizePage(page);
+        int normalizedSize = normalizeSize(size);
+        int offset = (normalizedPage - 1) * normalizedSize;
+        int total = repository.countByPrepNo(prepNo);
+        List<EducationExecutionResponse> items = repository.findPageByPrepNo(prepNo, normalizedSize, offset).stream()
                 .map(e -> EducationExecutionResponse.from(e, repository.findAttendances(e.getExecutionNo())))
                 .toList();
+        return new PageResponse<>(normalizedPage, normalizedSize, total, items);
+    }
+
+    private int normalizePage(int page) {
+        return page < 1 ? DEFAULT_PAGE : page;
+    }
+
+    private int normalizeSize(int size) {
+        if (size < 1) {
+            return DEFAULT_SIZE;
+        }
+        return Math.min(size, MAX_SIZE);
     }
 
     private Long parseId(String no) {

@@ -2,6 +2,7 @@ package org.dpbe.domain.claim.repository;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.List;
 import org.dpbe.domain.actor.Customer;
 import org.dpbe.domain.claim.entity.AccidentReport;
@@ -52,6 +53,20 @@ public class AccidentReportRepository {
         return sql.executeQuery("SELECT " + COLS + " FROM accident_reports", this::mapRow);
     }
 
+    public int countByCustomerNo(String customerNo) {
+        QueryParts query = buildCustomerQuery("SELECT COUNT(*) AS cnt FROM accident_reports", customerNo);
+        return sql.queryOne(query.sql(), rs -> rs.getInt("cnt"), query.params().toArray());
+    }
+
+    public List<AccidentReport> findPageByCustomerNo(String customerNo, int limit, int offset) {
+        QueryParts query = buildCustomerQuery("SELECT " + COLS + " FROM accident_reports", customerNo);
+        List<Object> params = new ArrayList<>(query.params());
+        params.add(limit);
+        params.add(offset);
+        return sql.executeQuery(query.sql() + " ORDER BY id DESC LIMIT ? OFFSET ?",
+                this::mapRow, params.toArray());
+    }
+
     public AccidentReport findById(Long id) {
         return sql.queryOne(
                 "SELECT " + COLS + " FROM accident_reports WHERE id=?", this::mapRow, id);
@@ -77,5 +92,18 @@ public class AccidentReportRepository {
         r.enterCasualtyInfo(rs.getInt("casualty_count"),
                 rs.getString("injury_severity"), rs.getBoolean("emergency_reported"));
         return r;
+    }
+
+    private QueryParts buildCustomerQuery(String selectSql, String customerNo) {
+        StringBuilder query = new StringBuilder(selectSql);
+        List<Object> params = new ArrayList<>();
+        if (customerNo != null) {
+            query.append(" WHERE customer_id=?");
+            params.add(customerNo);
+        }
+        return new QueryParts(query.toString(), params);
+    }
+
+    private record QueryParts(String sql, List<Object> params) {
     }
 }

@@ -2,6 +2,7 @@ package org.dpbe.domain.claim.repository;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import org.dpbe.domain.actor.Customer;
@@ -59,6 +60,20 @@ public class ClaimRequestRepository {
         return sql.executeQuery("SELECT " + COLS + " FROM claim_requests", this::mapRow);
     }
 
+    public int countByCustomerNo(String customerNo) {
+        QueryParts query = buildCustomerQuery("SELECT COUNT(*) AS cnt FROM claim_requests", customerNo);
+        return sql.queryOne(query.sql(), rs -> rs.getInt("cnt"), query.params().toArray());
+    }
+
+    public List<ClaimRequest> findPageByCustomerNo(String customerNo, int limit, int offset) {
+        QueryParts query = buildCustomerQuery("SELECT " + COLS + " FROM claim_requests", customerNo);
+        List<Object> params = new ArrayList<>(query.params());
+        params.add(limit);
+        params.add(offset);
+        return sql.executeQuery(query.sql() + " ORDER BY id DESC LIMIT ? OFFSET ?",
+                this::mapRow, params.toArray());
+    }
+
     public ClaimRequest findById(Long id) {
         return sql.queryOne(
                 "SELECT " + COLS + " FROM claim_requests WHERE id=?", this::mapRow, id);
@@ -109,5 +124,18 @@ public class ClaimRequestRepository {
         java.sql.Timestamp rat = rs.getTimestamp("requested_at");
         if (rat != null) r.setRequestedAt(rat.toLocalDateTime());
         return r;
+    }
+
+    private QueryParts buildCustomerQuery(String selectSql, String customerNo) {
+        StringBuilder query = new StringBuilder(selectSql);
+        List<Object> params = new ArrayList<>();
+        if (customerNo != null) {
+            query.append(" WHERE customer_id=?");
+            params.add(customerNo);
+        }
+        return new QueryParts(query.toString(), params);
+    }
+
+    private record QueryParts(String sql, List<Object> params) {
     }
 }

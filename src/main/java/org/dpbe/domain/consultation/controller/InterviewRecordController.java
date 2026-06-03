@@ -1,10 +1,10 @@
 package org.dpbe.domain.consultation.controller;
 
-import java.util.List;
 import org.dpbe.domain.consultation.dto.InterviewRecordCreateRequest;
 import org.dpbe.domain.consultation.dto.InterviewRecordResponse;
 import org.dpbe.domain.consultation.dto.InterviewRecordUpdateRequest;
 import org.dpbe.domain.consultation.service.InterviewRecordService;
+import org.dpbe.global.dto.PageResponse;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -19,8 +19,10 @@ public class InterviewRecordController {
     }
 
     @GetMapping
-    public List<InterviewRecordResponse> findAll() {
-        return recordService.findAll();
+    public PageResponse<InterviewRecordResponse> findAll(
+            @RequestParam(defaultValue = "1") int page,
+            @RequestParam(defaultValue = "20") int size) {
+        return recordService.findAll(page, size);
     }
 
     @GetMapping("/{recordNo}")

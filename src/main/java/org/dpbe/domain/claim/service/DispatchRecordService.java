@@ -7,7 +7,6 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
 import org.dpbe.domain.claim.dto.DispatchRecordResponse;
 import org.dpbe.domain.claim.dto.DispatchResponse;
 import org.dpbe.domain.claim.entity.Dispatch;
@@ -16,7 +15,9 @@ import org.dpbe.domain.claim.repository.DispatchRecordRepository;
 import org.dpbe.domain.claim.repository.DispatchRepository;
 import org.dpbe.domain.common.entity.Attachment;
 import org.dpbe.domain.common.enums.DispatchRecordStatus;
+import org.dpbe.global.auth.dto.AuthenticatedUser;
 import org.dpbe.global.auth.service.AuthAccessService;
+import org.dpbe.global.dto.PageResponse;
 import org.dpbe.global.exception.ApiException;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -32,6 +33,10 @@ import org.springframework.web.multipart.MultipartFile;
 @Service
 @Transactional(readOnly = true)
 public class DispatchRecordService {
+
+    private static final int DEFAULT_PAGE = 1;
+    private static final int DEFAULT_SIZE = 20;
+    private static final int MAX_SIZE = 100;
 
     private final DispatchRecordRepository recordRepository;
     private final DispatchRepository dispatchRepository;
@@ -49,11 +54,41 @@ public class DispatchRecordService {
     }
 
     /** 현장 출동 목록 (기록 대상 선택용). */
-    public List<DispatchResponse> listDispatches() {
+    public PageResponse<DispatchResponse> listDispatches(int page, int size) {
         authAccessService.requireDispatchRecordAccess();
-        return dispatchRepository.findAll().stream()
+
+        AuthenticatedUser user = authAccessService.currentUser();
+        String customerNo = authAccessService.isCustomer() ? user.linkedCustomerNo() : null;
+        if (authAccessService.isCustomer() && customerNo == null) {
+            return emptyPage(page, size);
+        }
+
+        int normalizedPage = normalizePage(page);
+        int normalizedSize = normalizeSize(size);
+        int offset = (normalizedPage - 1) * normalizedSize;
+        int total = dispatchRepository.countByCustomerNo(customerNo);
+        List<DispatchResponse> items = dispatchRepository
+                .findPageByCustomerNo(customerNo, normalizedSize, offset)
+                .stream()
                 .map(DispatchResponse::from)
-                .collect(Collectors.toList());
+                .toList();
+
+        return new PageResponse<>(normalizedPage, normalizedSize, total, items);
+    }
+
+    private int normalizePage(int page) {
+        return page < 1 ? DEFAULT_PAGE : page;
+    }
+
+    private int normalizeSize(int size) {
+        if (size < 1) {
+            return DEFAULT_SIZE;
+        }
+        return Math.min(size, MAX_SIZE);
+    }
+
+    private <T> PageResponse<T> emptyPage(int page, int size) {
+        return new PageResponse<>(normalizePage(page), normalizeSize(size), 0, List.of());
     }
 
     public DispatchRecordResponse findByDispatchNo(String dispatchNo) {
@@ -113,7 +148,7 @@ public class DispatchRecordService {
         }
         recordRepository.markTransmitted(rec);
 
-        List<String> names = saved.stream().map(Attachment::getFileName).collect(Collectors.toList());
+        List<String> names = saved.stream().map(Attachment::getFileName).toList();
         return DispatchRecordResponse.from(rec, names);
     }
 

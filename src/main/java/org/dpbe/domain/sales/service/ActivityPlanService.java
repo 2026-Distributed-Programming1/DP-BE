@@ -1,7 +1,5 @@
 package org.dpbe.domain.sales.service;
 
-import java.util.List;
-import java.util.stream.Collectors;
 import org.dpbe.domain.common.enums.ActivityType;
 import org.dpbe.domain.common.enums.InsuranceType;
 import org.dpbe.domain.common.enums.PlanStatus;
@@ -11,12 +9,17 @@ import org.dpbe.domain.sales.entity.ActivityPlan;
 import org.dpbe.domain.sales.entity.ScheduleItem;
 import org.dpbe.domain.sales.repository.ActivityPlanRepository;
 import org.dpbe.global.auth.service.AuthAccessService;
+import org.dpbe.global.dto.PageResponse;
 import org.dpbe.global.exception.ApiException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class ActivityPlanService {
+
+    private static final int DEFAULT_PAGE = 1;
+    private static final int DEFAULT_SIZE = 20;
+    private static final int MAX_SIZE = 100;
 
     private final ActivityPlanRepository repository;
     private final AuthAccessService authAccessService;
@@ -28,11 +31,27 @@ public class ActivityPlanService {
     }
 
     @Transactional(readOnly = true)
-    public List<ActivityPlanResponse> findAll() {
+    public PageResponse<ActivityPlanResponse> findAll(int page, int size) {
         authAccessService.requireSalesOperationAccess();
-        return repository.findAll().stream()
+        int normalizedPage = normalizePage(page);
+        int normalizedSize = normalizeSize(size);
+        int offset = (normalizedPage - 1) * normalizedSize;
+        int total = repository.countAll();
+        var items = repository.findPage(normalizedSize, offset).stream()
                 .map(ActivityPlanResponse::from)
-                .collect(Collectors.toList());
+                .toList();
+        return new PageResponse<>(normalizedPage, normalizedSize, total, items);
+    }
+
+    private int normalizePage(int page) {
+        return page < 1 ? DEFAULT_PAGE : page;
+    }
+
+    private int normalizeSize(int size) {
+        if (size < 1) {
+            return DEFAULT_SIZE;
+        }
+        return Math.min(size, MAX_SIZE);
     }
 
     private Long parseId(String planNo) {

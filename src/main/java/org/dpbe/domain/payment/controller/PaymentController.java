@@ -1,12 +1,12 @@
 package org.dpbe.domain.payment.controller;
 
-import java.util.List;
 import org.dpbe.domain.payment.dto.PaymentContractResponse;
 import org.dpbe.domain.payment.dto.PaymentPreviewRequest;
 import org.dpbe.domain.payment.dto.PaymentPreviewResponse;
 import org.dpbe.domain.payment.dto.PaymentResultResponse;
 import org.dpbe.domain.payment.dto.PaymentSubmitRequest;
 import org.dpbe.domain.payment.service.PaymentService;
+import org.dpbe.global.dto.ItemsResponse;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -27,8 +27,8 @@ public class PaymentController {
 
     /** 납입 가능한 고객 계약 목록 */
     @GetMapping("/customers/{customerId}/contracts")
-    public List<PaymentContractResponse> customerContracts(@PathVariable String customerId) {
-        return paymentService.customerContracts(customerId);
+    public ItemsResponse<PaymentContractResponse> customerContracts(@PathVariable String customerId) {
+        return new ItemsResponse<>(paymentService.customerContracts(customerId));
     }
 
     /** 미리보기 — 총액/선납할인 계산 (저장 없음) */

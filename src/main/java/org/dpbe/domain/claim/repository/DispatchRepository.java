@@ -2,6 +2,7 @@ package org.dpbe.domain.claim.repository;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.List;
 import org.dpbe.domain.claim.entity.AccidentReport;
 import org.dpbe.domain.claim.entity.Dispatch;
@@ -17,6 +18,7 @@ import org.springframework.stereotype.Repository;
 public class DispatchRepository {
 
     private static final String COLS = "id, accident_id, status";
+    private static final String ALIASED_COLS = "d.id, d.accident_id, d.status";
 
     private final SqlExecutor sql;
 
@@ -38,6 +40,20 @@ public class DispatchRepository {
 
     public List<Dispatch> findAll() {
         return sql.executeQuery("SELECT " + COLS + " FROM dispatches", this::mapRow);
+    }
+
+    public int countByCustomerNo(String customerNo) {
+        QueryParts query = buildCustomerQuery("SELECT COUNT(*) AS cnt FROM dispatches d", customerNo);
+        return sql.queryOne(query.sql(), rs -> rs.getInt("cnt"), query.params().toArray());
+    }
+
+    public List<Dispatch> findPageByCustomerNo(String customerNo, int limit, int offset) {
+        QueryParts query = buildCustomerQuery("SELECT " + ALIASED_COLS + " FROM dispatches d", customerNo);
+        List<Object> params = new ArrayList<>(query.params());
+        params.add(limit);
+        params.add(offset);
+        return sql.executeQuery(query.sql() + " ORDER BY d.id DESC LIMIT ? OFFSET ?",
+                this::mapRow, params.toArray());
     }
 
     public Dispatch findById(Long id) {
@@ -69,5 +85,19 @@ public class DispatchRepository {
 
     private Long parseId(String businessNo) {
         return Long.parseLong(businessNo.replaceAll("\\D", ""));
+    }
+
+    private QueryParts buildCustomerQuery(String selectSql, String customerNo) {
+        StringBuilder query = new StringBuilder(selectSql);
+        List<Object> params = new ArrayList<>();
+        if (customerNo != null) {
+            query.append(" LEFT JOIN accident_reports ar ON ar.id = d.accident_id")
+                    .append(" WHERE ar.customer_id=?");
+            params.add(customerNo);
+        }
+        return new QueryParts(query.toString(), params);
+    }
+
+    private record QueryParts(String sql, List<Object> params) {
     }
 }

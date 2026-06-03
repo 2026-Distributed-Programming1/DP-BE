@@ -1,5 +1,6 @@
 package org.dpbe.domain.contract.repository;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import org.dpbe.domain.common.enums.CustomerResponse;
@@ -65,6 +66,29 @@ public class ExpiringContractManagementRepository {
         return sql.executeQuery(
                 "SELECT " + COLS + " FROM expiring_contract_notices WHERE contract_id=? ORDER BY id DESC",
                 rowMapper(), parseId(contractNo));
+    }
+
+    public int countByContractNo(String contractNo) {
+        if (contractNo != null && !contractNo.isBlank()) {
+            return sql.queryOne(
+                    "SELECT COUNT(*) AS cnt FROM expiring_contract_notices WHERE contract_id=?",
+                    rs -> rs.getInt("cnt"), parseId(contractNo));
+        }
+        return sql.queryOne(
+                "SELECT COUNT(*) AS cnt FROM expiring_contract_notices",
+                rs -> rs.getInt("cnt"));
+    }
+
+    public List<ExpiringContractManagement> findPageByContractNo(String contractNo, int limit, int offset) {
+        if (contractNo != null && !contractNo.isBlank()) {
+            return sql.executeQuery(
+                    "SELECT " + COLS + " FROM expiring_contract_notices"
+                    + " WHERE contract_id=? ORDER BY id DESC LIMIT ? OFFSET ?",
+                    rowMapper(), parseId(contractNo), limit, offset);
+        }
+        return sql.executeQuery(
+                "SELECT " + COLS + " FROM expiring_contract_notices ORDER BY id DESC LIMIT ? OFFSET ?",
+                rowMapper(), limit, offset);
     }
 
     private SqlExecutor.RowMapper<ExpiringContractManagement> rowMapper() {

@@ -2,6 +2,7 @@ package org.dpbe.domain.inquiry.repository;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.List;
 import org.dpbe.domain.common.enums.InquiryStatus;
 import org.dpbe.domain.common.enums.InquiryType;
@@ -58,6 +59,21 @@ public class InquiryRepository {
                 this::mapRow, customerName, status);
     }
 
+    public int countByFilters(Long customerId, String customerName, String status) {
+        QueryParts query = buildFilterQuery("SELECT COUNT(*) AS cnt FROM inquiries", customerId, customerName, status);
+        return sql.queryOne(query.sql(), rs -> rs.getInt("cnt"), query.params().toArray());
+    }
+
+    public List<Inquiry> findPageByFilters(
+            Long customerId, String customerName, String status, int limit, int offset) {
+        QueryParts query = buildFilterQuery("SELECT " + COLS + " FROM inquiries", customerId, customerName, status);
+        List<Object> params = new ArrayList<>(query.params());
+        params.add(limit);
+        params.add(offset);
+        return sql.executeQuery(query.sql() + " ORDER BY id DESC LIMIT ? OFFSET ?",
+                this::mapRow, params.toArray());
+    }
+
     public Inquiry findById(Long id) {
         return sql.queryOne(
                 "SELECT " + COLS + " FROM inquiries WHERE id=?", this::mapRow, id);
@@ -110,5 +126,31 @@ public class InquiryRepository {
         java.sql.Timestamp cat = rs.getTimestamp("created_at");
         if (cat != null) i.setReceivedAt(cat.toLocalDateTime());
         return i;
+    }
+
+    private QueryParts buildFilterQuery(String selectSql, Long customerId, String customerName, String status) {
+        StringBuilder query = new StringBuilder(selectSql);
+        List<String> conditions = new ArrayList<>();
+        List<Object> params = new ArrayList<>();
+
+        if (customerId != null) {
+            conditions.add("customer_id=?");
+            params.add(customerId);
+        }
+        if (customerName != null && !customerName.isBlank()) {
+            conditions.add("customer_name=?");
+            params.add(customerName);
+        }
+        if (status != null && !status.isBlank()) {
+            conditions.add("status=?");
+            params.add(status);
+        }
+        if (!conditions.isEmpty()) {
+            query.append(" WHERE ").append(String.join(" AND ", conditions));
+        }
+        return new QueryParts(query.toString(), params);
+    }
+
+    private record QueryParts(String sql, List<Object> params) {
     }
 }

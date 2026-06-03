@@ -1,7 +1,6 @@
 package org.dpbe.domain.inquiry.service;
 
 import java.time.LocalDateTime;
-import java.util.List;
 import org.dpbe.domain.common.enums.InquiryStatus;
 import org.dpbe.domain.inquiry.dto.InquiryAnswerRequest;
 import org.dpbe.domain.inquiry.dto.InquiryRequest;
@@ -10,12 +9,17 @@ import org.dpbe.domain.inquiry.entity.Inquiry;
 import org.dpbe.domain.inquiry.repository.InquiryRepository;
 import org.dpbe.global.auth.dto.AuthenticatedUser;
 import org.dpbe.global.auth.service.AuthAccessService;
+import org.dpbe.global.dto.PageResponse;
 import org.dpbe.global.exception.ApiException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class InquiryService {
+
+    private static final int DEFAULT_PAGE = 1;
+    private static final int DEFAULT_SIZE = 20;
+    private static final int MAX_SIZE = 100;
 
     private final InquiryRepository repository;
     private final AuthAccessService authAccessService;
@@ -27,26 +31,32 @@ public class InquiryService {
     }
 
     @Transactional(readOnly = true)
-    public List<InquiryResponse> getInquiries(String customerName, String status) {
+    public PageResponse<InquiryResponse> getInquiries(String customerName, String status, int page, int size) {
+        Long customerId = null;
         if (authAccessService.isCustomer()) {
-            Long customerId = currentLinkedCustomerId();
-            List<Inquiry> list = status != null && !status.isBlank()
-                    ? repository.findByCustomerIdAndStatus(customerId, status)
-                    : repository.findByCustomerId(customerId);
-            return list.stream().map(InquiryResponse::from).toList();
+            customerId = currentLinkedCustomerId();
+            customerName = null;
         }
 
-        List<Inquiry> list;
-        if (customerName != null && !customerName.isBlank() && status != null && !status.isBlank()) {
-            list = repository.findByCustomerNameAndStatus(customerName, status);
-        } else if (customerName != null && !customerName.isBlank()) {
-            list = repository.findByCustomerName(customerName);
-        } else if (status != null && !status.isBlank()) {
-            list = repository.findByStatus(status);
-        } else {
-            list = repository.findAll();
+        int normalizedPage = normalizePage(page);
+        int normalizedSize = normalizeSize(size);
+        int offset = (normalizedPage - 1) * normalizedSize;
+        int total = repository.countByFilters(customerId, customerName, status);
+        var items = repository.findPageByFilters(customerId, customerName, status, normalizedSize, offset).stream()
+                .map(InquiryResponse::from)
+                .toList();
+        return new PageResponse<>(normalizedPage, normalizedSize, total, items);
+    }
+
+    private int normalizePage(int page) {
+        return page < 1 ? DEFAULT_PAGE : page;
+    }
+
+    private int normalizeSize(int size) {
+        if (size < 1) {
+            return DEFAULT_SIZE;
         }
-        return list.stream().map(InquiryResponse::from).toList();
+        return Math.min(size, MAX_SIZE);
     }
 
     @Transactional(readOnly = true)

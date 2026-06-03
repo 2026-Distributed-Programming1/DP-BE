@@ -22,7 +22,7 @@
   - 한 번에 전체를 수정하지 않는다.
   - 각 도메인마다 “현재 API로 화면 구성이 가능한가”, “프론트가 하드코딩해야 하는 값은 무엇인가”, “추가 endpoint가 필요한가”를 본다.
 - 추가 기능 후보는 바로 구현하지 않는다.
-  - 로그인/권한, 고객 CRUD, enum 값 명세, API 문서화, 목록 응답 통일은 백로그로만 둔다.
+  - 로그인/권한, 고객 CRUD, enum 값 명세, API 문서화, 목록 응답 통일은 백로그로 관리하되, 완료된 항목은 상태를 갱신한다.
 - 기존 버그 가능성 중심 검토는 `DomainReviewFindings.md`에 있다.
   - 이 문서는 프론트 연동 관점만 다룬다.
 
@@ -54,13 +54,17 @@
   - education: 교육 계획/제반/진행은 `EDUCATION_STAFF`, `ADMIN`으로 제한.
   - inquiry: 고객은 본인 문의만 조회하고, 답변은 직원/관리자만 수행하도록 제한.
   - customer: 검색은 직원/관리자 전용, 상세는 직원/관리자 또는 고객 본인 접근 허용.
+- 주요 테이블 목록 응답 통일 및 DB pagination 1차 적용 완료:
+  - `page/size/total/items` 응답 형태로 통일.
+  - customer, contract, payment/refund, claim, consultation, sales, education, inquiry 주요 목록은 DB `COUNT` + `LIMIT/OFFSET` 기준으로 조회.
+  - 고객 소유권이 필요한 목록은 SQL 조건에 고객 식별자를 포함해 `total`과 `items` 범위를 일치시킴.
 
 ### 다음에 이어서 할 일
 
-1. 목록 응답 형태 통일 대상 API 확정
-2. 도메인별 상태 전이 규칙 문서화
-3. `ApiSpec.md`에 계약/납입/청구 등 주요 도메인 API 명세 확장
-4. 파일/S3 저장 정책 설계
+1. 도메인별 상태 전이 규칙 문서화
+2. `ApiSpec.md`에 계약/납입/청구 등 주요 도메인 API 명세 확장
+3. 파일/S3 저장 정책 설계
+4. 미사용 DTO/유틸 정리
 
 ## 검토 순서
 
@@ -216,38 +220,42 @@
   - 프론트와 동시에 작업하려면 request/response 예시가 필수에 가깝다.
 
 - **COMMON-API-04 / 목록 응답 형태 통일**
-  - 일부 목록은 `page/size/total/items`, 일부 목록은 배열을 직접 반환한다.
+  - 상태: 1차 완료
+  - 주요 테이블 목록은 `page/size/total/items`로 통일했다.
+  - 주요 도메인 목록은 DB `COUNT` + `LIMIT/OFFSET` 기반 pagination으로 전환했다.
+  - 고객 본인 데이터만 조회해야 하는 목록은 SQL 조건에 고객 식별자를 포함해 `total`과 `items`가 같은 범위를 보도록 했다.
   - 프론트 공통 테이블/페이지네이션 컴포넌트를 생각하면 목록 응답 정책을 정해야 한다.
   - `List<ResponseDto>`를 Controller에서 직접 반환하는 API는 확장성이 낮다.
     - 응답에 `total`, `page`, `size`, `hasNext`, 집계값 같은 메타데이터를 추가하기 어렵다.
     - 나중에 페이지네이션이나 정렬을 붙이면 응답 형태가 깨진다.
     - 프론트가 목록 API마다 배열 응답과 wrapper 응답을 따로 처리해야 한다.
-  - 1차 정책 후보:
-    - 테이블 화면에 쓰는 목록은 `page`, `size`, `total`, `items`로 통일
-    - 페이지네이션이 필요 없는 단순 목록은 최소한 `{ "items": [] }` wrapper 사용
-    - select option용 작은 목록은 배열 반환 허용 가능하나, 현재는 option API를 두지 않기로 했으므로 예외 범위를 좁게 유지
-  - 기존 배열 응답을 바로 바꾸면 프론트 호환에 영향이 있으므로, 프론트 본격 연결 전에 정하는 편이 좋다.
-  - 1차 수정 후보:
-    - `GET /api/cancellations`
-    - `GET /api/expiring-contracts`
-    - `GET /api/expiring-notices`
-    - `GET /api/contract-statistics/history`
-    - `GET /api/payment-records`
-    - `GET /api/refund-calculations`
-    - `GET /api/refund-payments`
-    - `GET /api/accidents`
-  - 2026-06-03 코드 점검 기준 `List<T>` 또는 `ResponseEntity<List<T>>`를 직접 반환하는 컨트롤러:
-    - claim: `AccidentController.list()`, `ClaimController.list()`, `DispatchController.list()`
-    - consultation: `ConsultationController.findAll()`, `InsuranceProductController.findAll()`, `InterviewRecordController.findAll()`, `InterviewScheduleController.findAll()`, `ProposalController.findAll()`, `UnderwritingController.findPending()`
-    - contract: `CancellationController.list()`, `ContractStatisticsController.history()`, `ExpiringContractManagementController.list()`, `ExpiringContractManagementController.notices()`
-    - education: `EducationPlanController.list()`, `EducationPreparationController.list()`, `EducationExecutionController.list()`
-    - inquiry: `InquiryController.list()`
-    - payment/refund: `PaymentController.customerContracts()`, `PaymentRecordController.list()`, `RefundController.getAllCalculations()`, `RefundController.getAllPayments()`
-    - sales: `ActivityPlanController.findAll()`, `ChannelRecruitmentController.findAll()`, `ChannelScreeningController.findAll()`, `CustomerRegistrationController.findAll()`
-  - 수정 방향:
-    - 테이블 화면용 목록은 `page`, `size`, `total`, `items` 응답으로 변경한다.
-    - 페이지네이션이 필요 없는 참조 목록은 최소 `{ "items": [] }` wrapper를 검토한다.
-    - 프론트 연결 전에 응답 형태를 정하지 않으면 화면별 adapter가 늘어난다.
+  - 확정 정책:
+    - 테이블 화면에 쓰는 목록은 `page`, `size`, `total`, `items`로 통일한다.
+    - `page`는 1부터 시작한다.
+    - `size`는 요청 크기이며 기본값은 20, 최대값은 100을 기본 정책으로 둔다.
+    - `total`은 필터 적용 후 전체 건수다.
+    - `items`는 현재 페이지 데이터다.
+    - 페이지네이션이 필요 없는 참조용 소량 목록은 `{ "items": [] }` wrapper를 사용한다.
+    - 배열 직접 반환은 신규 API에서 사용하지 않는다.
+    - select option용 API는 현재 두지 않기로 했으므로 배열 반환 예외도 만들지 않는다.
+  - 예외 기준:
+    - 단건 조회, 생성/수정/상태변경 응답은 wrapper를 강제하지 않는다.
+    - 프론트가 화면 테이블로 쓰지 않는 “현재 요청의 하위 리소스 소량 목록”은 `{ "items": [] }`를 허용한다.
+    - 예: 특정 고객의 납입 가능 계약 목록은 테이블 페이지보다 선택용 목록에 가까우므로 `{ "items": [] }` 후보.
+  - 적용 완료 범위:
+    - customer 검색
+    - contract: 계약, 해지, 만기계약, 만기 안내, 통계 이력
+    - payment/refund: 납입 기록, 환급 산출, 환급 지급
+    - claim: 사고, 청구, 출동
+    - consultation: 상담, 면담 일정, 면담 기록, 제안, 인수심사 대기
+    - sales: 활동계획, 채널 모집, 채널 심사, 고객 등록, 영업활동, 조직평가
+    - education: 교육 계획, 교육 제반, 교육 실행
+    - inquiry: 문의 목록
+  - 정리 완료:
+    - `global/util/PageResponses.java` 삭제 — DB pagination 전환 후 참조 없음
+    - `domain/customer/dto/CustomerListResponse.java` 삭제 — `PageResponse<CustomerSummary>` 전환 후 참조 없음
+    - `domain/contract/dto/ContractListResponse.java` 삭제 — `PageResponse<ContractSummaryResponse>` 전환 후 참조 없음
+    - 도메인별 상세 API 명세에 page query와 응답 예시 반영
 
 - **AUTH-02 / 인증 API 권한 최종 점검**
   - 상태: 1차 점검 완료
@@ -374,11 +382,10 @@
   - 없는 고객 ID를 넣어도 계약 목록 조회 결과가 빈 배열이면, 프론트는 “고객 없음”과 “납입 가능한 계약 없음”을 구분하기 어렵다.
   - 후보 작업: 고객 존재 확인 후 없는 고객은 404, 계약이 없는 고객은 빈 배열로 구분.
 
-- **FE-CONTRACT-03 / 목록 응답 형태 불일치**
+- **FE-CONTRACT-03 / 목록 응답 형태 불일치** ✅ 완료
   - 확인 위치: `ContractController.list()`, `CancellationController.list()`, `PaymentRecordController.list()`, `RefundController`
-  - 계약 목록은 페이지 객체를 반환하지만, 해지/납입내역/환급 목록은 배열을 직접 반환한다.
-  - 작은 데이터에서는 괜찮지만 프론트 공통 테이블 컴포넌트와 서버 페이지네이션을 생각하면 통일이 필요하다.
-  - 후보 정책: 조회량이 많아질 수 있는 목록은 `page/size/total/items`로 통일.
+  - 계약/해지/납입내역/환급 목록은 `page/size/total/items` 응답으로 통일했다.
+  - 주요 목록은 DB `COUNT` + `LIMIT/OFFSET` 기반으로 전환했다.
 
 - **FE-CONTRACT-04 / enum 값 출처 없음**
   - 확인 위치: `PaymentSubmitRequest.paymentMethod`, `PaymentRecordRejectRequest.rejectCategory`, `NoticeResponseRequest.customerResponse`
@@ -446,11 +453,11 @@
   - 환급 산출/확정/지급 실행은 `FINANCE_STAFF`, `ADMIN`으로 제한했다.
   - 남은 작업: 환급 목록 필터와 페이지네이션 정책 결정.
 
-- **FE-REFUND-02 / 환급 목록 API에 필터와 페이지네이션이 없음**
+- **FE-REFUND-02 / 환급 목록 API 페이지네이션** ✅ 1차 완료
   - 확인 위치: `RefundController.getAllCalculations()`, `RefundController.getAllPayments()`
-  - 환급 산출 목록과 지급 목록이 전체 배열을 반환한다.
-  - 프론트 테이블에서는 상태, 고객, 계약, 해지번호, 기간 조건으로 필터링할 가능성이 높다.
-  - 후보 작업: `status`, `customerId`, `contractNo`, `page`, `size` query 지원 검토.
+  - 환급 산출 목록과 지급 목록은 `page/size/total/items` 응답으로 통일했다.
+  - 고객 조회 시 SQL 조건에 고객 식별자를 포함해 본인 환급 데이터만 count/list 한다.
+  - 남은 작업: `status`, `customerId`, `contractNo`, 기간 조건 같은 추가 필터 지원 검토.
 
 - **FE-REFUND-03 / 환급 지급 실행의 OTP는 검증용 stub임**
   - 확인 위치: `RefundPayment.verifyOTP()`, `RefundService.execute()`
@@ -541,11 +548,11 @@
   - 산출 생성 가능 여부, 산출 승인 가능 여부, 지급 생성 가능 여부, 지급 실행 가능 여부를 프론트가 상태값으로 직접 해석해야 한다.
   - 후보 작업: 화면 버튼 판단은 프론트 책임으로 두고, 상태 전이 표를 문서화.
 
-- **FE-CLAIM-03 / claim 목록 API에 필터와 페이지네이션이 없음**
+- **FE-CLAIM-03 / claim 목록 API 페이지네이션** ✅ 1차 완료
   - 확인 위치: `ClaimController.list()`, `AccidentController.list()`, `DispatchController.list()`
-  - 사고/청구/출동 목록이 배열 전체를 반환한다.
-  - 프론트 테이블에서 상태별 필터, 고객명 검색, 페이지네이션을 구현하려면 클라이언트 메모리 필터에 의존하게 된다.
-  - 후보 작업: `status`, `customerId`, `contractNo`, `page`, `size` query 지원 검토.
+  - 사고/청구/출동 목록은 `page/size/total/items` 응답으로 통일했다.
+  - 고객 조회가 필요한 사고/청구 목록은 DB pagination에서 고객 조건을 적용한다.
+  - 남은 작업: `status`, `customerId`, `contractNo` 같은 추가 필터 query 지원 검토.
 
 - **FE-CLAIM-04 / 사고 접수와 보험금 청구의 연결 관계가 약함**
   - 확인 위치: `AccidentCreateRequest`, `ClaimCreateRequest`
@@ -727,11 +734,11 @@
   - 프론트에서 select box를 만들 수는 있지만, 이름 중복이나 이름 변경에 취약하다.
   - 후보 작업: 상품에는 `productNo` 같은 안정 식별자를 제공하고, 제안/청약/보험신청은 가능한 ID 기반으로 연결.
 
-- **FE-CONSULT-06 / 상담·면담 목록에 필터와 페이지네이션이 없음**
+- **FE-CONSULT-06 / 상담·면담 목록 페이지네이션** ✅ 1차 완료
   - 확인 위치: `ConsultationController.findAll()`, `InterviewScheduleController.findAll()`, `InterviewRecordController.findAll()`
-  - 상담, 면담 일정, 면담 기록 목록이 배열 전체를 반환한다.
-  - 프론트 캘린더/테이블에서는 기간, 상태, 고객명, 담당자 필터가 필요할 가능성이 높다.
-  - 후보 작업: `status`, `from`, `to`, `customerName`, `designerName`, `page`, `size` query 지원 검토.
+  - 상담, 면담 일정, 면담 기록, 제안, 인수심사 대기 목록은 `page/size/total/items` 응답으로 통일했다.
+  - 인수심사 대기 목록은 `policy_applications`와 `insurance_applications`를 `UNION ALL`로 합쳐 DB pagination 한다.
+  - 남은 작업: `status`, `from`, `to`, `customerName`, `designerName` 같은 추가 필터 query 지원 검토.
 
 - **FE-CONSULT-07 / 면담 일정과 면담 기록이 직접 연결되지 않음**
   - 확인 위치: `InterviewScheduleCreateRequest`, `InterviewRecordCreateRequest`
@@ -876,17 +883,15 @@
   - `ActivityPlanResponse`에는 `schedules` 필드가 있으므로 목록 화면에서 빈 배열로 보일 수 있다.
   - 후보 작업: 목록 응답을 요약 DTO로 분리하거나, 목록에도 schedule 요약을 포함할지 정책 결정.
 
-- **FE-SALES-05 / 활동계획 목록에 필터와 페이지네이션이 없음**
+- **FE-SALES-05 / 활동계획 목록 페이지네이션** ✅ 1차 완료
   - 확인 위치: `ActivityPlanController.findAll()`
-  - 활동계획 목록은 배열 전체를 반환한다.
-  - 프론트에서 상태, 작성자, 기간, 제안 보험종류 기준 필터와 페이지네이션이 필요할 수 있다.
-  - 후보 작업: `status`, `author`, `from`, `to`, `page`, `size` query 지원 검토.
+  - 활동계획 목록은 `page/size/total/items` 응답으로 통일했고 DB pagination을 적용했다.
+  - 남은 작업: `status`, `author`, `from`, `to` 같은 추가 필터 query 지원 검토.
 
-- **FE-SALES-06 / 채널모집·채널심사·고객등록 목록은 배열 반환**
+- **FE-SALES-06 / 채널모집·채널심사·고객등록 목록 응답** ✅ 완료
   - 확인 위치: `ChannelRecruitmentController.findAll()`, `ChannelScreeningController.findAll()`, `CustomerRegistrationController.findAll()`
-  - 영업활동/평가 목록은 페이지 객체인데, 모집/심사/고객등록은 배열 전체를 반환한다.
-  - 프론트 공통 테이블 컴포넌트를 쓰려면 응답 형태가 갈라진다.
-  - 후보 작업: 조회량이 늘 수 있는 목록은 `page/size/total/items`로 통일 검토.
+  - 활동계획, 채널모집, 채널심사, 고객등록, 영업활동, 조직평가 목록은 모두 `page/size/total/items` 응답으로 통일했다.
+  - DB pagination을 적용해 sales 테이블 컴포넌트 공통화가 쉬워졌다.
 
 - **FE-SALES-07 / 채널심사 버튼 가능 여부가 응답에 없음**
   - 확인 위치: `ChannelScreeningResponse.status`, `ChannelScreeningService.approve/reject()`
@@ -925,11 +930,10 @@
   - 성과급 요청 생성은 `ADMIN`으로 제한했다.
   - 남은 작업: 성과급 요청 목록/상세 조회 API 추가 여부 결정.
 
-- **FE-SALES-13 / 생성 API는 201 응답을 쓰지만 목록 응답 정책은 여전히 섞여 있음**
+- **FE-SALES-13 / 생성 API와 목록 응답 정책** ✅ 목록 정책 완료
   - 확인 위치: `SalesActivityManagementController`, `SalesOrgEvaluationController`, 나머지 sales controller
-  - 영업활동/조직평가 생성은 `ResponseEntity.status(201)`을 사용하고, 목록도 wrapper DTO를 반환한다.
-  - 반면 활동계획, 채널모집, 채널심사, 고객등록 목록은 `List<ResponseDto>`를 직접 반환한다.
-  - 후보 작업: sales 목록 응답을 `page/size/total/items` 또는 `{ "items": [] }`로 통일.
+  - sales 목록 응답은 `page/size/total/items`로 통일했다.
+  - 생성 API 201 응답 사용 여부는 목록 정책과 별개로 유지한다.
 
 ### 우선순위 제안
 
@@ -1007,11 +1011,11 @@
   - 프론트에서 action 오타가 나도 성공 응답이 내려와 디버깅이 어렵다.
   - 후보 작업: 허용값을 `TEMP_SAVE`, `REQUEST_APPROVAL`로 명시 검증하고 알 수 없는 action은 400 반환.
 
-- **FE-EDU-04 / 교육 목록 응답이 배열 반환이고 페이지네이션이 없음**
+- **FE-EDU-04 / 교육 목록 페이지네이션** ✅ 1차 완료
   - 확인 위치: `EducationPlanController`, `EducationPreparationController`, `EducationExecutionController`
-  - 교육 계획/제반/실행 목록이 배열 전체를 반환한다.
-  - 프론트 테이블에서 기간, 상태, 강사, 채널 유형, 페이지네이션이 필요할 수 있다.
-  - 후보 작업: `page/size/total/items` 형태와 필터 query 추가 검토.
+  - 교육 계획/제반/실행 목록은 `page/size/total/items` 응답으로 통일했고 DB pagination을 적용했다.
+  - 계획 status, 제반 planNo, 실행 prepNo 조건은 SQL에서 처리한다.
+  - 남은 작업: 기간, 강사, 채널 유형 같은 추가 필터 query 검토.
 
 - **FE-EDU-05 / 다음 단계 버튼 가능 여부가 응답에 없음**
   - 확인 위치: `EducationPlanResponse`, `EducationPreparationResponse`, `EducationExecutionResponse`
@@ -1037,11 +1041,11 @@
   - 잘못된 status 값은 에러가 아니라 빈 목록으로 보일 수 있어 프론트 옵션 불일치를 찾기 어렵다.
   - 후보 작업: `InquiryStatus`로 선검증하거나 알 수 없는 status는 400 반환.
 
-- **FE-INQ-03 / 문의 목록 페이지네이션이 없음**
+- **FE-INQ-03 / 문의 목록 페이지네이션** ✅ 1차 완료
   - 확인 위치: `InquiryController.list()`
-  - 고객센터 문의는 데이터가 늘기 쉬운데 배열 전체를 반환한다.
-  - 프론트 테이블에서는 상태, 고객명, 기간, 문의유형, 페이지네이션이 필요할 가능성이 높다.
-  - 후보 작업: `inquiryType`, `from`, `to`, `page`, `size` query 추가 검토.
+  - 문의 목록은 `page/size/total/items` 응답으로 통일했고 DB pagination을 적용했다.
+  - 고객 role은 `customer_id`, 직원/관리자는 `customerName`, `status` 조건으로 SQL filtering 한다.
+  - 남은 작업: `inquiryType`, `from`, `to` query 추가 검토.
 
 - **FE-INQ-04 / 답변 버튼 가능 여부가 응답에 없음**
   - 확인 위치: `InquiryResponse.status`, `InquiryService.answer()`
@@ -1103,7 +1107,7 @@
 
 - 고객 선택이 필요한 화면은 많은데 공통 고객 검색/상세 API가 부족하다.
 - enum/status/action 값을 프론트가 하드코딩해야 하는 구간이 많다.
-- 목록 응답이 페이지 객체와 배열로 섞여 있다.
+- 목록 응답은 주요 테이블 API 기준 `page/size/total/items`로 통일됐다.
 - 업무 단계 버튼 가능 여부를 프론트가 상태 문자열로 직접 해석해야 한다.
 - 일부 잘못된 입력은 400이 아니라 500 또는 빈 목록으로 보일 수 있다.
 - 생성 API만 있고 목록/상세 조회가 없어 새로고침 이후 화면 복원이 어려운 도메인이 있다.
@@ -1133,12 +1137,13 @@
      - `HttpMessageNotReadableException` 400 처리
      - `code`, `path`, `fieldErrors` 도입 검토
 
-4. **프론트 첫 화면 기준 목록 페이지네이션 정리**
+4. **프론트 첫 화면 기준 목록 페이지네이션 정리** ✅ 완료
    - 영향 도메인: claim, consultation, sales 일부, education, inquiry
    - 이유: 테이블 화면이 배열 전체 응답에 의존하지 않게 한다.
-   - 정책 후보:
+   - 결과:
      - 테이블 목록: `page/size/total/items`
-     - 옵션 목록: 배열 허용
+     - 주요 테이블 목록은 DB pagination으로 전환
+     - 참조성 소량 목록은 `{ "items": [] }` wrapper 유지
 
 5. **상태 전이 규칙 문서화**
    - 영향 도메인: claim, contract/payment/refund, education, inquiry, sales screening
@@ -1199,10 +1204,11 @@
   - enum 값 명세 ✅ 완료
   - 공통 에러 응답 400 처리 ✅ 완료
 
-- **Batch B / 첫 화면 테이블 안정화**
-  - claim 목록 필터/페이지네이션
-  - inquiry 목록 필터/페이지네이션
-  - education 목록 필터/페이지네이션
+- **Batch B / 첫 화면 테이블 안정화** ✅ 완료
+  - claim 목록 DB 페이지네이션
+  - inquiry 목록 DB 페이지네이션
+  - education 목록 DB 페이지네이션
+  - contract/payment/refund/consultation/sales 주요 목록 DB 페이지네이션
   - 배열 목록과 페이지 목록 정책 확정
 
 - **Batch C / 업무 workflow 안정화**
@@ -1226,7 +1232,7 @@
 
 ### 다음 작업 제안
 
-수정으로 넘어가기 전에 목록 응답 통일 또는 상태 전이 문서화 중 하나를 선택한다.
+다음 작업은 상태 전이 문서화 또는 상세 API 명세 확장 중 하나를 선택한다.
 
 우선 검토할 파일:
 

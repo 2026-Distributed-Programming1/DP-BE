@@ -1,6 +1,7 @@
 package org.dpbe.domain.payment.repository;
 
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import org.dpbe.domain.actor.Customer;
@@ -21,6 +22,9 @@ public class PaymentRecordRepository {
     private static final String COLS =
             "id, contract_id, customer_name, amount, method, payment_date, status,"
             + " confirmed_at, rejected_at, reject_category, reject_reason";
+    private static final String ALIASED_COLS =
+            "pr.id, pr.contract_id, pr.customer_name, pr.amount, pr.method, pr.payment_date, pr.status,"
+            + " pr.confirmed_at, pr.rejected_at, pr.reject_category, pr.reject_reason";
 
     private final SqlExecutor sql;
 
@@ -82,6 +86,54 @@ public class PaymentRecordRepository {
                 rowMapper(), status.name());
     }
 
+    public int countByFilters(String contractNo, PaymentRecordStatus status, String customerNo) {
+        QueryParts query = buildFilterQuery(
+                "SELECT COUNT(*) AS cnt FROM payment_records pr",
+                contractNo,
+                status,
+                customerNo);
+        return sql.queryOne(query.sql(), rs -> rs.getInt("cnt"), query.params().toArray());
+    }
+
+    public List<PaymentRecord> findPageByFilters(
+            String contractNo, PaymentRecordStatus status, String customerNo, int limit, int offset) {
+        QueryParts query = buildFilterQuery(
+                "SELECT " + ALIASED_COLS + " FROM payment_records pr",
+                contractNo,
+                status,
+                customerNo);
+        String pageSql = query.sql() + " ORDER BY pr.id DESC LIMIT ? OFFSET ?";
+        List<Object> params = new ArrayList<>(query.params());
+        params.add(limit);
+        params.add(offset);
+        return sql.executeQuery(pageSql, rowMapper(), params.toArray());
+    }
+
+    private QueryParts buildFilterQuery(
+            String selectSql, String contractNo, PaymentRecordStatus status, String customerNo) {
+        StringBuilder query = new StringBuilder(selectSql);
+        List<String> conditions = new ArrayList<>();
+        List<Object> params = new ArrayList<>();
+
+        if (customerNo != null) {
+            query.append(" LEFT JOIN contracts c ON c.id = pr.contract_id");
+            conditions.add("c.customer_id=?");
+            params.add(customerNo);
+        }
+        if (contractNo != null && !contractNo.isBlank()) {
+            conditions.add("pr.contract_id=?");
+            params.add(parseId(contractNo));
+        }
+        if (status != null) {
+            conditions.add("pr.status=?");
+            params.add(status.name());
+        }
+        if (!conditions.isEmpty()) {
+            query.append(" WHERE ").append(String.join(" AND ", conditions));
+        }
+        return new QueryParts(query.toString(), params);
+    }
+
     private SqlExecutor.RowMapper<PaymentRecord> rowMapper() {
         return rs -> {
             long contractId = rs.getLong("contract_id");
@@ -120,5 +172,8 @@ public class PaymentRecordRepository {
 
     private Long parseId(String businessNo) {
         return Long.parseLong(businessNo.replaceAll("\\D", ""));
+    }
+
+    private record QueryParts(String sql, List<Object> params) {
     }
 }

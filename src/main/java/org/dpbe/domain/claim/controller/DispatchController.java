@@ -1,9 +1,9 @@
 package org.dpbe.domain.claim.controller;
 
-import java.util.List;
 import org.dpbe.domain.claim.dto.DispatchRecordResponse;
 import org.dpbe.domain.claim.dto.DispatchResponse;
 import org.dpbe.domain.claim.service.DispatchRecordService;
+import org.dpbe.global.dto.PageResponse;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -29,8 +29,10 @@ public class DispatchController {
 
     /** 현장 출동 목록 */
     @GetMapping
-    public List<DispatchResponse> list() {
-        return recordService.listDispatches();
+    public PageResponse<DispatchResponse> list(
+            @RequestParam(defaultValue = "1") int page,
+            @RequestParam(defaultValue = "20") int size) {
+        return recordService.listDispatches(page, size);
     }
 
     /** 출동 기록 등록 (사진 multipart/form-data) */

@@ -1,19 +1,22 @@
 package org.dpbe.domain.sales.service;
 
-import java.util.List;
-import java.util.stream.Collectors;
 import org.dpbe.domain.common.enums.InsuranceType;
 import org.dpbe.domain.sales.dto.CustomerRegistrationRequest;
 import org.dpbe.domain.sales.dto.CustomerRegistrationResponse;
 import org.dpbe.domain.sales.entity.CustomerRegistration;
 import org.dpbe.domain.sales.repository.CustomerRegistrationRepository;
 import org.dpbe.global.auth.service.AuthAccessService;
+import org.dpbe.global.dto.PageResponse;
 import org.dpbe.global.exception.ApiException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class CustomerRegistrationService {
+
+    private static final int DEFAULT_PAGE = 1;
+    private static final int DEFAULT_SIZE = 20;
+    private static final int MAX_SIZE = 100;
 
     private final CustomerRegistrationRepository repository;
     private final AuthAccessService authAccessService;
@@ -25,11 +28,27 @@ public class CustomerRegistrationService {
     }
 
     @Transactional(readOnly = true)
-    public List<CustomerRegistrationResponse> findAll() {
+    public PageResponse<CustomerRegistrationResponse> findAll(int page, int size) {
         authAccessService.requireSalesOperationAccess();
-        return repository.findAll().stream()
+        int normalizedPage = normalizePage(page);
+        int normalizedSize = normalizeSize(size);
+        int offset = (normalizedPage - 1) * normalizedSize;
+        int total = repository.countAll();
+        var items = repository.findPage(normalizedSize, offset).stream()
                 .map(CustomerRegistrationResponse::from)
-                .collect(Collectors.toList());
+                .toList();
+        return new PageResponse<>(normalizedPage, normalizedSize, total, items);
+    }
+
+    private int normalizePage(int page) {
+        return page < 1 ? DEFAULT_PAGE : page;
+    }
+
+    private int normalizeSize(int size) {
+        if (size < 1) {
+            return DEFAULT_SIZE;
+        }
+        return Math.min(size, MAX_SIZE);
     }
 
     @Transactional
