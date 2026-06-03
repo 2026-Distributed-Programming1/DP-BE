@@ -43,8 +43,7 @@ public class OverdueNoticeSetting {
     /** 설정 저장 */
     public void save() {
         this.savedAt = LocalDateTime.now();
-        System.out.println("[OverdueNoticeSetting] 설정 저장 완료 (활성: " + enabled
-                + ", D+" + daysAfterDue + ")");
+        // 처리 필요 
     }
 
     // Getter

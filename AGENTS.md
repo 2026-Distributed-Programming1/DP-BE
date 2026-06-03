@@ -4,8 +4,9 @@ This file provides guidance to Codex (Codex.ai/code) when working with code in t
 
 > **현재 상태 (2026-06-03)**: 콘솔(Runner) 구조를 Spring REST API 구조로 전환 완료. 최종 수렴도 완료되어 `old/`/`OldMain` 삭제, 업무번호 format-on-read, FK `id` 전환이 반영됨.
 > - 완료: 전 UC Controller/Service/Repository/DTO 전환 · 웹 시더 · `old/` 제거 · `xxx_no` 저장 컬럼 제거 · FK `id(BIGINT)` 전환 · Docker DB 재생성 및 주요 API smoke test ✅
-> - 추가 완료: Flyway 도입 · HTTP 세션 로그인 · Spring Session JDBC · `auth_users` 기반 role · 고객 직접 회원가입 · 직원 계정 발급 · 고객 검색/상세 API · 공통 에러 응답 보강 · 문의 customer_id 연결 · 도메인별 role 기반 권한 보강 1차 적용 · 목록 응답 `page/size/total/items` 통일 · 주요 목록 API DB pagination 전환 · 미사용 DTO/유틸 삭제(`PageResponses`, `CustomerListResponse`, `ContractListResponse`).
-> - **다음 작업**: 상태 전이 규칙 문서화 · 주요 도메인 API 명세 확장 · 파일/S3 정책.
+> - 추가 완료: Flyway 도입 · HTTP 세션 로그인 · Spring Session JDBC · `auth_users` 기반 role · 고객 직접 회원가입 · 직원 계정 발급 · 고객 검색/상세 API · 공통 에러 응답 보강 · 문의 customer_id 연결 · 도메인별 role 기반 권한 보강 1차 적용 · 목록 응답 `page/size/total/items` 통일 · 주요 목록 API DB pagination 전환 · 미사용 DTO/유틸 삭제(`PageResponses`, `CustomerListResponse`, `ContractListResponse`) · 상태 전이 규칙 문서화(`design/StateTransitionRules.md`) · 상태 전이 검증 엔터티 위임 리팩터링(`design/StateTransitionRefactorProgress.md`) · 전 도메인 엔터티 `System.out.println` 제거.
+> - **다음 작업**: 주요 도메인 API 명세 확장(`design/ApiSpec.md`) · 파일/S3 정책.
+> - **작업 전 반드시 참고**: 상태 전이 규칙은 **`src/main/resources/design/StateTransitionRules.md`**.
 > - **작업 전 반드시 참고**: 전환 계획은 **`src/main/resources/design/ApiMigrationPlan.md`**, 프론트/인증 방향은 **`src/main/resources/design/FrontendIntegrationReview.md`**, 배포 env는 **`src/main/resources/design/DeploymentPlan.md`**.
 
 ## 빌드 및 실행

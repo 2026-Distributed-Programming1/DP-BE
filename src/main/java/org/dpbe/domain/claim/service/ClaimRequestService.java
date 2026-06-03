@@ -8,7 +8,6 @@ import org.dpbe.domain.claim.dto.ClaimResponse;
 import org.dpbe.domain.claim.entity.ClaimRequest;
 import org.dpbe.domain.claim.repository.ClaimRequestRepository;
 import org.dpbe.domain.common.enums.AuthMethod;
-import org.dpbe.domain.common.enums.ClaimRequestStatus;
 import org.dpbe.domain.common.enums.ClaimType;
 import org.dpbe.domain.contract.entity.Contract;
 import org.dpbe.domain.contract.repository.ContractRepository;
@@ -154,10 +153,6 @@ public class ClaimRequestService {
             throw ApiException.badRequest("필수 입력값이 누락되어 청구를 제출할 수 없습니다.");
         }
         claim.submit();
-        if (claim.getStatus() != ClaimRequestStatus.RECEIVED) {
-            throw ApiException.badRequest("청구 제출에 실패했습니다.");
-        }
-
         claimRequestRepository.save(claim);
         return ClaimResponse.from(claim);
     }
@@ -181,15 +176,6 @@ public class ClaimRequestService {
             return ClaimType.valueOf(type);
         } catch (IllegalArgumentException e) {
             throw ApiException.badRequest("알 수 없는 청구 유형입니다: " + type);
-        }
-    }
-
-    private boolean canAccessCustomer(Customer customer) {
-        try {
-            authAccessService.requireCustomerAccess(customer);
-            return true;
-        } catch (ApiException e) {
-            return false;
         }
     }
 }

@@ -3,6 +3,7 @@ package org.dpbe.domain.payment.entity;
 import org.dpbe.domain.contract.entity.Contract;
 import org.dpbe.domain.common.enums.PaymentRecordStatus;
 import org.dpbe.domain.common.enums.RejectCategory;
+import org.dpbe.global.exception.ApiException;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
@@ -52,11 +53,14 @@ public class PaymentRecord {
 
     /** 수납 확정 및 장부 반영 - confirmedAt=now(), status="완료" */
     public void confirm() {
+        if (this.status != PaymentRecordStatus.WAITING) {
+            throw ApiException.badRequest("대기 상태인 납부 내역만 확정할 수 있습니다. 현재 상태: " + this.status);
+        }
         try {
             this.confirmedAt = LocalDateTime.now();
             this.status = PaymentRecordStatus.COMPLETED;
             updateContractStatus();
-            System.out.println("[PaymentRecord] 수납 확정: " + recordNo);
+              // 처리 필요
         } catch (Exception e) {
             handleProcessingError();
         }
@@ -64,11 +68,11 @@ public class PaymentRecord {
 
     /**
      * 계약 상태 자동 업데이트
-     * 6️⃣ 도메인의 Contract 미완 구현 상태이므로 더미로 처리한다.
+     * 도메인의 Contract 미완 구현 상태이므로 더미로 처리하는 게 맞는지 확인 필요
      */
     public void updateContractStatus() {
         if (this.contract != null) {
-            System.out.println("[PaymentRecord] 계약 상태 업데이트: " + contract.getContractNo());
+            // 처리 필요
         }
     }
 
@@ -80,18 +84,21 @@ public class PaymentRecord {
 
     /** 수납 반려 확정 - rejectedAt=now(), status="반려" */
     public void reject() {
+        if (this.status != PaymentRecordStatus.WAITING) {
+            throw ApiException.badRequest("대기 상태인 납부 내역만 반려할 수 있습니다. 현재 상태: " + this.status);
+        }
         if (this.rejectCategory == null) {
-            System.out.println("[PaymentRecord] 반려 사유 미입력으로 반려 불가");
+            // 처리 필요
             return;
         }
         this.rejectedAt = LocalDateTime.now();
         this.status = PaymentRecordStatus.REJECTED;
-        System.out.println("[PaymentRecord] 수납 반려: " + recordNo + ", 사유: " + rejectReason);
+        // 처리 필요
     }
 
     /** 확정 처리 오류 (E1) */
     public void handleProcessingError() {
-        System.out.println("[PaymentRecord] 확정 처리 오류 발생: " + recordNo);
+      // 처리 필요
     }
 
     // Getter

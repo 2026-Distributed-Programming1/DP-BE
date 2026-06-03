@@ -30,7 +30,7 @@ public class Proposal {
 
     public void send() {
         this.sentAt = LocalDateTime.now();
-        System.out.println("  [시스템] 보험상품 제안서가 고객에게 발송되었습니다.");
+        // 처리 필요
     }
 
     public Long getId() { return id; }

@@ -2,6 +2,7 @@ package org.dpbe.domain.sales.entity;
 
 import org.dpbe.domain.common.enums.ChannelType;
 import org.dpbe.domain.common.enums.ScreeningStatus;
+import org.dpbe.global.exception.ApiException;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -34,12 +35,18 @@ public class ChannelScreening {
 //    }
 
     public void approve() {
+        if (this.screeningStatus != ScreeningStatus.PENDING) {
+            throw ApiException.badRequest("대기 상태의 심사만 승인할 수 있습니다.");
+        }
         this.reviewedAt = LocalDateTime.now();
         this.approvalNo = "AP-" + reviewedAt.toString().replaceAll("[^0-9]", "").substring(0, 14);
         this.screeningStatus = ScreeningStatus.APPROVED;
     }
 
     public void reject() {
+        if (this.screeningStatus != ScreeningStatus.PENDING) {
+            throw ApiException.badRequest("대기 상태의 심사만 거절할 수 있습니다.");
+        }
         this.reviewedAt = LocalDateTime.now();
         this.screeningStatus = ScreeningStatus.REJECTED;
     }

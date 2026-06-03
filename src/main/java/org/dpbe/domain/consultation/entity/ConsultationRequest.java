@@ -1,6 +1,7 @@
 package org.dpbe.domain.consultation.entity;
 
 import java.time.LocalDateTime;
+import org.dpbe.global.exception.ApiException;
 
 /**
  * 상담신청 (ConsultationRequest)
@@ -56,6 +57,9 @@ public class ConsultationRequest {
     }
 
     public void accept() {
+        if (!"접수".equals(this.status)) {
+            throw ApiException.badRequest("이미 처리된 상담 요청입니다. (현재 상태: " + this.status + ")");
+        }
         this.status = "수락";
         this.acceptedAt = LocalDateTime.now();
     }

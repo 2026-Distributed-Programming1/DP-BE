@@ -4,6 +4,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.time.LocalDate;
 import java.util.List;
+import org.dpbe.domain.common.enums.PlanStatus;
 import org.dpbe.domain.education.entity.EducationPlan;
 import org.dpbe.global.jdbc.SqlExecutor;
 import org.springframework.stereotype.Repository;
@@ -62,6 +63,7 @@ public class EducationPlanRepository {
 
     /** INSERT → id 회수 → plan_no 파생 UPDATE */
     public void save(EducationPlan plan) {
+        String statusName = plan.getStatus() != null ? plan.getStatus().name() : null;
         long id = sql.executeInsertReturningKey(
                 "INSERT INTO education_plans"
                 + " (trainer_name, education_name, channel_type, start_date, end_date,"
@@ -72,21 +74,27 @@ public class EducationPlanRepository {
                 plan.getStartDate(), plan.getEndDate(),
                 plan.getTargetCount(), plan.getBudget(),
                 plan.getEducationGoal(), plan.getEducationContent(), plan.getTextbookList(),
-                plan.getRejectReason(), plan.getApprovedAt(), plan.getStatus());
+                plan.getRejectReason(), plan.getApprovedAt(), statusName);
         plan.setId(id);
         plan.setPlanNo("PLN" + String.format("%05d", id));
     }
 
     /** 승인/반려 시 status·approved_at·reject_reason 갱신 */
     public void updateStatus(EducationPlan plan) {
+        String statusName = plan.getStatus() != null ? plan.getStatus().name() : null;
         sql.executeUpdate(
                 "UPDATE education_plans SET status=?, approved_at=?, reject_reason=? WHERE id=?",
-                plan.getStatus(), plan.getApprovedAt(), plan.getRejectReason(), plan.getId());
+                statusName, plan.getApprovedAt(), plan.getRejectReason(), plan.getId());
     }
 
     private EducationPlan mapRow(ResultSet rs) throws SQLException {
         LocalDate startDate = rs.getDate("start_date") != null ? rs.getDate("start_date").toLocalDate() : null;
         LocalDate endDate   = rs.getDate("end_date")   != null ? rs.getDate("end_date").toLocalDate()   : null;
+        String st = rs.getString("status");
+        PlanStatus status = PlanStatus.TEMP_SAVE;
+        if (st != null) {
+            try { status = PlanStatus.valueOf(st); } catch (IllegalArgumentException ignored) {}
+        }
         EducationPlan plan = EducationPlan.fromDb(
                 0,
                 rs.getString("trainer_name"),
@@ -99,7 +107,7 @@ public class EducationPlanRepository {
                 rs.getString("education_content"),
                 rs.getString("textbook_list"),
                 rs.getString("reject_reason"),
-                rs.getString("status"));
+                status);
         plan.setId(rs.getLong("id"));
         plan.setPlanNo("PLN" + String.format("%05d", rs.getLong("id")));
         java.sql.Timestamp aat = rs.getTimestamp("approved_at");

@@ -31,8 +31,7 @@ public class DeductionAdjustment {
 
     /** 조정 적용 */
     public void apply() {
-        System.out.println("[DeductionAdjustment] 공제 항목 조정 적용: " + itemName
-                + " (" + originalAmount + " → " + adjustedAmount + ")");
+      // 처리 필요 
     }
 
     // Getter

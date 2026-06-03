@@ -3,6 +3,7 @@ package org.dpbe.domain.consultation.entity;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import org.dpbe.global.exception.ApiException;
 
 /**
  * 면담일정 (InterviewSchedule)
@@ -75,6 +76,9 @@ public class InterviewSchedule {
     }
 
     public void modify(LocalDateTime scheduledAt, String location, String preparation) {
+        if ("취소".equals(this.status)) {
+            throw ApiException.badRequest("취소된 면담일정은 수정할 수 없습니다.");
+        }
         this.scheduledAt = scheduledAt;
         this.location = location;
         this.preparation = preparation;
@@ -82,6 +86,9 @@ public class InterviewSchedule {
     }
 
     public void cancel() {
+        if ("취소".equals(this.status)) {
+            throw ApiException.badRequest("이미 취소된 면담일정입니다.");
+        }
         this.status = "취소";
         this.cancelledAt = LocalDateTime.now();
     }

@@ -7,6 +7,7 @@ import java.util.List;
 import org.dpbe.domain.contract.entity.Cancellation;
 import org.dpbe.domain.contract.entity.Contract;
 import org.dpbe.domain.common.enums.RefundStatus;
+import org.dpbe.global.exception.ApiException;
 
 /**
  * 해약 환급금 산출 (RefundCalculation)
@@ -59,15 +60,15 @@ public class RefundCalculation {
         this.cancellation = cancellation;
         this.adjustments = new ArrayList<>();
         this.calculatedAt = LocalDateTime.now();
-        this.status = RefundStatus.CALCULATION_PENDING;
 
         loadContractData();
-        if (validateRequiredData()) {
-            calculateBaseRefund();
-            calculateDeductions();
-            calculateFinalRefund();
-            this.status = RefundStatus.CALCULATED;
+        if (!validateRequiredData()) {
+            throw ApiException.badRequest("환급금 산출에 필요한 데이터가 누락되었습니다.");
         }
+        calculateBaseRefund();
+        calculateDeductions();
+        calculateFinalRefund();
+        this.status = RefundStatus.CALCULATED;
     }
 
     /**
@@ -136,7 +137,6 @@ public class RefundCalculation {
     /** 조정 후 재산출 */
     public void recalculate() {
         calculateFinalRefund();
-        System.out.println("[RefundCalculation] 재산출 완료, 최종 환급금: " + finalRefund);
     }
 
     /**
@@ -144,15 +144,16 @@ public class RefundCalculation {
      * 외부 시스템 연동이 필요하므로 더미로 처리한다.
      */
     public File exportPDF() {
-        System.out.println("[RefundCalculation] 산출 내역서 PDF 다운로드: " + refundNo);
         return new File(refundNo + ".pdf");
     }
 
     /** 환급금 확정 및 지급 이관 - RefundPayment 생성 */
     public RefundPayment confirm() {
+        if (this.status != RefundStatus.CALCULATED) {
+            throw ApiException.badRequest("산출 완료 상태인 경우에만 확정할 수 있습니다.");
+        }
         this.confirmedAt = LocalDateTime.now();
-        this.status = RefundStatus.CALCULATED;
-        System.out.println("[RefundCalculation] 환급금 확정 및 지급 이관: " + refundNo);
+        this.status = RefundStatus.PAID;
         return new RefundPayment(this);
     }
 

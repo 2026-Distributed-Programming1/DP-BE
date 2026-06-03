@@ -61,11 +61,7 @@ public class EducationExecution {
     }
 
     public void sendCompletionNotice() {
-        System.out.println("  [시스템] 판매채널에 수료 알림이 발송되었습니다.");
-        for (Attendance a : preparation.getAttendanceList()) {
-            System.out.println("    - " + a.getAttendeeName()
-                    + " : " + (a.isAttended() ? "수료" : "미수료"));
-        }
+      // 처리 필요
     }
 
     public Long getId() { return id; }

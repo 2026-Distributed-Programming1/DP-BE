@@ -4,6 +4,7 @@ import java.time.LocalDateTime;
 import org.dpbe.domain.actor.Customer;
 import org.dpbe.domain.common.enums.AccidentReportStatus;
 import org.dpbe.domain.common.enums.AccidentType;
+import org.dpbe.global.exception.ApiException;
 
 /**
  * 사고 접수 (AccidentReport)
@@ -90,10 +91,13 @@ public class AccidentReport {
 
     /** 접수 처리 - status 갱신 */
     public void receive() {
-        if (validateRequiredFields() && verifyContract()) {
-            this.status = AccidentReportStatus.RECEIVED;
-            System.out.println("[AccidentReport] 사고 접수 완료: " + reportNo);
+        if (!validateRequiredFields()) {
+            throw ApiException.badRequest("필수 항목 누락(차량/소유자/연락처/사고유형/위치/약관동의).");
         }
+        if (!verifyContract()) {
+            throw ApiException.badRequest("[E1] 당사 가입 내역을 확인할 수 없습니다.");
+        }
+        this.status = AccidentReportStatus.RECEIVED;
     }
 
     /** 현장출동 신청 - Dispatch 객체 생성 */
@@ -106,6 +110,9 @@ public class AccidentReport {
 
     /** 접수만 진행/취소 (A2) */
     public void cancel() {
+        if (this.status != AccidentReportStatus.RECEIVED) {
+            throw ApiException.badRequest("접수 완료(RECEIVED) 상태에서만 취소할 수 있습니다.");
+        }
         this.status = AccidentReportStatus.CANCELED;
     }
 

@@ -5,8 +5,6 @@ import org.dpbe.domain.common.entity.BankAccount;
 import org.dpbe.domain.contract.entity.Cancellation;
 import org.dpbe.domain.contract.entity.Contract;
 import org.dpbe.domain.contract.repository.CancellationRepository;
-import org.dpbe.domain.common.enums.RefundPaymentStatus;
-import org.dpbe.domain.common.enums.RefundStatus;
 import org.dpbe.domain.payment.dto.RefundCalculationResponse;
 import org.dpbe.domain.payment.dto.RefundPaymentResponse;
 import org.dpbe.domain.payment.entity.RefundCalculation;
@@ -54,10 +52,6 @@ public class RefundService {
         }
 
         RefundCalculation refund = new RefundCalculation(cancellation);
-        if (refund.getStatus() == RefundStatus.CALCULATION_PENDING) {
-            throw ApiException.badRequest("환급금 산출에 필요한 데이터가 누락되었습니다.");
-        }
-
         refundCalculationRepository.save(refund);
         return refund;
     }
@@ -77,14 +71,12 @@ public class RefundService {
         RefundCalculation refund = refundCalculationRepository.findById(parseId(refundNo))
                 .orElseThrow(() -> ApiException.notFound("환급금 산출 건을 찾을 수 없습니다: " + refundNo));
 
-        if (refund.getStatus() != RefundStatus.CALCULATED) {
-            throw ApiException.badRequest("산출 완료 상태인 경우에만 확정할 수 있습니다.");
-        }
         if (refundPaymentRepository.findByRefundNo(refundNo).isPresent()) {
             throw ApiException.badRequest("이미 지급 이관된 환급금 건입니다: " + refundNo);
         }
 
-        RefundPayment payment = new RefundPayment(refund);
+        RefundPayment payment = refund.confirm();
+        refundCalculationRepository.updateStatus(refund);
         refundPaymentRepository.save(payment);
         return payment;
     }
@@ -95,13 +87,6 @@ public class RefundService {
         authAccessService.requireRefundOperationAccess();
         RefundPayment payment = refundPaymentRepository.findById(parseId(paymentNo))
                 .orElseThrow(() -> ApiException.notFound("환급금 지급 건을 찾을 수 없습니다: " + paymentNo));
-
-        if (payment.getStatus() == RefundPaymentStatus.COMPLETED) {
-            throw ApiException.badRequest("이미 완료된 지급 건입니다.");
-        }
-        if (payment.getStatus() == RefundPaymentStatus.LOCKED) {
-            throw ApiException.badRequest("OTP 5회 실패로 잠금된 지급 건입니다. 관리자에게 문의하세요.");
-        }
 
         payment.enterOTP(otpInput);
         boolean verified = payment.verifyOTP();

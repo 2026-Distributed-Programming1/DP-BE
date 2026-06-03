@@ -4,6 +4,7 @@ import java.time.LocalDateTime;
 import org.dpbe.domain.common.enums.FaqCategory;
 import org.dpbe.domain.common.enums.InquiryStatus;
 import org.dpbe.domain.common.enums.InquiryType;
+import org.dpbe.global.exception.ApiException;
 
 /**
  * 문의 (Inquiry)
@@ -55,6 +56,15 @@ public class Inquiry {
         this.receivedAt = LocalDateTime.now();
         this.inquiryNo = "INQ-" + receivedAt.toString().replaceAll("[^0-9]", "").substring(0, 14);
         this.status = InquiryStatus.PENDING;
+    }
+
+    public void answer(String content) {
+        if (this.status != InquiryStatus.PENDING) {
+            throw ApiException.badRequest("이미 답변이 완료된 문의입니다.");
+        }
+        this.answerContent = content;
+        this.answeredAt = LocalDateTime.now();
+        this.status = InquiryStatus.ANSWERED;
     }
 
     // API 응답과 DB 복원에서 사용하는 getter/setter

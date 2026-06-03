@@ -3,6 +3,7 @@ package org.dpbe.domain.claim.entity;
 import java.time.LocalDateTime;
 import org.dpbe.domain.actor.DispatchAgent;
 import org.dpbe.domain.common.enums.DispatchStatus;
+import org.dpbe.global.exception.ApiException;
 
 /**
  * 현장 출동 (Dispatch)
@@ -37,6 +38,9 @@ public class Dispatch {
 
     /** 직원 배정 - status="배정" */
     public void assignAgent(DispatchAgent agent) {
+        if (this.status != DispatchStatus.REQUESTED) {
+            throw ApiException.badRequest("신청(REQUESTED) 상태에서만 배정할 수 있습니다.");
+        }
         this.agent = agent;
         this.status = DispatchStatus.ASSIGNED;
     }
@@ -48,11 +52,17 @@ public class Dispatch {
 
     /** 현장 출발 - status="출발" */
     public void depart() {
+        if (this.status != DispatchStatus.ASSIGNED) {
+            throw ApiException.badRequest("배정(ASSIGNED) 상태에서만 출발할 수 있습니다.");
+        }
         this.status = DispatchStatus.DEPARTED;
     }
 
     /** 현장 도착 - arrivalTime=now(), status="도착" */
     public void arrive() {
+        if (this.status != DispatchStatus.DEPARTED) {
+            throw ApiException.badRequest("출발(DEPARTED) 상태에서만 도착 처리할 수 있습니다.");
+        }
         this.arrivalTime = LocalDateTime.now();
         this.status = DispatchStatus.ARRIVED;
     }
@@ -66,12 +76,18 @@ public class Dispatch {
 
     /** 출동 취소 (A4) */
     public void cancel(String reason) {
+        if (this.status == DispatchStatus.COMPLETED || this.status == DispatchStatus.CANCELED) {
+            throw ApiException.badRequest("완료 또는 이미 취소된 출동은 취소할 수 없습니다.");
+        }
         this.status = DispatchStatus.CANCELED;
         this.cancelReason = reason;
     }
 
     /** 출동 완료 - status="완료" */
     public void complete() {
+        if (this.status != DispatchStatus.ARRIVED) {
+            throw ApiException.badRequest("도착(ARRIVED) 상태에서만 완료 처리할 수 있습니다.");
+        }
         this.status = DispatchStatus.COMPLETED;
     }
 
