@@ -198,13 +198,15 @@ classDiagram
     class ClaimPayment
     class RefundPayment
     class DispatchRecord
+    class DispatchPhoto
 
     Customer "1" o-- "*" BankAccount : 등록 계좌
     Payment "*" --> "0..1" BankAccount : 납입 계좌
     ClaimRequest "*" --> "1" BankAccount : 지급 계좌
     ClaimPayment "*" --> "1" BankAccount : 수령 계좌
     RefundPayment "*" --> "0..1" BankAccount : 수령 계좌
-    DispatchRecord "1" o-- "*" Attachment : 사진
+    DispatchRecord "1" o-- "*" DispatchPhoto : 사진
+    DispatchPhoto "*" --> "1" Attachment : 파일 메타 기반
     ClaimRequest "1" o-- "*" Attachment : 첨부 서류
 ```
 
@@ -736,15 +738,24 @@ classDiagram
     class DispatchRecord {
         -String recordId
         -Dispatch dispatch
-        -List~Attachment~ photos
+        -List~DispatchPhoto~ photos
         -boolean policeRequired
         -boolean towingRequired
         -String notes
         -LocalDateTime transmittedAt
         -DispatchRecordStatus status
-        +uploadPhoto(String category, Attachment photo) void
+        +uploadPhoto(String category, DispatchPhoto photo) void
         +validateRequired() boolean
         +transmit() void
+    }
+    class DispatchPhoto {
+        -Long id
+        -Long recordId
+        -String fileName
+        -String filePath
+        -long fileSize
+        -String mimeType
+        -LocalDateTime uploadedAt
     }
     class ClaimRequest {
         -String claimNo
@@ -869,6 +880,7 @@ classDiagram
     class ClaimsHandler
     class Employee
     class Attachment
+    class DispatchPhoto
     class BankAccount
 
     AccidentReport "*" --> "1" Customer : 사고자
@@ -876,7 +888,8 @@ classDiagram
     Dispatch "*" --> "1" AccidentReport : 대상 사고
     Dispatch "*" --> "0..1" DispatchAgent : 배정 직원
     DispatchRecord "*" --> "1" Dispatch : 대상 출동
-    DispatchRecord "1" o-- "*" Attachment : 사진 보유
+    DispatchRecord "1" o-- "*" DispatchPhoto : 사진 보유
+    DispatchPhoto "*" --> "1" Attachment : 파일 메타 기반
 
     ClaimRequest "*" --> "1" Customer : 청구 고객
     ClaimRequest "*" --> "1" Customer : 피보험자

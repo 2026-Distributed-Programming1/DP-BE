@@ -5,8 +5,8 @@ import java.sql.SQLException;
 import java.time.LocalDateTime;
 import java.util.List;
 import org.dpbe.domain.claim.entity.Dispatch;
+import org.dpbe.domain.claim.entity.DispatchPhoto;
 import org.dpbe.domain.claim.entity.DispatchRecord;
-import org.dpbe.domain.common.entity.Attachment;
 import org.dpbe.domain.common.enums.DispatchRecordStatus;
 import org.dpbe.global.jdbc.SqlExecutor;
 import org.springframework.stereotype.Repository;
@@ -53,11 +53,11 @@ public class DispatchRecordRepository {
     }
 
     /** 사진 메타 1건 저장 (record_id FK). */
-    public void savePhoto(String recordNo, Attachment photo) {
+    public void savePhoto(DispatchPhoto photo) {
         sql.executeUpdate(
                 "INSERT INTO dispatch_photos (record_id, file_name, file_path, file_size,"
                 + " mime_type, uploaded_at) VALUES (?,?,?,?,?,?)",
-                parseId(recordNo), photo.getFileName(), photo.getFilePath(), photo.getFileSize(),
+                photo.getRecordId(), photo.getFileName(), photo.getFilePath(), photo.getFileSize(),
                 photo.getMimeType(), photo.getUploadedAt());
     }
 
@@ -66,6 +66,14 @@ public class DispatchRecordRepository {
         return sql.executeQuery(
                 "SELECT file_name FROM dispatch_photos WHERE record_id=? ORDER BY id",
                 rs -> rs.getString("file_name"), parseId(recordNo));
+    }
+
+    /** 한 기록의 사진 메타데이터 목록. */
+    public List<DispatchPhoto> findPhotos(String recordNo) {
+        return sql.executeQuery(
+                "SELECT id, record_id, file_name, file_path, file_size, mime_type, uploaded_at"
+                + " FROM dispatch_photos WHERE record_id=? ORDER BY id",
+                this::mapPhotoRow, parseId(recordNo));
     }
 
     public List<DispatchRecord> findAll() {
@@ -102,6 +110,18 @@ public class DispatchRecordRepository {
             catch (IllegalArgumentException ignored) {}
         }
         return rec;
+    }
+
+    private DispatchPhoto mapPhotoRow(ResultSet rs) throws SQLException {
+        java.sql.Timestamp uploadedAt = rs.getTimestamp("uploaded_at");
+        return new DispatchPhoto(
+                rs.getLong("id"),
+                rs.getLong("record_id"),
+                rs.getString("file_name"),
+                rs.getString("file_path"),
+                rs.getLong("file_size"),
+                rs.getString("mime_type"),
+                uploadedAt != null ? uploadedAt.toLocalDateTime() : null);
     }
 
     private Long parseId(String businessNo) {

@@ -8,20 +8,17 @@ import org.dpbe.domain.contract.dto.ContractDetailResponse;
 import org.dpbe.domain.contract.dto.ContractSummaryResponse;
 import org.dpbe.domain.contract.entity.Contract;
 import org.dpbe.domain.contract.repository.ContractRepository;
+import org.dpbe.global.auth.dto.AuthenticatedUser;
 import org.dpbe.global.auth.service.AuthAccessService;
 import org.dpbe.global.dto.PageResponse;
 import org.dpbe.global.exception.ApiException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-/**
- * UC '계약 정보를 조회한다' API 서비스.
- * 계약 조회·필터·상세 로직을 처리한다.
- * 조회 전용이므로 readOnly 트랜잭션.
- */
+/** UC '가입 보험을 조회한다' API 서비스. */
 @Service
 @Transactional(readOnly = true)
-public class ContractService {
+public class SubscribedInsuranceService {
 
     private static final int DEFAULT_PAGE = 1;
     private static final int DEFAULT_SIZE = 20;
@@ -30,27 +27,49 @@ public class ContractService {
     private final ContractRepository contractRepository;
     private final AuthAccessService authAccessService;
 
-    public ContractService(ContractRepository contractRepository,
-                           AuthAccessService authAccessService) {
+    public SubscribedInsuranceService(ContractRepository contractRepository,
+                                      AuthAccessService authAccessService) {
         this.contractRepository = contractRepository;
         this.authAccessService = authAccessService;
     }
 
-    /** Basic 2 / A1(필터 없음) / A2(결과 없음) — 필터 + 페이징 목록 */
+    /** 고객 본인 가입 보험 목록 */
     public PageResponse<ContractSummaryResponse> list(String type, int page, int size) {
-        authAccessService.requireContractOperationAccess();
+        requireCustomer();
+        AuthenticatedUser user = authAccessService.currentUser();
+        String customerNo = user.linkedCustomerNo();
+        if (customerNo == null) {
+            return emptyPage(page, size);
+        }
 
         int normalizedPage = normalizePage(page);
         int normalizedSize = normalizeSize(size);
         int offset = (normalizedPage - 1) * normalizedSize;
-        int total = contractRepository.countByFilters(type, null);
+        int total = contractRepository.countByFilters(type, customerNo);
         List<ContractSummaryResponse> items = contractRepository
-                .findPageByFilters(type, null, normalizedSize, offset)
+                .findPageByFilters(type, customerNo, normalizedSize, offset)
                 .stream()
                 .map(this::toSummary)
                 .toList();
 
         return new PageResponse<>(normalizedPage, normalizedSize, total, items);
+    }
+
+    /** 고객 본인 가입 보험 상세 */
+    public ContractDetailResponse detail(String contractNo) {
+        requireCustomer();
+        Contract c = contractRepository.findById(parseId(contractNo));
+        if (c == null) {
+            throw ApiException.notFound("계약을 찾을 수 없습니다: " + contractNo);
+        }
+        authAccessService.requireContractAccess(c);
+        return toDetail(c);
+    }
+
+    private void requireCustomer() {
+        if (!authAccessService.isCustomer()) {
+            throw ApiException.forbidden("고객만 가입 보험을 조회할 수 있습니다.");
+        }
     }
 
     private int normalizePage(int page) {
@@ -76,14 +95,7 @@ public class ContractService {
         }
     }
 
-    /** Basic 4 / A3(만기임박 D-day) / A5(특약 없음) — 상세 */
-    public ContractDetailResponse detail(String contractNo) {
-        authAccessService.requireContractOperationAccess();
-        Contract c = contractRepository.findById(parseId(contractNo));
-        if (c == null) {
-            throw ApiException.notFound("계약을 찾을 수 없습니다: " + contractNo);
-        }
-
+    private ContractDetailResponse toDetail(Contract c) {
         LocalDate endDate = c.getEndDate();
         long daysUntilExpiry = endDate != null
                 ? ChronoUnit.DAYS.between(LocalDate.now(), endDate) : -1;

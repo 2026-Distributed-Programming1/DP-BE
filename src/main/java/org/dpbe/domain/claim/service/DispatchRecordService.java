@@ -10,6 +10,7 @@ import java.util.List;
 import org.dpbe.domain.claim.dto.DispatchRecordResponse;
 import org.dpbe.domain.claim.dto.DispatchResponse;
 import org.dpbe.domain.claim.entity.Dispatch;
+import org.dpbe.domain.claim.entity.DispatchPhoto;
 import org.dpbe.domain.claim.entity.DispatchRecord;
 import org.dpbe.domain.claim.repository.DispatchRecordRepository;
 import org.dpbe.domain.claim.repository.DispatchRepository;
@@ -134,28 +135,28 @@ public class DispatchRecordService {
         String recordNo = rec.getRecordId();
 
         // 사진을 uploads/dispatch/{recordNo}/ 에 저장하고 엔터티/메타에 반영
-        List<Attachment> saved = storePhotos(recordNo, photos);
-        for (Attachment a : saved) {
-            rec.uploadPhoto("현장", a);
-            recordRepository.savePhoto(recordNo, a);
+        List<DispatchPhoto> saved = storePhotos(rec.getId(), recordNo, photos);
+        for (DispatchPhoto photo : saved) {
+            rec.uploadPhoto("현장", photo);
+            recordRepository.savePhoto(photo);
         }
 
         // 전송 처리 (E1: 사진 1장 이상이면 통과) → transmittedAt·status 갱신
         rec.transmit();
         recordRepository.markTransmitted(rec);
 
-        List<String> names = saved.stream().map(Attachment::getFileName).toList();
+        List<String> names = saved.stream().map(DispatchPhoto::getFileName).toList();
         return DispatchRecordResponse.from(rec, names);
     }
 
-    private List<Attachment> storePhotos(String recordNo, MultipartFile[] photos) {
+    private List<DispatchPhoto> storePhotos(Long recordId, String recordNo, MultipartFile[] photos) {
         Path dir = Paths.get(uploadRoot, recordNo);
         try {
             Files.createDirectories(dir);
         } catch (IOException e) {
             throw new RuntimeException("업로드 디렉터리 생성 실패: " + dir, e);
         }
-        List<Attachment> result = new ArrayList<>();
+        List<DispatchPhoto> result = new ArrayList<>();
         for (MultipartFile mf : photos) {
             if (mf.isEmpty()) continue;
             String original = mf.getOriginalFilename() != null ? mf.getOriginalFilename() : "photo";
@@ -165,7 +166,7 @@ public class DispatchRecordService {
             } catch (IOException e) {
                 throw new RuntimeException("사진 저장 실패: " + target, e);
             }
-            result.add(new Attachment(new File(target.toString())));
+            result.add(new DispatchPhoto(recordId, new Attachment(new File(target.toString()))));
         }
         if (result.isEmpty()) {
             throw ApiException.badRequest("[E1] 유효한 현장 사진이 없습니다.");

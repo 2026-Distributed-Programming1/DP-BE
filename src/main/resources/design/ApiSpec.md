@@ -488,7 +488,7 @@ Response:
 
 `GET /api/contracts?type=&page=1&size=20`
 
-권한: 직원/관리자 전체, 고객은 본인 계약만
+권한: `CONTRACT_STAFF`/`ADMIN`
 
 Query:
 
@@ -521,7 +521,7 @@ Response:
 
 `GET /api/contracts/{contractNo}`
 
-권한: 직원/관리자 전체, 고객은 본인 계약만
+권한: `CONTRACT_STAFF`/`ADMIN`
 
 Response:
 
@@ -540,6 +540,20 @@ Response:
   "overdueCount": 0
 }
 ```
+
+### 가입 보험 목록
+
+`GET /api/subscribed-insurances?type=&page=1&size=20`
+
+권한: `CUSTOMER`. 기존 `GET /api/contracts`는 계약관리 담당자의 계약 정보 조회 유스케이스로 유지하고, 고객의 가입 보험 조회 유스케이스는 1:1 Controller/Service 대응을 위해 이 URL로 분리한다. 응답 DTO는 계약 목록과 동일하게 `ContractSummaryResponse`를 사용한다.
+
+Response: `PageResponse<ContractSummaryResponse>`
+
+### 가입 보험 상세
+
+`GET /api/subscribed-insurances/{contractNo}`
+
+권한: `CUSTOMER`. 본인 계약만 조회 가능. 응답 DTO는 계약 상세와 동일하게 `ContractDetailResponse`를 사용한다.
 
 ### 계약 해지 신청
 
