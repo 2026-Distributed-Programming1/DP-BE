@@ -5,7 +5,7 @@ import org.dpbe.domain.common.entity.BankAccount;
 import org.dpbe.domain.contract.entity.Cancellation;
 import org.dpbe.domain.contract.entity.Contract;
 import org.dpbe.domain.contract.repository.CancellationRepository;
-import org.dpbe.domain.payment.dto.RefundPaymentResponse;
+import org.dpbe.domain.payment.dto.PayRefundResponse;
 import org.dpbe.domain.payment.entity.RefundCalculation;
 import org.dpbe.domain.payment.entity.RefundPayment;
 import org.dpbe.domain.payment.repository.RefundPaymentRepository;
@@ -38,7 +38,7 @@ public class PayRefundService {
 
     /** OTP 인증 후 이체 실행 — POST /api/refund-payments/{paymentNo}/execute */
     @Transactional
-    public RefundPayment execute(String paymentNo, String otpInput) {
+    public PayRefundResponse execute(String paymentNo, String otpInput) {
         authAccessService.requireRefundOperationAccess();
         RefundPayment payment = refundPaymentRepository.findById(parseId(paymentNo))
                 .orElseThrow(() -> ApiException.notFound("환급금 지급 건을 찾을 수 없습니다: " + paymentNo));
@@ -63,21 +63,21 @@ public class PayRefundService {
         payment.execute();
         payment.sendNotice();
         refundPaymentRepository.update(payment);
-        return payment;
+        return PayRefundResponse.from(payment);
     }
 
     /** 환급금 지급 단건 조회 */
     @Transactional(readOnly = true)
-    public RefundPayment getPayment(String paymentNo) {
+    public PayRefundResponse getPayment(String paymentNo) {
         RefundPayment payment = refundPaymentRepository.findById(parseId(paymentNo))
                 .orElseThrow(() -> ApiException.notFound("환급금 지급 건을 찾을 수 없습니다: " + paymentNo));
         requireRefundAccess(payment.getRefund());
-        return payment;
+        return PayRefundResponse.from(payment);
     }
 
     /** 환급금 지급 목록 */
     @Transactional(readOnly = true)
-    public PageResponse<RefundPaymentResponse> getAllPayments(int page, int size) {
+    public PageResponse<PayRefundResponse> getAllPayments(int page, int size) {
         String customerNo = accessibleCustomerNo();
         if (!authAccessService.isCustomer()) {
             authAccessService.requireRefundOperationAccess();
@@ -91,10 +91,10 @@ public class PayRefundService {
         int normalizedSize = normalizeSize(size);
         int offset = (normalizedPage - 1) * normalizedSize;
         int total = refundPaymentRepository.countByCustomerNo(customerNo);
-        List<RefundPaymentResponse> items = refundPaymentRepository
+        List<PayRefundResponse> items = refundPaymentRepository
                 .findPageByCustomerNo(customerNo, normalizedSize, offset)
                 .stream()
-                .map(RefundPaymentResponse::from)
+                .map(PayRefundResponse::from)
                 .toList();
 
         return new PageResponse<>(normalizedPage, normalizedSize, total, items);

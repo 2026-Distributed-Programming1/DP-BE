@@ -19,8 +19,7 @@ public class RefundController {
     /** 환급금 산출 단건 조회 */
     @GetMapping("/refund-calculations/{refundNo}")
     public ResponseEntity<RefundCalculationResponse> getCalculation(@PathVariable String refundNo) {
-        return ResponseEntity.ok(RefundCalculationResponse.from(
-                refundService.getCalculation(refundNo)));
+        return ResponseEntity.ok(refundService.getCalculation(refundNo));
     }
 
     /** 환급금 산출 목록 */

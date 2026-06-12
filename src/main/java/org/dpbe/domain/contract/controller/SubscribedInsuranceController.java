@@ -1,7 +1,7 @@
 package org.dpbe.domain.contract.controller;
 
-import org.dpbe.domain.contract.dto.ContractDetailResponse;
-import org.dpbe.domain.contract.dto.ContractSummaryResponse;
+import org.dpbe.domain.contract.dto.SubscribedInsuranceDetailResponse;
+import org.dpbe.domain.contract.dto.SubscribedInsuranceSummaryResponse;
 import org.dpbe.domain.contract.service.SubscribedInsuranceService;
 import org.dpbe.global.dto.PageResponse;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -23,7 +23,7 @@ public class SubscribedInsuranceController {
 
     /** 고객 본인 가입 보험 목록 */
     @GetMapping
-    public PageResponse<ContractSummaryResponse> list(
+    public PageResponse<SubscribedInsuranceSummaryResponse> list(
             @RequestParam(required = false) String type,
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "20") int size) {
@@ -32,7 +32,7 @@ public class SubscribedInsuranceController {
 
     /** 고객 본인 가입 보험 상세 */
     @GetMapping("/{contractNo}")
-    public ContractDetailResponse detail(@PathVariable String contractNo) {
+    public SubscribedInsuranceDetailResponse detail(@PathVariable String contractNo) {
         return subscribedInsuranceService.detail(contractNo);
     }
 }

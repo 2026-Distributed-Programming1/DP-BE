@@ -1,7 +1,7 @@
 package org.dpbe.domain.payment.controller;
 
+import org.dpbe.domain.payment.dto.PayRefundResponse;
 import org.dpbe.domain.payment.dto.RefundPaymentExecuteRequest;
-import org.dpbe.domain.payment.dto.RefundPaymentResponse;
 import org.dpbe.domain.payment.service.PayRefundService;
 import org.dpbe.global.dto.PageResponse;
 import org.springframework.http.ResponseEntity;
@@ -26,23 +26,21 @@ public class PayRefundController {
 
     /** OTP 인증 후 이체 실행 */
     @PostMapping("/refund-payments/{paymentNo}/execute")
-    public ResponseEntity<RefundPaymentResponse> execute(
+    public ResponseEntity<PayRefundResponse> execute(
             @PathVariable String paymentNo,
             @RequestBody RefundPaymentExecuteRequest req) {
-        return ResponseEntity.ok(RefundPaymentResponse.from(
-                payRefundService.execute(paymentNo, req.otpInput())));
+        return ResponseEntity.ok(payRefundService.execute(paymentNo, req.otpInput()));
     }
 
     /** 환급금 지급 단건 조회 */
     @GetMapping("/refund-payments/{paymentNo}")
-    public ResponseEntity<RefundPaymentResponse> getPayment(@PathVariable String paymentNo) {
-        return ResponseEntity.ok(RefundPaymentResponse.from(
-                payRefundService.getPayment(paymentNo)));
+    public ResponseEntity<PayRefundResponse> getPayment(@PathVariable String paymentNo) {
+        return ResponseEntity.ok(payRefundService.getPayment(paymentNo));
     }
 
     /** 환급금 지급 목록 */
     @GetMapping("/refund-payments")
-    public ResponseEntity<PageResponse<RefundPaymentResponse>> getAllPayments(
+    public ResponseEntity<PageResponse<PayRefundResponse>> getAllPayments(
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "20") int size) {
         return ResponseEntity.ok(payRefundService.getAllPayments(page, size));

@@ -1,7 +1,7 @@
 package org.dpbe.domain.payment.controller;
 
-import org.dpbe.domain.payment.dto.RefundCalculationResponse;
-import org.dpbe.domain.payment.dto.RefundPaymentResponse;
+import org.dpbe.domain.payment.dto.CalculateRefundResponse;
+import org.dpbe.domain.payment.dto.ConfirmRefundPaymentResponse;
 import org.dpbe.domain.payment.service.CalculateRefundService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -22,15 +22,13 @@ public class CalculateRefundController {
 
     /** 환급금 산출 */
     @PostMapping("/cancellations/{cancellationNo}/refund-calculation")
-    public ResponseEntity<RefundCalculationResponse> calculate(@PathVariable String cancellationNo) {
-        return ResponseEntity.ok(RefundCalculationResponse.from(
-                calculateRefundService.calculate(cancellationNo)));
+    public ResponseEntity<CalculateRefundResponse> calculate(@PathVariable String cancellationNo) {
+        return ResponseEntity.ok(calculateRefundService.calculate(cancellationNo));
     }
 
     /** 환급금 확정 + 지급 이관 */
     @PostMapping("/refund-calculations/{refundNo}/confirm")
-    public ResponseEntity<RefundPaymentResponse> confirm(@PathVariable String refundNo) {
-        return ResponseEntity.ok(RefundPaymentResponse.from(
-                calculateRefundService.confirm(refundNo)));
+    public ResponseEntity<ConfirmRefundPaymentResponse> confirm(@PathVariable String refundNo) {
+        return ResponseEntity.ok(calculateRefundService.confirm(refundNo));
     }
 }

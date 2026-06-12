@@ -2,6 +2,8 @@ package org.dpbe.domain.payment.service;
 
 import org.dpbe.domain.contract.entity.Cancellation;
 import org.dpbe.domain.contract.repository.CancellationRepository;
+import org.dpbe.domain.payment.dto.CalculateRefundResponse;
+import org.dpbe.domain.payment.dto.ConfirmRefundPaymentResponse;
 import org.dpbe.domain.payment.entity.RefundCalculation;
 import org.dpbe.domain.payment.entity.RefundPayment;
 import org.dpbe.domain.payment.repository.RefundCalculationRepository;
@@ -32,7 +34,7 @@ public class CalculateRefundService {
 
     /** 환급금 산출 — POST /api/cancellations/{cancellationNo}/refund-calculation */
     @Transactional
-    public RefundCalculation calculate(String cancellationNo) {
+    public CalculateRefundResponse calculate(String cancellationNo) {
         authAccessService.requireRefundOperationAccess();
         Cancellation cancellation = cancellationRepository.findById(parseId(cancellationNo))
                 .orElseThrow(() -> ApiException.notFound("해지 건을 찾을 수 없습니다: " + cancellationNo));
@@ -43,12 +45,12 @@ public class CalculateRefundService {
 
         RefundCalculation refund = new RefundCalculation(cancellation);
         refundCalculationRepository.save(refund);
-        return refund;
+        return CalculateRefundResponse.from(refund);
     }
 
     /** 환급금 확정 + 지급 이관 — POST /api/refund-calculations/{refundNo}/confirm */
     @Transactional
-    public RefundPayment confirm(String refundNo) {
+    public ConfirmRefundPaymentResponse confirm(String refundNo) {
         authAccessService.requireRefundOperationAccess();
         RefundCalculation refund = refundCalculationRepository.findById(parseId(refundNo))
                 .orElseThrow(() -> ApiException.notFound("환급금 산출 건을 찾을 수 없습니다: " + refundNo));
@@ -60,7 +62,7 @@ public class CalculateRefundService {
         RefundPayment payment = refund.confirm();
         refundCalculationRepository.updateStatus(refund);
         refundPaymentRepository.save(payment);
-        return payment;
+        return ConfirmRefundPaymentResponse.from(payment);
     }
 
     private Long parseId(String businessNo) {

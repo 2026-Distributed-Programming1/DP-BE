@@ -43,11 +43,11 @@ public class RefundService {
 
     /** 환급금 산출 단건 조회 */
     @Transactional(readOnly = true)
-    public RefundCalculation getCalculation(String refundNo) {
+    public RefundCalculationResponse getCalculation(String refundNo) {
         RefundCalculation refund = refundCalculationRepository.findById(parseId(refundNo))
                 .orElseThrow(() -> ApiException.notFound("환급금 산출 건을 찾을 수 없습니다: " + refundNo));
         requireRefundAccess(refund);
-        return refund;
+        return RefundCalculationResponse.from(refund);
     }
 
     /** 환급금 산출 목록 */

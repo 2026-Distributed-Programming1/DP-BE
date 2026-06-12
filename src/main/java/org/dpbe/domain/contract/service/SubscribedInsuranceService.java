@@ -4,8 +4,8 @@ import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
 import org.dpbe.domain.common.enums.ContractStatus;
-import org.dpbe.domain.contract.dto.ContractDetailResponse;
-import org.dpbe.domain.contract.dto.ContractSummaryResponse;
+import org.dpbe.domain.contract.dto.SubscribedInsuranceDetailResponse;
+import org.dpbe.domain.contract.dto.SubscribedInsuranceSummaryResponse;
 import org.dpbe.domain.contract.entity.Contract;
 import org.dpbe.domain.contract.repository.ContractRepository;
 import org.dpbe.global.auth.dto.AuthenticatedUser;
@@ -34,7 +34,7 @@ public class SubscribedInsuranceService {
     }
 
     /** 고객 본인 가입 보험 목록 */
-    public PageResponse<ContractSummaryResponse> list(String type, int page, int size) {
+    public PageResponse<SubscribedInsuranceSummaryResponse> list(String type, int page, int size) {
         requireCustomer();
         AuthenticatedUser user = authAccessService.currentUser();
         String customerNo = user.linkedCustomerNo();
@@ -46,7 +46,7 @@ public class SubscribedInsuranceService {
         int normalizedSize = normalizeSize(size);
         int offset = (normalizedPage - 1) * normalizedSize;
         int total = contractRepository.countByFilters(type, customerNo);
-        List<ContractSummaryResponse> items = contractRepository
+        List<SubscribedInsuranceSummaryResponse> items = contractRepository
                 .findPageByFilters(type, customerNo, normalizedSize, offset)
                 .stream()
                 .map(this::toSummary)
@@ -56,7 +56,7 @@ public class SubscribedInsuranceService {
     }
 
     /** 고객 본인 가입 보험 상세 */
-    public ContractDetailResponse detail(String contractNo) {
+    public SubscribedInsuranceDetailResponse detail(String contractNo) {
         requireCustomer();
         Contract c = contractRepository.findById(parseId(contractNo));
         if (c == null) {
@@ -95,13 +95,13 @@ public class SubscribedInsuranceService {
         }
     }
 
-    private ContractDetailResponse toDetail(Contract c) {
+    private SubscribedInsuranceDetailResponse toDetail(Contract c) {
         LocalDate endDate = c.getEndDate();
         long daysUntilExpiry = endDate != null
                 ? ChronoUnit.DAYS.between(LocalDate.now(), endDate) : -1;
         boolean expiringSoon = daysUntilExpiry >= 0 && daysUntilExpiry <= 30;
 
-        return new ContractDetailResponse(
+        return new SubscribedInsuranceDetailResponse(
                 c.getContractNo(),
                 c.getPolicyNo(),
                 c.getCustomer() != null ? c.getCustomer().getName() : null,
@@ -122,8 +122,8 @@ public class SubscribedInsuranceService {
                 c.getSpecialClauses());
     }
 
-    private ContractSummaryResponse toSummary(Contract c) {
-        return new ContractSummaryResponse(
+    private SubscribedInsuranceSummaryResponse toSummary(Contract c) {
+        return new SubscribedInsuranceSummaryResponse(
                 c.getContractNo(),
                 c.getCustomer() != null ? c.getCustomer().getName() : null,
                 c.getInsuranceType(),

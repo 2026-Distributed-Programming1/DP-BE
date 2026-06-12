@@ -3,7 +3,7 @@ package org.dpbe.domain.payment.dto;
 import java.time.LocalDateTime;
 import org.dpbe.domain.payment.entity.RefundPayment;
 
-public record RefundPaymentResponse(
+public record PayRefundResponse(
         String paymentNo,
         String refundNo,
         long finalAmount,
@@ -12,8 +12,8 @@ public record RefundPaymentResponse(
         int otpFailCount,
         String status
 ) {
-    public static RefundPaymentResponse from(RefundPayment p) {
-        return new RefundPaymentResponse(
+    public static PayRefundResponse from(RefundPayment p) {
+        return new PayRefundResponse(
                 p.getPaymentNo(),
                 p.getRefund() != null ? p.getRefund().getRefundNo() : null,
                 p.getFinalAmount(),
